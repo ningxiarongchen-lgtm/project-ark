@@ -1,7 +1,7 @@
 {
-  "name": "cmax-backend",
+  "name": "project-ark-backend",
   "version": "1.0.0",
-  "description": "Backend API for C-MAX Actuator Selection System",
+  "description": "Backend services for the C-MAX Project Ark platform.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

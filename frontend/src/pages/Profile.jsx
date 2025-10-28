@@ -33,7 +33,6 @@ const Profile = () => {
         >
           <Descriptions bordered column={1}>
             <Descriptions.Item label="Name">{user?.name}</Descriptions.Item>
-            <Descriptions.Item label="Email">{user?.email}</Descriptions.Item>
             <Descriptions.Item label="Role">
               {user?.role?.replace('_', ' ')}
             </Descriptions.Item>
@@ -53,7 +52,6 @@ const Profile = () => {
             onFinish={handleUpdate}
             initialValues={{
               name: user?.name,
-              email: user?.email,
               department: user?.department,
               phone: user?.phone,
             }}
@@ -62,17 +60,6 @@ const Profile = () => {
               name="name"
               label="Name"
               rules={[{ required: true, message: 'Please enter your name' }]}
-            >
-              <Input />
-            </Form.Item>
-
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: 'Please enter your email' },
-                { type: 'email', message: 'Please enter a valid email' },
-              ]}
             >
               <Input />
             </Form.Item>

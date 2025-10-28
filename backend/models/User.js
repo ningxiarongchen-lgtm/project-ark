@@ -17,14 +17,6 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide a name'],
     trim: true
   },
-  email: {
-    type: String,
-    unique: true,
-    sparse: true, // 允许多个null值
-    lowercase: true,
-    trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
-  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],

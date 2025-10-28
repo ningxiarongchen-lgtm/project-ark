@@ -5,7 +5,7 @@ const Supplier = require('./models/Supplier');
 // 连接数据库
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax-actuator');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/project_ark');
     console.log('✅ MongoDB连接成功');
   } catch (error) {
     console.error('❌ MongoDB连接失败:', error.message);

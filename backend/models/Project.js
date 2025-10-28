@@ -21,7 +21,6 @@ const projectSchema = new mongoose.Schema({
       required: [true, 'Client name is required']
     },
     company: String,
-    email: String,
     phone: String,
     address: String
   },

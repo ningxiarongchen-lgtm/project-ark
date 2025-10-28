@@ -121,7 +121,6 @@ const projectSchema = new mongoose.Schema({
   client_contact: {
     company: String,
     contact_person: String,
-    email: String,
     phone: String,
     address: String
   },

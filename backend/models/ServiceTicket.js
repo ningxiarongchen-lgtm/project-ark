@@ -39,7 +39,6 @@ const serviceTicketSchema = new mongoose.Schema({
       required: [true, 'Customer name is required']
     },
     company: String,
-    email: String,
     phone: {
       type: String,
       required: [true, 'Customer phone is required']

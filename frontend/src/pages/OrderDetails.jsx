@@ -193,8 +193,7 @@ const OrderDetails = () => {
       customer: {
         name: order.client?.name || '',
         company: order.client?.company || '',
-        phone: order.client?.phone || '',
-        email: order.client?.email || ''
+        phone: order.client?.phone || ''
       }
     })
 
@@ -1615,15 +1614,6 @@ const OrderDetails = () => {
                 rules={[{ required: true, message: '请输入联系电话' }]}
               >
                 <Input placeholder="联系电话" />
-              </Form.Item>
-            </Col>
-
-            <Col span={12}>
-              <Form.Item
-                name={['customer', 'email']}
-                label="电子邮箱"
-              >
-                <Input placeholder="电子邮箱" />
               </Form.Item>
             </Col>
           </Row>

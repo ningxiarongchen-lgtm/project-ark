@@ -207,18 +207,6 @@ const SupplierManagement = () => {
       ) : '-'
     },
     {
-      title: '邮箱',
-      dataIndex: 'email',
-      key: 'email',
-      width: 180,
-      render: (text) => text ? (
-        <Space>
-          <MailOutlined style={{ color: '#52c41a' }} />
-          {text}
-        </Space>
-      ) : '-'
-    },
-    {
       title: '业务范围',
       dataIndex: 'business_scope',
       key: 'business_scope',
@@ -475,14 +463,6 @@ const SupplierManagement = () => {
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item
-            name="email"
-            label="邮箱"
-            rules={[{ type: 'email', message: '请输入有效的邮箱地址' }]}
-          >
-            <Input placeholder="例如: contact@supplier.com" />
-          </Form.Item>
 
           <Form.Item
             name="address"

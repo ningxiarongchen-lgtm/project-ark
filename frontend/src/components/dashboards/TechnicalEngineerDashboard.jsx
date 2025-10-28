@@ -100,7 +100,7 @@ const TechnicalEngineerDashboard = () => {
               <RocketOutlined /> 技术工程师工作台
             </Title>
             <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              欢迎，{user?.name}！专注于技术选型与方案设计
+              Welcome to Project Ark，{user?.name}！专注于技术选型与方案设计
             </Text>
           </Space>
         </Card>

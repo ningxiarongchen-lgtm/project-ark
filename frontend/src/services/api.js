@@ -56,17 +56,7 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'), // 🔒 添加 logout 接口以清除服务器端的 Cookie
   getProfile: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
-  changePassword: (data) => api.post('/auth/change-password', data),
-  
-  // 密码重置
-  requestPasswordReset: (email) => api.post('/auth/request-password-reset', { email }),
-  validateResetCode: (email, code) => api.post('/auth/validate-reset-code', { email, code }),
-  performPasswordReset: (email, code, newPassword) => api.post('/auth/perform-reset', { email, code, newPassword }),
-  
-  // 管理员功能
-  getPasswordResetRequests: () => api.get('/auth/password-reset-requests'),
-  approvePasswordReset: (userId) => api.post('/auth/approve-password-reset', { userId }),
-  denyPasswordReset: (userId) => api.post('/auth/deny-password-reset', { userId })
+  changePassword: (data) => api.post('/auth/change-password', data)
 }
 
 // ==================== 执行器 API ====================

@@ -107,7 +107,7 @@ const ProductionPlannerDashboard = () => {
               <RocketOutlined /> 生产计划员工作台
             </Title>
             <Text style={{ color: '#666' }}>
-              欢迎，{user?.name}！今日已完成 {stats.completedToday} 单
+              Welcome to Project Ark，{user?.name}！今日已完成 {stats.completedToday} 单
             </Text>
           </Space>
         </Card>

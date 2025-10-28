@@ -496,7 +496,7 @@ workOrderSchema.statics.findByWorkCenter = async function(workCenterId, status) 
   return await this.find(query)
     .populate('product.product_id', 'model_base version')
     .populate('work_center', 'code name')
-    .populate('assigned_operators.operator', 'username email')
+    .populate('assigned_operators.operator', 'username')
     .sort({ 'plan.planned_start_time': 1 });
 };
 

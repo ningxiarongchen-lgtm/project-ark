@@ -479,7 +479,7 @@ qualityCheckSchema.statics.findByInspector = async function(inspectorId, status)
   return await this.find(query)
     .populate('work_order', 'work_order_number status')
     .populate('product.product_id', 'model_base version')
-    .populate('inspector', 'username email')
+    .populate('inspector', 'username')
     .sort({ createdAt: -1 });
 };
 
@@ -499,7 +499,7 @@ qualityCheckSchema.statics.getPendingInspections = async function(filters = {}) 
     .populate('work_order', 'work_order_number')
     .populate('production_order', 'productionOrderNumber')
     .populate('product.product_id', 'model_base version')
-    .populate('inspector', 'username email')
+    .populate('inspector', 'username')
     .sort({ createdAt: 1 });
 };
 

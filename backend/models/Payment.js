@@ -358,7 +358,7 @@ paymentSchema.statics.getPendingPayments = async function() {
     .populate('invoice', 'invoice_number amount_summary')
     .populate('sales_order', 'orderNumber')
     .populate('customer.customer_id', 'name contact')
-    .populate('created_by', 'username email')
+    .populate('created_by', 'username')
     .sort({ payment_date: -1 });
 };
 

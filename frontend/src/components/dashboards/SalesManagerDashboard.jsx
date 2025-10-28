@@ -131,7 +131,7 @@ const SalesManagerDashboard = () => {
               <TrophyOutlined /> 销售经理控制台
             </Title>
             <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              欢迎，{user?.name}！团队目标达成率 {stats.achievementRate}%
+              Welcome to Project Ark，{user?.name}！团队目标达成率 {stats.achievementRate}%
             </Text>
           </Space>
         </Card>

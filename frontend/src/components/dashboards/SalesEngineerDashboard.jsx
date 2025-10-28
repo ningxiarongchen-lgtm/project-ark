@@ -102,7 +102,7 @@ const SalesEngineerDashboard = () => {
               <CustomerServiceOutlined /> 销售工程师工作台
             </Title>
             <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              欢迎，{user?.name}！今天也要全力以赴！
+              Welcome to Project Ark，{user?.name}！今天也要全力以赴！
             </Text>
           </Space>
         </Card>

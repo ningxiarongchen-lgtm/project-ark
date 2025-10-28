@@ -157,7 +157,7 @@ const MainLayout = () => {
           fontWeight: 'bold',
           transition: 'all 0.2s',
         }}>
-          {collapsed ? 'C-MAX' : 'C-MAX 选型系统'}
+          {collapsed ? 'Ark' : 'Project Ark'}
         </div>
         <Menu
           theme="dark"
@@ -191,7 +191,7 @@ const MainLayout = () => {
               />
             )}
             <h2 style={{ marginLeft: 24, marginBottom: 0 }}>
-              SF系列气动执行器选型系统
+              Project Ark - 智能选型系统
             </h2>
           </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">

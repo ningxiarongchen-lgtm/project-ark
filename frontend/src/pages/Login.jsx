@@ -61,6 +61,7 @@ const Login = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={2} style={{ marginBottom: 8 }}>C-MAX 选型系统</Title>
+          <Title level={3} style={{ marginBottom: 12, color: '#1890ff' }}>Project Ark</Title>
           <Text type="secondary">SF系列气动执行器智能选型平台</Text>
         </div>
 
