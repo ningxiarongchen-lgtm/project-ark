@@ -687,15 +687,6 @@ const ServiceCenter = () => {
                 <Input prefix={<PhoneOutlined />} placeholder="联系电话" />
               </Form.Item>
             </Col>
-
-            <Col span={12}>
-              <Form.Item
-                name={['customer', 'email']}
-                label="电子邮箱"
-              >
-                <Input prefix={<MailOutlined />} placeholder="电子邮箱" />
-              </Form.Item>
-            </Col>
           </Row>
 
           <Form.Item

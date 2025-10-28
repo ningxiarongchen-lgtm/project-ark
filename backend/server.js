@@ -123,7 +123,7 @@ if (testingRoutes) {
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'C-MAX Actuator Selection System API is running',
+    message: 'Project Ark - C-MAX Platform API is running',
     timestamp: new Date().toISOString()
   });
 });
@@ -131,7 +131,7 @@ app.get('/api/health', (req, res) => {
 // Welcome route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Welcome to C-MAX Actuator Selection System API',
+    message: 'Welcome to Project Ark - C-MAX Platform API',
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
@@ -166,7 +166,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════╗
-║   C-MAX Actuator Selection System - Backend API       ║
+║        Project Ark - C-MAX Platform API               ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                             ║
 ║   Server running on port ${PORT}                        ║
 ║   API: http://localhost:${PORT}                        ║

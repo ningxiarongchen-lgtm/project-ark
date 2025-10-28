@@ -38,28 +38,6 @@ exports.validateObjectId = (fieldName = 'id') => {
 };
 
 /**
- * 邮箱验证
- */
-exports.validateEmail = (fieldName = 'email', required = true) => {
-  const validator = body(fieldName)
-    .trim()
-    .normalizeEmail();
-  
-  if (required) {
-    return validator
-      .notEmpty()
-      .withMessage('邮箱不能为空')
-      .isEmail()
-      .withMessage('请输入有效的邮箱地址');
-  }
-  
-  return validator
-    .optional()
-    .isEmail()
-    .withMessage('请输入有效的邮箱地址');
-};
-
-/**
  * 手机号验证（中国）
  */
 exports.validatePhone = (fieldName = 'phone', required = false) => {
@@ -210,14 +188,6 @@ exports.userRegistrationValidation = [
     .withMessage('用户名必须在2-50个字符之间')
     .escape(),
   
-  body('email')
-    .trim()
-    .notEmpty()
-    .withMessage('邮箱不能为空')
-    .isEmail()
-    .withMessage('请输入有效的邮箱地址')
-    .normalizeEmail(),
-  
   body('password')
     .notEmpty()
     .withMessage('密码不能为空')
@@ -269,13 +239,6 @@ exports.userUpdateValidation = [
     .withMessage('用户名必须在2-50个字符之间')
     .escape(),
   
-  body('email')
-    .optional()
-    .trim()
-    .isEmail()
-    .withMessage('请输入有效的邮箱地址')
-    .normalizeEmail(),
-  
   body('phone')
     .optional()
     .trim()
@@ -317,13 +280,6 @@ exports.projectValidation = [
     .withMessage('联系人不能超过100个字符')
     .escape(),
   
-  body('email')
-    .optional()
-    .trim()
-    .isEmail()
-    .withMessage('请输入有效的邮箱地址')
-    .normalizeEmail(),
-  
   body('phone')
     .optional()
     .trim()
@@ -347,13 +303,6 @@ exports.supplierValidation = [
     .isLength({ max: 200 })
     .withMessage('供应商名称不能超过200个字符')
     .escape(),
-  
-  body('email')
-    .optional()
-    .trim()
-    .isEmail()
-    .withMessage('请输入有效的邮箱地址')
-    .normalizeEmail(),
   
   body('phone')
     .optional()

@@ -14,11 +14,6 @@ const supplierSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  email: {
-    type: String,
-    trim: true,
-    lowercase: true
-  },
   address: {
     type: String,
     trim: true

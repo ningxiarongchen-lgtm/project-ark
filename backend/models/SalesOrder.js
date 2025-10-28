@@ -24,7 +24,6 @@ const salesOrderSchema = new mongoose.Schema({
     client: {
       name: String,
       company: String,
-      email: String,
       phone: String,
       address: String
     }

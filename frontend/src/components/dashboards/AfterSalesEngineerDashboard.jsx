@@ -114,7 +114,7 @@ const AfterSalesEngineerDashboard = () => {
               <CustomerServiceOutlined /> 售后工程师工作台
             </Title>
             <Text style={{ color: '#666' }}>
-              欢迎，{user?.name}！客户满意度 <Rate disabled value={stats.satisfaction} style={{ fontSize: 14 }} />
+              Welcome to Project Ark，{user?.name}！客户满意度 <Rate disabled value={stats.satisfaction} style={{ fontSize: 14 }} />
             </Text>
           </Space>
         </Card>

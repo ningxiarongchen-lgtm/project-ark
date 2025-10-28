@@ -102,7 +102,7 @@ const ProcurementSpecialistDashboard = () => {
               <ShoppingCartOutlined /> 采购专员工作台
             </Title>
             <Text style={{ color: '#666' }}>
-              欢迎，{user?.name}！准时交付率 {stats.onTimeRate}%
+              Welcome to Project Ark，{user?.name}！准时交付率 {stats.onTimeRate}%
             </Text>
           </Space>
         </Card>

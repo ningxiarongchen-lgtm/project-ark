@@ -9,12 +9,6 @@ const {
   getUsers,
   deleteUser,
   updateUserRole,
-  requestPasswordReset,
-  getPasswordResetRequests,
-  approvePasswordReset,
-  denyPasswordReset,
-  validateResetCode,
-  performPasswordReset,
   refreshToken,
   revokeToken,
   logout,
@@ -26,8 +20,7 @@ const {
   userRegistrationValidation,
   userLoginValidation,
   userUpdateValidation,
-  validate,
-  validateEmail
+  validate
 } = require('../middleware/validators');
 const { body } = require('express-validator');
 
@@ -54,22 +47,6 @@ router.post('/refresh-token', [
   body('refreshToken').notEmpty().withMessage('Refresh token is required')
 ], validate, refreshToken);
 
-// Password reset routes - Public
-router.post('/request-password-reset', [
-  validateEmail('email', true)
-], validate, requestPasswordReset);
-
-router.post('/validate-reset-code', [
-  validateEmail('email', true),
-  body('code').notEmpty().withMessage('验证码不能为空').isLength({ min: 6, max: 6 }).withMessage('验证码必须是6位数字')
-], validate, validateResetCode);
-
-router.post('/perform-reset', [
-  validateEmail('email', true),
-  body('code').notEmpty().withMessage('验证码不能为空'),
-  body('newPassword').notEmpty().withMessage('新密码不能为空').isLength({ min: 6 }).withMessage('密码至少需要6个字符')
-], validate, performPasswordReset);
-
 // Protected routes
 router.get('/me', protect, getMe);
 router.put('/profile', protect, userUpdateValidation, validate, updateProfile);
@@ -90,11 +67,6 @@ router.delete('/users/:id', protect, authorize('Administrator'), deleteUser);
 router.put('/users/:id/role', protect, authorize('Administrator'), [
   body('role').notEmpty().withMessage('角色不能为空').isIn(['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer', 'Administrator']).withMessage('无效的角色')
 ], validate, updateUserRole);
-
-// Password reset management - Admin only
-router.get('/password-reset-requests', protect, authorize('Administrator'), getPasswordResetRequests);
-router.post('/approve-password-reset', protect, authorize('Administrator'), approvePasswordReset);
-router.post('/deny-password-reset', protect, authorize('Administrator'), denyPasswordReset);
 
 module.exports = router;
 

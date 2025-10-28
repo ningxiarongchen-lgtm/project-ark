@@ -55,7 +55,7 @@ const stats = {
  */
 async function connectDatabase() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax-selection';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/project_ark';
     
     log.info(`正在连接数据库: ${mongoUri}`);
     

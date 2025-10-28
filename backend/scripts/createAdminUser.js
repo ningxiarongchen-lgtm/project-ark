@@ -10,7 +10,7 @@ require('dotenv').config();
 const createAdminUser = async () => {
   try {
     // 连接数据库
-    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax';
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/project_ark';
     await mongoose.connect(mongoURI);
     console.log('✅ MongoDB连接成功');
 

@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
 import MainLayout from './components/Layout/MainLayout'
 import Login from './pages/Login'
-import ForgotPassword from './pages/ForgotPassword'
 import ChangePassword from './pages/ChangePassword'
 import Dashboard from './pages/Dashboard'
 import Products from './pages/Products'
@@ -60,7 +59,6 @@ function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
       
       {/* Change Password Route - Protected but skips password check */}
       <Route path="/change-password" element={

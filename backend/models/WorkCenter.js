@@ -280,8 +280,8 @@ workCenterSchema.statics.findByOperation = async function(operationName) {
   return await this.find({
     is_active: true,
     'capable_operations.operation_name': operationName
-  }).populate('supervisor', 'username email')
-    .populate('operators', 'username email');
+  }).populate('supervisor', 'username')
+    .populate('operators', 'username');
 };
 
 // 静态方法：获取工作中心统计

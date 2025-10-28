@@ -43,9 +43,6 @@ const SupplierForm = ({ visible, record, onSubmit, onCancel }) => {
         <Form.Item name="phone" label="电话">
           <Input />
         </Form.Item>
-        <Form.Item name="email" label="邮箱">
-          <Input type="email" />
-        </Form.Item>
         <Form.Item name="address" label="地址">
           <Input.TextArea rows={2} />
         </Form.Item>

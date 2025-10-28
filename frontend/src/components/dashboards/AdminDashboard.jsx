@@ -90,7 +90,7 @@ const AdminDashboard = () => {
               管理员控制台
             </Title>
             <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              欢迎回来，{user?.name}！系统运行正常
+              欢迎回来，{user?.name}！Welcome to Project Ark - 系统运行正常
             </Text>
           </Space>
         </Card>
