@@ -1,0 +1,42 @@
+{
+  "name": "cmax-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:firefox": "cypress run --browser firefox",
+    "test:e2e": "start-server-and-test dev http://localhost:5173 cypress:run",
+    "test:e2e:open": "start-server-and-test dev http://localhost:5173 cypress:open"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.2.6",
+    "@ant-design/plots": "^2.6.6",
+    "antd": "^5.11.0",
+    "axios": "^1.6.0",
+    "dayjs": "^1.11.10",
+    "gantt-task-react": "^0.3.9",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.0",
+    "leancloud-storage": "^4.15.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-google-recaptcha": "^3.1.0",
+    "react-router-dom": "^6.18.0",
+    "xlsx": "^0.18.5",
+    "zustand": "^4.4.6"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.2.0",
+    "cypress": "^15.5.0",
+    "start-server-and-test": "^2.1.2",
+    "vite": "^5.0.0"
+  }
+}

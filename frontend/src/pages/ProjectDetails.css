@@ -1,0 +1,121 @@
+/* ProjectDetails 页面样式 */
+
+/* 可编辑表格行样式 */
+.editable-row-editing {
+  background-color: #e6f7ff !important;
+  border: 2px solid #1890ff;
+}
+
+.editable-row-editing td {
+  padding: 8px !important;
+}
+
+/* BOM清单区域样式 */
+.bom-section {
+  min-height: 400px;
+}
+
+/* 功能按钮区域 */
+.bom-actions-wrapper {
+  margin-bottom: 16px;
+}
+
+/* 统计卡片样式 */
+.bom-statistics {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+/* 表格悬停效果 */
+.ant-table-tbody > tr:hover > td {
+  background-color: #fafafa;
+}
+
+/* 编辑中的表单项样式 */
+.editable-row-editing .ant-form-item {
+  margin-bottom: 0;
+}
+
+.editable-row-editing .ant-form-item-explain {
+  font-size: 12px;
+}
+
+/* 空状态样式 */
+.bom-empty-state {
+  padding: 40px;
+  text-align: center;
+}
+
+/* Tab标签徽章 */
+.ant-tabs-tab .ant-tag {
+  margin-left: 8px;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* ========== 版本对比样式 ========== */
+
+/* 新增项高亮 - 绿色背景 */
+.version-diff-added {
+  background-color: #f6ffed !important;
+  border-left: 3px solid #52c41a !important;
+}
+
+.version-diff-added:hover {
+  background-color: #d9f7be !important;
+}
+
+/* 删除项高亮 - 红色背景 */
+.version-diff-removed {
+  background-color: #fff1f0 !important;
+  border-left: 3px solid #ff4d4f !important;
+}
+
+.version-diff-removed:hover {
+  background-color: #ffccc7 !important;
+}
+
+/* 修改项高亮 - 橙色背景 */
+.version-diff-modified {
+  background-color: #fff7e6 !important;
+  border-left: 3px solid #fa8c16 !important;
+}
+
+.version-diff-modified:hover {
+  background-color: #ffe7ba !important;
+}
+
+/* 版本卡片选中状态 */
+.version-card-selected {
+  border-color: #1890ff !important;
+  border-width: 2px !important;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+/* 版本列表滚动条样式 */
+.version-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.version-list-container::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.version-list-container::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 3px;
+}
+
+.version-list-container::-webkit-scrollbar-thumb:hover {
+  background: #8c8c8c;
+}
+
