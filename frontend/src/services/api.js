@@ -181,6 +181,7 @@ export const projectsAPI = {
   
   // 统计
   getStats: () => api.get('/projects/stats/summary'),
+  getSalesEngineerStats: () => api.get('/projects/stats/sales-engineer'),
   
   // 获取技术工程师列表
   getTechnicalEngineers: () => api.get('/projects/technical-engineers/list'),

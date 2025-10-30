@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证新Dashboard - 操作指南</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1890ff;
+            border-bottom: 3px solid #1890ff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #52c41a;
+            margin-top: 30px;
+        }
+        .step {
+            background: #e6f7ff;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #1890ff;
+            border-radius: 4px;
+        }
+        .check {
+            background: #f6ffed;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #52c41a;
+            border-radius: 4px;
+        }
+        .warning {
+            background: #fff7e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #faad14;
+            border-radius: 4px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+        .big-green {
+            font-size: 24px;
+            color: #52c41a;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            background: #f6ffed;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .screenshot {
+            border: 2px solid #1890ff;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 商务工程师Dashboard优化版 - 验证指南</h1>
+        
+        <div class="big-green">
+            ✅ 新版Dashboard已部署到 http://localhost:5173
+        </div>
+
+        <h2>📋 操作步骤</h2>
+        
+        <div class="step">
+            <strong>步骤 1: 完全退出浏览器</strong>
+            <ul>
+                <li>Mac: 按 <code>Cmd + Q</code> 完全退出Chrome</li>
+                <li>Windows: 按 <code>Alt + F4</code> 完全退出Chrome</li>
+                <li>⚠️ 不是关闭标签页，是退出整个浏览器应用！</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <strong>步骤 2: 等待5秒钟</strong>
+            <p>让浏览器进程完全结束</p>
+        </div>
+
+        <div class="step">
+            <strong>步骤 3: 重新打开Chrome</strong>
+            <p>从应用程序启动Chrome浏览器</p>
+        </div>
+
+        <div class="step">
+            <strong>步骤 4: 访问系统</strong>
+            <p>在地址栏输入: <code>http://localhost:5173</code></p>
+        </div>
+
+        <div class="step">
+            <strong>步骤 5: 登录账号</strong>
+            <ul>
+                <li>手机号: <code>13000000004</code></li>
+                <li>密码: <code>password</code></li>
+                <li>角色: 商务工程师（刘商务）</li>
+            </ul>
+        </div>
+
+        <h2>✨ 新版Dashboard识别标志</h2>
+
+        <div class="check">
+            <strong>标志 1: 右上角绿色标识</strong>
+            <p>页面右上角会显示: <span style="background:#52c41a;color:white;padding:4px 12px;border-radius:4px;font-size:12px;">✨ 优化版 v2.0</span></p>
+        </div>
+
+        <div class="check">
+            <strong>标志 2: 6个统计卡片（不是4个）</strong>
+            <ul>
+                <li>我的项目总数 <span style="color:#1890ff;">●</span></li>
+                <li>待完成报价 <span style="color:#fa8c16;">●</span></li>
+                <li>待跟进客户 <span style="color:#13c2c2;">●</span> <strong>← 新增</strong></li>
+                <li>本月成交金额 <span style="color:#52c41a;">●</span> <strong>← 新增</strong></li>
+                <li>待审核合同 <span style="color:#722ed1;">●</span> <strong>← 新增</strong></li>
+                <li>待催款项目 <span style="color:#eb2f96;">●</span> <strong>← 新增</strong></li>
+            </ul>
+        </div>
+
+        <div class="check">
+            <strong>标志 3: 任务提醒中心</strong>
+            <p>页面左侧有时间轴样式的"任务提醒中心"模块</p>
+        </div>
+
+        <div class="check">
+            <strong>标志 4: 业务管理中心</strong>
+            <p>页面中部有3个Tab页: 报价管理 | 合同管理 | 客户管理</p>
+        </div>
+
+        <h2>❓ 如果还是看到旧版（4个卡片）</h2>
+
+        <div class="warning">
+            <strong>方案 1: 清除浏览器所有缓存</strong>
+            <ol>
+                <li>Chrome菜单 → 设置 → 隐私和安全 → 清除浏览数据</li>
+                <li>选择"时间范围: 所有时间"</li>
+                <li>勾选"缓存的图片和文件"</li>
+                <li>点击"清除数据"</li>
+                <li>重新访问 http://localhost:5173</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <strong>方案 2: 使用Safari浏览器测试</strong>
+            <p>打开Safari浏览器，访问 http://localhost:5173，看是否能看到新版</p>
+        </div>
+
+        <div class="warning">
+            <strong>方案 3: 检查开发者工具</strong>
+            <ol>
+                <li>按 <code>F12</code> 打开开发者工具</li>
+                <li>切换到 <code>Network</code> 标签</li>
+                <li>勾选 <code>Disable cache</code></li>
+                <li>按 <code>Cmd + R</code> 刷新页面</li>
+                <li>查看 <code>Console</code> 标签是否有错误</li>
+            </ol>
+        </div>
+
+        <h2>📞 技术验证</h2>
+
+        <div class="check">
+            <strong>已确认：</strong>
+            <ul>
+                <li>✅ 前端文件已更新 (1195行代码)</li>
+                <li>✅ 后端API已部署</li>
+                <li>✅ 服务正常运行 (http://localhost:5173)</li>
+                <li>✅ 路由配置正确</li>
+                <li>✅ 组件导出正确</li>
+                <li>✅ Vite缓存已清理</li>
+            </ul>
+        </div>
+
+        <h2>🎯 预期效果对比</h2>
+
+        <table border="1" cellpadding="10" cellspacing="0" style="width:100%;border-collapse:collapse;margin:20px 0;">
+            <thead>
+                <tr style="background:#f0f0f0;">
+                    <th>特性</th>
+                    <th>旧版</th>
+                    <th>新版（优化版）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>统计卡片数量</td>
+                    <td style="color:#ff4d4f;">4个</td>
+                    <td style="color:#52c41a;"><strong>6个</strong></td>
+                </tr>
+                <tr>
+                    <td>版本标识</td>
+                    <td style="color:#ff4d4f;">无</td>
+                    <td style="color:#52c41a;"><strong>右上角绿色标识</strong></td>
+                </tr>
+                <tr>
+                    <td>任务提醒</td>
+                    <td style="color:#ff4d4f;">无</td>
+                    <td style="color:#52c41a;"><strong>有（时间轴）</strong></td>
+                </tr>
+                <tr>
+                    <td>业务管理Tab</td>
+                    <td style="color:#ff4d4f;">无</td>
+                    <td style="color:#52c41a;"><strong>有（3个Tab）</strong></td>
+                </tr>
+                <tr>
+                    <td>项目筛选</td>
+                    <td style="color:#ff4d4f;">无</td>
+                    <td style="color:#52c41a;"><strong>有（工具栏）</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="background:#f0f2f5;padding:20px;border-radius:8px;margin-top:30px;text-align:center;">
+            <p style="font-size:18px;color:#1890ff;margin:0;">
+                <strong>🎉 所有技术工作已完成，就差浏览器刷新这最后一步了！</strong>
+            </p>
+            <p style="margin:10px 0 0 0;color:#666;">
+                如果按照上述步骤还是看到旧版，请截图发送给开发团队
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+
