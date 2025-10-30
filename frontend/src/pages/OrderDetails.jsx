@@ -578,23 +578,23 @@ const OrderDetails = () => {
       width: 100,
       render: (status) => {
         const colorMap = {
-          'Open': 'default',
-          'Assigned': 'cyan',
-          'In Progress': 'processing',
-          'Pending Parts': 'warning',
-          'On Hold': 'orange',
-          'Resolved': 'success',
-          'Closed': 'default',
-          'Cancelled': 'error'
+          'Open': 'default',           // 未开始 - 灰色
+          'Assigned': 'cyan',          // 未开始 - 青色
+          'In Progress': 'processing', // 进行中 - 蓝色
+          'Pending Parts': 'processing', // 进行中 - 蓝色
+          'On Hold': 'warning',        // 进行中 - 橙色
+          'Resolved': 'success',       // 已完成 - 绿色
+          'Closed': 'success',         // 已完成 - 绿色
+          'Cancelled': 'error'         // 已取消 - 红色
         }
         const nameMap = {
-          'Open': '待处理',
-          'Assigned': '已分配',
-          'In Progress': '处理中',
-          'Pending Parts': '等待零件',
-          'On Hold': '暂停',
-          'Resolved': '已解决',
-          'Closed': '已关闭',
+          'Open': '未开始',           // 销售经理创建后，未分配给工程师
+          'Assigned': '未开始',       // 已分配给工程师但未开始
+          'In Progress': '进行中',    // 工程师正在处理
+          'Pending Parts': '进行中',  // 等待零件（也算进行中）
+          'On Hold': '进行中',        // 暂停（也算进行中）
+          'Resolved': '已完成',       // 已解决
+          'Closed': '已完成',         // 已关闭
           'Cancelled': '已取消'
         }
         return <Tag color={colorMap[status]}>{nameMap[status] || status}</Tag>

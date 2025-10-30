@@ -55,7 +55,7 @@ export const menuConfig = [
     key: '/database', 
     label: '产品数据库', 
     icon: '<DatabaseOutlined />', 
-    allowedRoles: ['all'] 
+    allowedRoles: ['Administrator', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']  // 🔒 移除技术工程师权限
   },
   { 
     key: '/admin/users', 
