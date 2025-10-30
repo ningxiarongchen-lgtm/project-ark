@@ -2653,6 +2653,71 @@ const ProjectDetails = () => {
     
     const buttons = []
     
+    // 技术工程师 - 选型阶段
+    if (user?.role === 'Technical Engineer') {
+      // 开始选型按钮（自动滚动到技术清单Tab）
+      buttons.push(
+        <Button
+          key="start-selection"
+          type="primary"
+          size="large"
+          icon={<FileSearchOutlined />}
+          onClick={() => {
+            // 滚动到技术清单Tab区域
+            const tabsElement = document.querySelector('.ant-tabs')
+            if (tabsElement) {
+              tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }}
+          style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            border: 'none'
+          }}
+        >
+          📋 开始选型
+        </Button>
+      )
+      
+      // 导出技术清单按钮
+      if (project?.technical_item_list && project.technical_item_list.length > 0) {
+        buttons.push(
+          <Button
+            key="export-technical-list"
+            icon={<FilePdfOutlined />}
+            onClick={handleExportTechnicalItemListToPDF}
+          >
+            导出技术清单(PDF)
+          </Button>
+        )
+      }
+      
+      // 完成选型按钮（如果状态允许）
+      if (!technicalListLocked && ['选型进行中', '选型修正中', '草稿'].includes(project.status)) {
+        buttons.push(
+          <Button
+            key="complete-selection"
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: '完成选型，请求报价',
+                content: '确定完成技术选型并提交给商务团队进行报价吗？提交后技术清单将被锁定，商务工程师才能开始报价。',
+                okText: '确认提交',
+                cancelText: '取消',
+                onOk: handleSubmitTechnicalList
+              })
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+              border: 'none'
+            }}
+          >
+            完成选型，请求报价
+          </Button>
+        )
+      }
+    }
+    
     // 销售工程师 - 报价阶段
     if (user?.role === 'Sales Engineer' && project.status === 'Pending Quote') {
       buttons.push(
@@ -2938,7 +3003,8 @@ const ProjectDetails = () => {
                   {/* 技术清单显示 */}
                   {user?.role === 'Technical Engineer' ? (
                     <div>
-                      {/* 技术工程师：完整编辑界面 */}
+                      {/* 技术工程师：左右分栏布局，左侧显示技术需求参考，右侧显示选型表格 */}
+                      
                       {/* 🔒 版本锁定提示 */}
                       {technicalListLocked && (
                         <Alert
@@ -2972,49 +3038,124 @@ const ProjectDetails = () => {
                         />
                       )}
                       
-                      <div style={{ marginBottom: 16 }}>
-                        <Space>
-                          <Button
-                            type="primary"
-                            icon={<FilePdfOutlined />}
-                            onClick={handleExportTechnicalItemListToPDF}
-                            disabled={!project?.technical_item_list || project.technical_item_list.length === 0}
+                      <Row gutter={16}>
+                        {/* 左侧：客户技术需求参考面板 */}
+                        <Col xs={24} lg={8}>
+                          <Card 
+                            title={
+                              <span>
+                                <FileTextOutlined style={{ marginRight: 8 }} />
+                                客户技术需求参考
+                              </span>
+                            }
+                            style={{ 
+                              position: 'sticky', 
+                              top: 16,
+                              height: 'fit-content',
+                              maxHeight: 'calc(100vh - 200px)',
+                              overflowY: 'auto'
+                            }}
+                            size="small"
                           >
-                            导出技术清单(PDF)
-                          </Button>
-                          
-                          <Button
-                            icon={<HistoryOutlined />}
-                            onClick={handleViewVersionHistory}
-                            disabled={technicalVersions.length === 0}
-                          >
-                            版本历史 ({technicalVersions.length})
-                          </Button>
-                          
-                          {!technicalListLocked && (project.status === '选型进行中' || project.status === '选型修正中' || project.status === '草稿') && (
-                            <Button
-                              type="primary"
-                              icon={<SendOutlined />}
-                              onClick={() => {
-                                Modal.confirm({
-                                  title: '完成选型，请求报价',
-                                  content: '确定完成技术选型并提交给商务团队进行报价吗？提交后技术清单将被锁定，商务工程师才能开始报价。',
-                                  okText: '确认提交',
-                                  cancelText: '取消',
-                                  onOk: handleSubmitTechnicalList
-                                })
-                              }}
-                              style={{
-                                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-                                border: 'none'
-                              }}
-                            >
-                              完成选型，请求报价
-                            </Button>
-                          )}
-                        </Space>
-                      </div>
-                      <TechnicalItemList project={project} onUpdate={fetchProject} />
+                            {/* 显示销售提供的技术需求 */}
+                            {project.technical_requirements ? (
+                              <div style={{ marginBottom: 16 }}>
+                                <Typography.Title level={5}>技术要求</Typography.Title>
+                                <div style={{ 
+                                  background: '#f0f5ff',
+                                  padding: 12,
+                                  borderRadius: 4,
+                                  whiteSpace: 'pre-wrap',
+                                  lineHeight: 1.8,
+                                  fontSize: 14
+                                }}>
+                                  {project.technical_requirements}
+                                </div>
+                              </div>
+                            ) : (
+                              <Alert
+                                message="暂无技术要求"
+                                description="销售经理未提供技术要求信息"
+                                type="warning"
+                                showIcon
+                                style={{ marginBottom: 16 }}
+                              />
+                            )}
+                            
+                            {/* 显示项目附件/技术文件 */}
+                            {project.project_files && project.project_files.length > 0 && (
+                              <div>
+                                <Divider style={{ margin: '12px 0' }} />
+                                <Typography.Title level={5}>项目文件</Typography.Title>
+                                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                                  {project.project_files.map((file, idx) => (
+                                    <Button 
+                                      key={idx}
+                                      icon={<FileTextOutlined />}
+                                      onClick={() => window.open(file.file_url, '_blank')}
+                                      block
+                                      size="small"
+                                    >
+                                      {file.file_name}
+                                    </Button>
+                                  ))}
+                                </Space>
+                              </div>
+                            )}
+                            
+                            {/* 显示项目基本信息 */}
+                            <div style={{ marginTop: 16 }}>
+                              <Divider style={{ margin: '12px 0' }} />
+                              <Typography.Title level={5}>项目信息</Typography.Title>
+                              <Descriptions column={1} size="small">
+                                <Descriptions.Item label="客户名称">{project.client?.name || '-'}</Descriptions.Item>
+                                <Descriptions.Item label="行业">{project.industry || '-'}</Descriptions.Item>
+                                <Descriptions.Item label="应用">{project.application || '-'}</Descriptions.Item>
+                                <Descriptions.Item label="预算">¥{project.budget?.toLocaleString() || '-'}</Descriptions.Item>
+                              </Descriptions>
+                            </div>
+                          </Card>
+                        </Col>
+                        
+                        {/* 右侧：技术选型表格 */}
+                        <Col xs={24} lg={16}>
+                          <div style={{ marginBottom: 16 }}>
+                            <Space wrap>
+                              <Button
+                                type="primary"
+                                icon={<FilePdfOutlined />}
+                                onClick={handleExportTechnicalItemListToPDF}
+                                disabled={!project?.technical_item_list || project.technical_item_list.length === 0}
+                              >
+                                导出技术清单(PDF)
+                              </Button>
+                              
+                              {!technicalListLocked && (project.status === '选型进行中' || project.status === '选型修正中' || project.status === '草稿') && (
+                                <Button
+                                  type="primary"
+                                  icon={<SendOutlined />}
+                                  onClick={() => {
+                                    Modal.confirm({
+                                      title: '完成选型，请求报价',
+                                      content: '确定完成技术选型并提交给商务团队进行报价吗？提交后技术清单将被锁定，商务工程师才能开始报价。',
+                                      okText: '确认提交',
+                                      cancelText: '取消',
+                                      onOk: handleSubmitTechnicalList
+                                    })
+                                  }}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                                    border: 'none'
+                                  }}
+                                >
+                                  完成选型，请求报价
+                                </Button>
+                              )}
+                            </Space>
+                          </div>
+                          <TechnicalItemList project={project} onUpdate={fetchProject} />
+                        </Col>
+                      </Row>
                     </div>
                   ) : user?.role === 'Sales Engineer' ? (
                     <div>
@@ -3047,14 +3188,6 @@ const ProjectDetails = () => {
                             disabled={!project?.technical_item_list || project.technical_item_list.length === 0}
                           >
                             导出技术清单(PDF)
-                          </Button>
-                          
-                          <Button
-                            icon={<HistoryOutlined />}
-                            onClick={handleViewVersionHistory}
-                            disabled={technicalVersions.length === 0}
-                          >
-                            版本历史 ({technicalVersions.length})
                           </Button>
                           
                           {/* 🔒 驳回并提出修改建议按钮 */}
@@ -3191,14 +3324,6 @@ const ProjectDetails = () => {
                             disabled={!project?.technical_item_list || project.technical_item_list.length === 0}
                           >
                             导出技术清单(PDF)
-                          </Button>
-                          
-                          <Button
-                            icon={<HistoryOutlined />}
-                            onClick={handleViewVersionHistory}
-                            disabled={technicalVersions.length === 0}
-                          >
-                            版本历史 ({technicalVersions.length})
                           </Button>
                         </Space>
                       </div>
@@ -3517,16 +3642,6 @@ const ProjectDetails = () => {
                           生成报价单PDF
                         </Button>
                       </RoleBasedAccess>
-                      
-                      {/* 历史版本 - 所有人可查看 */}
-                      <Button
-                        icon={<HistoryOutlined />}
-                        onClick={handleOpenVersionComparison}
-                        disabled={bomVersions.length === 0}
-                      >
-                        历史版本与对比
-                        {bomVersions.length > 0 && <Tag color="blue" style={{ marginLeft: 4 }}>{bomVersions.length}</Tag>}
-                      </Button>
                       
                       {/* AI优化建议 - 技术和销售工程师可用 */}
                       <RoleBasedAccess allowedRoles={['Administrator', 'Technical Engineer', 'Sales Engineer']}>
