@@ -84,6 +84,41 @@ router.post('/:id/follow-up', authorize('After-sales Engineer', 'Technical Engin
 router.post('/:id/feedback', authorize('After-sales Engineer', 'Sales Engineer', 'Administrator'), checkTicketOwnership, ticketController.submitFeedback);
 
 /**
+ * @route   PATCH /api/tickets/:id/accept
+ * @desc    接受任务（技术工程师接受待受理的工单）
+ * @access  Private - Technical Engineer, Administrator
+ */
+router.patch('/:id/accept', authorize('Technical Engineer', 'Technical Support', 'Administrator'), ticketController.acceptTicket);
+
+/**
+ * @route   PATCH /api/tickets/:id/save-report
+ * @desc    保存解决报告（技术工程师编写报告）
+ * @access  Private - Technical Engineer, Administrator
+ */
+router.patch('/:id/save-report', authorize('Technical Engineer', 'Technical Support', 'Administrator'), ticketController.saveReport);
+
+/**
+ * @route   PATCH /api/tickets/:id/mark-resolved
+ * @desc    标记为已解决（技术工程师完成工作，交给销售确认）
+ * @access  Private - Technical Engineer, Administrator
+ */
+router.patch('/:id/mark-resolved', authorize('Technical Engineer', 'Technical Support', 'Administrator'), ticketController.markAsResolved);
+
+/**
+ * @route   PATCH /api/tickets/:id/close
+ * @desc    关闭工单（销售经理确认问题已解决）
+ * @access  Private - Sales Manager, Administrator
+ */
+router.patch('/:id/close', authorize('Sales Manager', 'Administrator'), ticketController.closeTicket);
+
+/**
+ * @route   PATCH /api/tickets/:id/reopen
+ * @desc    重新打开工单（销售经理认为问题未解决）
+ * @access  Private - Sales Manager, Administrator
+ */
+router.patch('/:id/reopen', authorize('Sales Manager', 'Administrator'), ticketController.reopenTicket);
+
+/**
  * @route   DELETE /api/tickets/:id
  * @desc    删除服务工单
  * @access  Private

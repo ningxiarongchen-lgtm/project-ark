@@ -27,6 +27,7 @@ import {
   ReloadOutlined,
   SearchOutlined
 } from '@ant-design/icons';
+import RoleBasedAccess from '../RoleBasedAccess';
 
 const { Search } = Input;
 
@@ -313,13 +314,15 @@ const DataManagementTable = ({
         </Col>
         <Col>
           <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-            >
-              新增
-            </Button>
+            <RoleBasedAccess allowedRoles={['Administrator']}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAdd}
+              >
+                新增用户
+              </Button>
+            </RoleBasedAccess>
             <Button
               icon={<DownloadOutlined />}
               onClick={handleDownloadTemplate}

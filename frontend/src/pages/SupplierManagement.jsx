@@ -66,6 +66,11 @@ const SupplierManagement = () => {
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [form] = Form.useForm();
   const [stats, setStats] = useState(null);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0
+  });
 
   // 搜索和筛选状态
   const [searchText, setSearchText] = useState('');
@@ -75,19 +80,30 @@ const SupplierManagement = () => {
   useEffect(() => {
     fetchSuppliers();
     fetchStats();
-  }, [searchText, statusFilter, ratingFilter]);
+  }, [pagination.current, pagination.pageSize, searchText, statusFilter, ratingFilter]);
 
   // 获取供应商列表
   const fetchSuppliers = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = {
+        page: pagination.current,
+        limit: pagination.pageSize
+      };
       if (searchText) params.search = searchText;
       if (statusFilter) params.status = statusFilter;
       if (ratingFilter) params.rating = ratingFilter;
 
       const response = await suppliersAPI.getAll(params);
       setSuppliers(response.data.data);
+      
+      // 更新分页信息
+      if (response.data.pagination) {
+        setPagination(prev => ({
+          ...prev,
+          total: response.data.pagination.total
+        }));
+      }
     } catch (error) {
       message.error('获取供应商列表失败');
       console.error(error);
@@ -249,16 +265,22 @@ const SupplierManagement = () => {
       }
     },
     {
-      title: '状态',
+      title: '供应商状态',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 200,
       align: 'center',
       render: (status, record) => {
         const statusConfig = {
-          active: { color: 'green', text: '活跃' },
-          inactive: { color: 'orange', text: '停用' },
-          blacklisted: { color: 'red', text: '黑名单' }
+          '合作供应商 (Partner)': { color: 'green', text: '合作供应商' },
+          '临时供应商 (Temporary)': { color: 'blue', text: '临时供应商' },
+          '考察中 (Onboarding)': { color: 'orange', text: '考察中' },
+          // 兼容旧状态
+          '合格 (Qualified)': { color: 'green', text: '合作供应商' },
+          '不合格 (Disqualified)': { color: 'orange', text: '考察中' },
+          'active': { color: 'green', text: '合作供应商' },
+          'inactive': { color: 'orange', text: '考察中' },
+          'blacklisted': { color: 'orange', text: '考察中' }
         };
         const config = statusConfig[status] || { color: 'default', text: status };
         
@@ -266,17 +288,17 @@ const SupplierManagement = () => {
           <Select
             value={status}
             onChange={(value) => handleUpdateStatus(record._id, value)}
-            style={{ width: 100 }}
+            style={{ width: 180 }}
             size="small"
           >
-            <Select.Option value="active">
-              <Tag color="green">活跃</Tag>
+            <Select.Option value="合作供应商 (Partner)">
+              <Tag color="green">合作供应商 (Partner)</Tag>
             </Select.Option>
-            <Select.Option value="inactive">
-              <Tag color="orange">停用</Tag>
+            <Select.Option value="临时供应商 (Temporary)">
+              <Tag color="blue">临时供应商 (Temporary)</Tag>
             </Select.Option>
-            <Select.Option value="blacklisted">
-              <Tag color="red">黑名单</Tag>
+            <Select.Option value="考察中 (Onboarding)">
+              <Tag color="orange">考察中 (Onboarding)</Tag>
             </Select.Option>
           </Select>
         );
@@ -376,14 +398,14 @@ const SupplierManagement = () => {
             />
             
             <Select
-              placeholder="筛选状态"
-              style={{ width: 120 }}
+              placeholder="筛选供应商状态"
+              style={{ width: 200 }}
               allowClear
               onChange={setStatusFilter}
             >
-              <Select.Option value="active">活跃</Select.Option>
-              <Select.Option value="inactive">停用</Select.Option>
-              <Select.Option value="blacklisted">黑名单</Select.Option>
+              <Select.Option value="合作供应商 (Partner)">合作供应商 (Partner)</Select.Option>
+              <Select.Option value="临时供应商 (Temporary)">临时供应商 (Temporary)</Select.Option>
+              <Select.Option value="考察中 (Onboarding)">考察中 (Onboarding)</Select.Option>
             </Select>
 
             <Select
@@ -415,9 +437,19 @@ const SupplierManagement = () => {
           loading={loading}
           scroll={{ x: 1550 }}
           pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 个供应商`
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showSizeChanger: false,
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条记录`,
+            onChange: (page, pageSize) => {
+              setPagination(prev => ({
+                ...prev,
+                current: page,
+                pageSize: pageSize
+              }));
+            }
           }}
         />
       </Card>
@@ -508,13 +540,23 @@ const SupplierManagement = () => {
 
           <Form.Item
             name="status"
-            label="状态"
-            initialValue="active"
+            label="供应商状态"
+            initialValue="考察中"
+            tooltip="合作供应商：长期合作伙伴；临时供应商：一次性或少量交易；考察中：正在评估阶段"
           >
             <Select>
-              <Select.Option value="active">活跃</Select.Option>
-              <Select.Option value="inactive">停用</Select.Option>
-              <Select.Option value="blacklisted">黑名单</Select.Option>
+              <Select.Option value="合作供应商 (Partner)">
+                <Tag color="green">合作供应商 (Partner)</Tag>
+                <span style={{ marginLeft: 8, fontSize: 12, color: '#666' }}>- 长期合作伙伴</span>
+              </Select.Option>
+              <Select.Option value="临时供应商 (Temporary)">
+                <Tag color="blue">临时供应商 (Temporary)</Tag>
+                <span style={{ marginLeft: 8, fontSize: 12, color: '#666' }}>- 一次性或少量交易</span>
+              </Select.Option>
+              <Select.Option value="考察中 (Onboarding)">
+                <Tag color="orange">考察中 (Onboarding)</Tag>
+                <span style={{ marginLeft: 8, fontSize: 12, color: '#666' }}>- 正在评估中</span>
+              </Select.Option>
             </Select>
           </Form.Item>
 

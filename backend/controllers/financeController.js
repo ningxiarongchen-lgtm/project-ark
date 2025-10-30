@@ -33,8 +33,8 @@ exports.getInvoices = async (req, res) => {
     const invoices = await Invoice.find(query)
       .populate('sales_order', 'orderNumber projectNumber projectName')
       .populate('customer.customer_id', 'name contact')
-      .populate('drawer', 'username email')
-      .populate('created_by', 'username email')
+      .populate('drawer', 'full_name phone')
+      .populate('created_by', 'full_name phone')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -65,9 +65,9 @@ exports.getInvoiceById = async (req, res) => {
     const invoice = await Invoice.findById(req.params.id)
       .populate('sales_order')
       .populate('customer.customer_id', 'name contact')
-      .populate('drawer', 'username email')
+      .populate('drawer', 'full_name phone')
       .populate('payments')
-      .populate('created_by', 'username email');
+      .populate('created_by', 'full_name phone');
     
     if (!invoice) {
       return res.status(404).json({
@@ -345,8 +345,8 @@ exports.getPayments = async (req, res) => {
       .populate('invoice', 'invoice_number amount_summary')
       .populate('sales_order', 'orderNumber')
       .populate('customer.customer_id', 'name contact')
-      .populate('confirmation.confirmed_by', 'username email')
-      .populate('created_by', 'username email')
+      .populate('confirmation.confirmed_by', 'full_name phone')
+      .populate('created_by', 'full_name phone')
       .sort({ payment_date: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -378,8 +378,8 @@ exports.getPaymentById = async (req, res) => {
       .populate('invoice')
       .populate('sales_order')
       .populate('customer.customer_id')
-      .populate('confirmation.confirmed_by', 'username email')
-      .populate('created_by', 'username email');
+      .populate('confirmation.confirmed_by', 'full_name phone')
+      .populate('created_by', 'full_name phone');
     
     if (!payment) {
       return res.status(404).json({

@@ -35,10 +35,16 @@ const QualityManagement = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false)
   const [inspectionModalVisible, setInspectionModalVisible] = useState(false)
   const [defectModalVisible, setDefectModalVisible] = useState(false)
+  const [qcPassModalVisible, setQcPassModalVisible] = useState(false)
   
   // Form
   const [inspectionForm] = Form.useForm()
   const [defectForm] = Form.useForm()
+  const [qcPassForm] = Form.useForm()
+  
+  // State
+  const [markingQCPass, setMarkingQCPass] = useState(false)
+  const [selectedProductionOrderId, setSelectedProductionOrderId] = useState(null)
 
   useEffect(() => {
     fetchQualityChecks()
@@ -122,14 +128,49 @@ const QualityManagement = () => {
   // 完成检验
   const handleCompleteInspection = async (values) => {
     try {
-      await qualityAPI.complete(selectedQC._id, values)
+      const response = await qualityAPI.complete(selectedQC._id, values)
       message.success('检验已完成')
       setInspectionModalVisible(false)
       inspectionForm.resetFields()
       fetchQualityChecks()
       fetchStatistics()
+      
+      // 如果检验结果是合格，提示是否标记生产订单为质检通过
+      if (response.data.data?.result === '合格' && selectedQC.production_order) {
+        Modal.confirm({
+          title: '检验已通过',
+          content: '是否将生产订单标记为"质检通过"状态？',
+          okText: '是',
+          cancelText: '否',
+          onOk: () => {
+            setSelectedProductionOrderId(selectedQC.production_order._id || selectedQC.production_order)
+            setQcPassModalVisible(true)
+          }
+        })
+      }
     } catch (error) {
       message.error('完成检验失败: ' + (error.response?.data?.message || error.message))
+    }
+  }
+
+  // 标记生产订单为质检通过
+  const handleMarkQCPassed = async () => {
+    try {
+      const values = await qcPassForm.validateFields()
+      setMarkingQCPass(true)
+      
+      await qualityAPI.markProductionOrderQCPassed(selectedProductionOrderId, {
+        notes: values.notes
+      })
+      
+      message.success('生产订单已标记为质检通过')
+      setQcPassModalVisible(false)
+      qcPassForm.resetFields()
+      fetchQualityChecks()
+    } catch (error) {
+      message.error('标记质检通过失败: ' + (error.response?.data?.message || error.message))
+    } finally {
+      setMarkingQCPass(false)
     }
   }
 
@@ -676,6 +717,36 @@ const QualityManagement = () => {
               <Option value="报废">报废</Option>
               <Option value="待定">待定</Option>
             </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 标记生产订单质检通过Modal */}
+      <Modal
+        title="标记生产订单质检通过"
+        open={qcPassModalVisible}
+        onCancel={() => setQcPassModalVisible(false)}
+        onOk={handleMarkQCPassed}
+        confirmLoading={markingQCPass}
+        width={500}
+        okText="确认标记"
+        cancelText="取消"
+      >
+        <Alert
+          message="质检已通过"
+          description="将生产订单标记为质检通过后，商务工程师将能够确认尾款并安排发货。"
+          type="success"
+          showIcon
+          icon={<CheckCircleOutlined />}
+          style={{ marginBottom: 16 }}
+        />
+        
+        <Form form={qcPassForm} layout="vertical">
+          <Form.Item
+            name="notes"
+            label="备注"
+          >
+            <TextArea rows={3} placeholder="请输入备注信息（可选）..." />
           </Form.Item>
         </Form>
       </Modal>

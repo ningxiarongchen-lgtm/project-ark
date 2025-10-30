@@ -26,8 +26,8 @@ exports.getEcos = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const ecos = await EngineeringChangeOrder.find(query)
-      .populate('approval.initiator', 'username email')
-      .populate('approval.approvals.approver', 'username email')
+      .populate('approval.initiator', 'full_name phone')
+      .populate('approval.approvals.approver', 'full_name phone')
       .populate('affected_products.actuator_id', 'model_base version status')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -58,15 +58,15 @@ exports.getEcos = async (req, res) => {
 exports.getEcoById = async (req, res) => {
   try {
     const eco = await EngineeringChangeOrder.findById(req.params.id)
-      .populate('approval.initiator', 'username email role')
-      .populate('approval.approvals.approver', 'username email role')
+      .populate('approval.initiator', 'full_name phone role')
+      .populate('approval.approvals.approver', 'full_name phone role')
       .populate('affected_products.actuator_id', 'model_base version status series')
-      .populate('implementation.responsible_person', 'username email')
-      .populate('implementation.team_members', 'username email')
-      .populate('implementation.steps.responsible', 'username email')
-      .populate('validation.test_responsible', 'username email')
-      .populate('documents.uploaded_by', 'username email')
-      .populate('closure.closed_by', 'username email');
+      .populate('implementation.responsible_person', 'full_name phone')
+      .populate('implementation.team_members', 'full_name phone')
+      .populate('implementation.steps.responsible', 'full_name phone')
+      .populate('validation.test_responsible', 'full_name phone')
+      .populate('documents.uploaded_by', 'full_name phone')
+      .populate('closure.closed_by', 'full_name phone');
 
     if (!eco) {
       return res.status(404).json({
@@ -114,7 +114,7 @@ exports.createEco = async (req, res) => {
     }
 
     const populatedEco = await EngineeringChangeOrder.findById(eco._id)
-      .populate('approval.initiator', 'username email')
+      .populate('approval.initiator', 'full_name phone')
       .populate('affected_products.actuator_id', 'model_base version');
 
     res.status(201).json({
@@ -158,7 +158,7 @@ exports.updateEco = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('approval.initiator', 'username email')
+    ).populate('approval.initiator', 'full_name phone')
      .populate('affected_products.actuator_id', 'model_base version');
 
     res.status(200).json({
@@ -241,7 +241,7 @@ exports.submitForApproval = async (req, res) => {
     await eco.submitForApproval();
 
     const updatedEco = await EngineeringChangeOrder.findById(eco._id)
-      .populate('approval.initiator', 'username email');
+      .populate('approval.initiator', 'full_name phone');
 
     res.status(200).json({
       success: true,
@@ -283,8 +283,8 @@ exports.approveEco = async (req, res) => {
     await eco.addApproval(req.user._id, role, '已批准', comments, conditions);
 
     const updatedEco = await EngineeringChangeOrder.findById(eco._id)
-      .populate('approval.initiator', 'username email')
-      .populate('approval.approvals.approver', 'username email');
+      .populate('approval.initiator', 'full_name phone')
+      .populate('approval.approvals.approver', 'full_name phone');
 
     res.status(200).json({
       success: true,
@@ -327,8 +327,8 @@ exports.rejectEco = async (req, res) => {
     await eco.addApproval(req.user._id, role, '已拒绝', comments, null);
 
     const updatedEco = await EngineeringChangeOrder.findById(eco._id)
-      .populate('approval.initiator', 'username email')
-      .populate('approval.approvals.approver', 'username email');
+      .populate('approval.initiator', 'full_name phone')
+      .populate('approval.approvals.approver', 'full_name phone');
 
     res.status(200).json({
       success: true,
@@ -371,7 +371,7 @@ exports.closeEco = async (req, res) => {
     await eco.closeEco(req.user._id, closed_reason, closed_notes);
 
     const updatedEco = await EngineeringChangeOrder.findById(eco._id)
-      .populate('closure.closed_by', 'username email');
+      .populate('closure.closed_by', 'full_name phone');
 
     res.status(200).json({
       success: true,
@@ -464,8 +464,8 @@ exports.getEcosByProduct = async (req, res) => {
     const ecos = await EngineeringChangeOrder.find({
       'affected_products.actuator_id': req.params.actuatorId
     })
-      .populate('approval.initiator', 'username email')
-      .populate('approval.approvals.approver', 'username email')
+      .populate('approval.initiator', 'full_name phone')
+      .populate('approval.approvals.approver', 'full_name phone')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

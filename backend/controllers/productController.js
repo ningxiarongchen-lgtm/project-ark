@@ -240,4 +240,145 @@ exports.searchProducts = async (req, res) => {
   }
 };
 
+// @desc    Bulk import products from Excel file
+// @route   POST /api/products/import
+// @access  Private/Admin/Technical Engineer
+exports.bulkImportProducts = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        success: false,
+        message: '请上传Excel文件' 
+      });
+    }
+
+    const XLSX = require('xlsx');
+    
+    // Parse Excel file from buffer
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert to JSON
+    const rows = XLSX.utils.sheet_to_json(worksheet);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Excel文件中没有数据' 
+      });
+    }
+
+    const results = {
+      successCount: 0,
+      errorCount: 0,
+      errors: [],
+      skipped: []
+    };
+
+    // Process each row
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2; // Excel row number (accounting for header)
+
+      try {
+        // Validate required fields
+        if (!row.modelNumber || !row.description || !row.torqueValue || !row.operatingPressure || !row.basePrice) {
+          results.errors.push(`第${rowNumber}行: 缺少必填字段（型号、描述、扭矩、压力或价格）`);
+          results.errorCount++;
+          continue;
+        }
+
+        // Check if product already exists
+        const existingProduct = await Product.findOne({ 
+          modelNumber: row.modelNumber.toString().trim().toUpperCase() 
+        });
+
+        if (existingProduct) {
+          results.skipped.push(`第${rowNumber}行: 产品 ${row.modelNumber} 已存在，已跳过`);
+          continue;
+        }
+
+        // Build product object
+        const productData = {
+          modelNumber: row.modelNumber.toString().trim().toUpperCase(),
+          series: row.series || 'SF-Series',
+          description: row.description,
+          specifications: {
+            torque: {
+              value: parseFloat(row.torqueValue),
+              min: row.torqueMin ? parseFloat(row.torqueMin) : undefined,
+              max: row.torqueMax ? parseFloat(row.torqueMax) : undefined
+            },
+            pressure: {
+              operating: parseFloat(row.operatingPressure),
+              min: row.pressureMin ? parseFloat(row.pressureMin) : 4,
+              max: row.pressureMax ? parseFloat(row.pressureMax) : 8
+            },
+            rotation: row.rotation || '90°',
+            temperature: {
+              min: row.tempMin ? parseFloat(row.tempMin) : -20,
+              max: row.tempMax ? parseFloat(row.tempMax) : 80
+            },
+            dimensions: {
+              length: row.length ? parseFloat(row.length) : undefined,
+              width: row.width ? parseFloat(row.width) : undefined,
+              height: row.height ? parseFloat(row.height) : undefined,
+              weight: row.weight ? parseFloat(row.weight) : undefined
+            },
+            portSize: row.portSize || undefined,
+            mountingType: row.mountingType || undefined,
+            materials: {
+              body: row.materialBody || 'Aluminum Alloy',
+              piston: row.materialPiston || 'Aluminum Alloy',
+              seal: row.materialSeal || 'NBR'
+            },
+            cycleLife: row.cycleLife ? parseInt(row.cycleLife) : 1000000,
+            features: row.features ? row.features.split(',').map(f => f.trim()) : []
+          },
+          pricing: {
+            basePrice: parseFloat(row.basePrice),
+            currency: row.currency || 'USD'
+          },
+          availability: {
+            inStock: row.inStock !== undefined ? row.inStock : true,
+            leadTime: row.leadTime ? parseInt(row.leadTime) : 14
+          },
+          category: row.category || 'Standard',
+          tags: row.tags ? row.tags.split(',').map(t => t.trim()) : [],
+          isActive: row.isActive !== undefined ? row.isActive : true,
+          notes: row.notes || ''
+        };
+
+        // Create product
+        await Product.create(productData);
+        results.successCount++;
+
+      } catch (error) {
+        results.errors.push(`第${rowNumber}行: ${error.message}`);
+        results.errorCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: '批量导入完成',
+      data: {
+        successCount: results.successCount,
+        errorCount: results.errorCount,
+        skippedCount: results.skipped.length,
+        errors: results.errors,
+        skipped: results.skipped
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk import error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: '导入失败: ' + error.message 
+    });
+  }
+};
+
 

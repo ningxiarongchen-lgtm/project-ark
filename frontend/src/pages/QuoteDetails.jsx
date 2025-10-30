@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Descriptions, Table, Button, Tag, Space, Spin, message, Select } from 'antd'
-import { ArrowLeftOutlined, FilePdfOutlined, EditOutlined } from '@ant-design/icons'
+import { Card, Descriptions, Table, Button, Tag, Space, Spin, message, Select, Typography } from 'antd'
+import { FilePdfOutlined, EditOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { quotesAPI } from '../services/api'
 import { generateQuotePDF } from '../utils/pdfGenerator'
 import dayjs from 'dayjs'
@@ -108,22 +108,40 @@ const QuoteDetails = () => {
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 24 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/quotes')}>
-          Back to Quotes
-        </Button>
-        <Button
-          type="primary"
-          icon={<FilePdfOutlined />}
-          onClick={handleDownloadPDF}
-        >
-          Download PDF
-        </Button>
-        <Button icon={<EditOutlined />}>
-          Revise Quote
-        </Button>
-      </Space>
+    <div style={{ padding: '24px' }}>
+      {/* 页面头部 - 替代废弃的PageHeader组件 */}
+      <div style={{ marginBottom: 24 }}>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space align="center">
+              <Button 
+                icon={<ArrowLeftOutlined />} 
+                onClick={() => navigate(-1)}
+              >
+                返回
+              </Button>
+              <div>
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                  {quote.quoteNumber}
+                </Typography.Title>
+                <Typography.Text type="secondary">报价详情</Typography.Text>
+              </div>
+            </Space>
+            <Space>
+              <Button
+                type="primary"
+                icon={<FilePdfOutlined />}
+                onClick={handleDownloadPDF}
+              >
+                Download PDF
+              </Button>
+              <Button icon={<EditOutlined />}>
+                Revise Quote
+              </Button>
+            </Space>
+          </Space>
+        </Space>
+      </div>
 
       <Card title="Quote Information" style={{ marginBottom: 16 }}>
         <Descriptions bordered column={2}>

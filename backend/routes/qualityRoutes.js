@@ -48,5 +48,9 @@ router.post('/checks/:id/corrective-actions', authorize('Technical Engineer', 'A
 // 审核
 router.post('/checks/:id/review', authorize('Administrator'), reviewQualityCheck);
 
+// 质检通过，更新生产订单状态
+const { markProductionOrderQCPassed } = require('../controllers/qualityController');
+router.post('/production-order/:id/pass', authorize('Technical Engineer', 'Administrator'), markProductionOrderQCPassed);
+
 module.exports = router;
 

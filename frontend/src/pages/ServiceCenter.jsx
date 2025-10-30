@@ -25,9 +25,10 @@ const ServiceCenter = () => {
   const { user, hasAnyRole } = useAuth()
   
   // 权限检查
-  const canCreate = hasAnyRole(['Administrator', 'After-sales Engineer', 'Sales Engineer', 'Technical Engineer'])
+  const canCreate = hasAnyRole(['Administrator', 'After-sales Engineer', 'Sales Engineer', 'Technical Engineer', 'Sales Manager'])
   const canDelete = hasAnyRole(['Administrator'])
   const isAftersalesEngineer = user?.role === 'After-sales Engineer'
+  const isSalesManager = user?.role === 'Sales Manager'
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(false)
   const [statistics, setStatistics] = useState(null)

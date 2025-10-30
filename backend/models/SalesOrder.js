@@ -32,7 +32,7 @@ const salesOrderSchema = new mongoose.Schema({
   // 订单状态
   status: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'In Production', 'Shipped', 'Delivered', 'Cancelled', 'Completed'],
+    enum: ['Pending', 'Confirmed', 'In Production', 'Awaiting QC', 'QC Passed', 'Ready to Ship', 'Shipped', 'Delivered', 'Cancelled', 'Completed'],
     default: 'Pending'
   },
   
@@ -227,7 +227,24 @@ const salesOrderSchema = new mongoose.Schema({
       method: String,
       reference: String,
       notes: String
-    }]
+    }],
+    
+    // 尾款确认（70%）
+    final_payment_confirmed: {
+      type: Boolean,
+      default: false
+    },
+    
+    // 尾款确认人
+    final_payment_confirmed_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    
+    // 尾款确认时间
+    final_payment_confirmed_at: {
+      type: Date
+    }
   },
   
   // 质保信息

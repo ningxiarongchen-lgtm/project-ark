@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons'
 import { projectsAPI, actuatorsAPI, manualOverridesAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import GreetingWidget from '../components/dashboards/GreetingWidget'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -42,9 +43,18 @@ const Dashboard = () => {
         manualOverridesAPI.getAll()
       ])
 
-      const projects = projectsRes.data || []
-      const actuators = actuatorsRes.data || []
-      const overrides = overridesRes.data || []
+      // 安全提取数据 - 后端返回格式: { success: true, data: [...] }
+      const projects = Array.isArray(projectsRes.data?.data) 
+        ? projectsRes.data.data 
+        : (Array.isArray(projectsRes.data) ? projectsRes.data : [])
+      
+      const actuators = Array.isArray(actuatorsRes.data?.data)
+        ? actuatorsRes.data.data
+        : (Array.isArray(actuatorsRes.data) ? actuatorsRes.data : [])
+      
+      const overrides = Array.isArray(overridesRes.data?.data)
+        ? overridesRes.data.data
+        : (Array.isArray(overridesRes.data) ? overridesRes.data : [])
 
       // 计算统计数据
       const selectionCount = projects.reduce((sum, project) => {
@@ -71,29 +81,54 @@ const Dashboard = () => {
     }
   }
 
-  const quickActions = [
-    {
-      icon: <ThunderboltOutlined />,
-      title: '智能选型',
-      description: '开始一个新的执行器选型',
-      color: '#1890ff',
-      onClick: () => navigate('/selection-engine')
-    },
-    {
-      icon: <PlusOutlined />,
-      title: '新建项目',
-      description: '创建一个新的选型项目',
-      color: '#52c41a',
-      onClick: () => navigate('/projects')
-    },
-    {
-      icon: <DatabaseOutlined />,
-      title: '产品管理',
-      description: '查看和管理产品数据',
-      color: '#722ed1',
-      onClick: () => navigate('/products')
-    },
-  ]
+  // 🔒 根据角色配置快捷操作
+  const quickActions = []
+  
+  // 销售经理专属快捷操作
+  if (user?.role === 'Sales Manager') {
+    quickActions.push(
+      {
+        icon: <PlusOutlined />,
+        title: '新建项目',
+        description: '创建一个新的选型项目',
+        color: '#52c41a',
+        onClick: () => navigate('/projects')
+      },
+      {
+        icon: <DatabaseOutlined />,
+        title: '产品目录',
+        description: '查看产品技术信息和库存',
+        color: '#722ed1',
+        onClick: () => navigate('/product-catalog')
+      }
+    )
+  } 
+  // 其他角色（技术工程师、商务工程师等）
+  else {
+    quickActions.push(
+      {
+        icon: <ThunderboltOutlined />,
+        title: '智能选型',
+        description: '开始一个新的执行器选型',
+        color: '#1890ff',
+        onClick: () => navigate('/selection-engine')
+      },
+      {
+        icon: <PlusOutlined />,
+        title: '新建项目',
+        description: '创建一个新的选型项目',
+        color: '#52c41a',
+        onClick: () => navigate('/projects')
+      },
+      {
+        icon: <DatabaseOutlined />,
+        title: '产品管理',
+        description: '查看和管理产品数据',
+        color: '#722ed1',
+        onClick: () => navigate('/products')
+      }
+    )
+  }
 
   // 管理员额外的快捷操作
   if (user?.role === 'Administrator') {
@@ -109,21 +144,8 @@ const Dashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24 }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0 }}>
-              欢迎回来，{user?.username || user?.name}！
-            </Title>
-            <Text type="secondary">
-              当前角色：<Tag color="blue">{getRoleNameCN()}</Tag> | 
-              登录时间：{dayjs().format('YYYY-MM-DD HH:mm')}
-            </Text>
-            <Paragraph style={{ margin: '8px 0 0 0' }}>
-              C-MAX SF系列气动执行器智能选型系统为您提供快速、准确的执行器选型服务。
-            </Paragraph>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 统计卡片 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -266,43 +288,80 @@ const Dashboard = () => {
           </Col>
         </Row>
 
-        {/* 使用提示 */}
+        {/* 使用提示 - 根据角色显示不同的指南 */}
         <Card 
           title="使用指南" 
           style={{ marginTop: 24 }}
         >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
-              <Space direction="vertical">
-                <Title level={5}>
-                  <span style={{ color: '#1890ff' }}>1.</span> 创建项目
-                </Title>
-                <Text type="secondary">
-                  在项目管理中创建新项目，用于组织多个阀门的选型工作。
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} md={8}>
-              <Space direction="vertical">
-                <Title level={5}>
-                  <span style={{ color: '#52c41a' }}>2.</span> 智能选型
-                </Title>
-                <Text type="secondary">
-                  输入阀门参数，系统自动推荐最合适的执行器和手动操作装置。
-                </Text>
-              </Space>
-            </Col>
-            <Col xs={24} md={8}>
-              <Space direction="vertical">
-                <Title level={5}>
-                  <span style={{ color: '#722ed1' }}>3.</span> 生成报价
-                </Title>
-                <Text type="secondary">
-                  选型完成后，可以一键生成技术数据表和商务报价单。
-                </Text>
-              </Space>
-            </Col>
-          </Row>
+          {user?.role === 'Sales Manager' ? (
+            // 🔒 销售经理专属使用指南
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#1890ff' }}>1.</span> 创建项目并指派
+                  </Title>
+                  <Text type="secondary">
+                    创建新项目，填写客户信息和需求，上传技术说明书后，指派给技术工程师进行选型。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#52c41a' }}>2.</span> 跟踪项目进度
+                  </Title>
+                  <Text type="secondary">
+                    等待技术工程师完成选型并提交给商务团队，商务团队对项目进行报价。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#722ed1' }}>3.</span> 查看并下载报价
+                  </Title>
+                  <Text type="secondary">
+                    商务完成报价后，在项目中查看报价详情并下载报价单，推进客户成交。
+                  </Text>
+                </Space>
+              </Col>
+            </Row>
+          ) : (
+            // 其他角色（技术工程师、商务工程师等）的使用指南
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#1890ff' }}>1.</span> 创建项目
+                  </Title>
+                  <Text type="secondary">
+                    在项目管理中创建新项目，用于组织多个阀门的选型工作。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#52c41a' }}>2.</span> 智能选型
+                  </Title>
+                  <Text type="secondary">
+                    输入阀门参数，系统自动推荐最合适的执行器和手动操作装置。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#722ed1' }}>3.</span> 生成报价
+                  </Title>
+                  <Text type="secondary">
+                    选型完成后，可以一键生成技术数据表和商务报价单。
+                  </Text>
+                </Space>
+              </Col>
+            </Row>
+          )}
         </Card>
       </div>
     </Spin>

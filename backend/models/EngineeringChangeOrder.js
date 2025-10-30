@@ -605,7 +605,7 @@ engineeringChangeOrderSchema.statics.getPendingApprovals = async function(approv
         status: '待审批'
       }
     }
-  }).populate('approval.initiator', 'username')
+  }).populate('approval.initiator', 'full_name phone')
     .populate('affected_products.actuator_id', 'model_base version')
     .sort({ priority: -1, createdAt: -1 });
 };

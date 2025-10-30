@@ -8,7 +8,7 @@ const { validateActuatorData, validateBatch, generateValidationReport } = requir
 // @access  Private
 exports.getActuators = async (req, res) => {
   try {
-    const { body_size, action_type, is_active, min_price, max_price } = req.query;
+    const { body_size, action_type, is_active, min_price, max_price, page = 1, limit = 10 } = req.query;
     
     // 构建查询条件
     let query = {};
@@ -24,12 +24,26 @@ exports.getActuators = async (req, res) => {
       if (max_price) query.base_price.$lte = Number(max_price);
     }
     
-    const actuators = await Actuator.find(query).sort({ body_size: 1, action_type: 1 });
+    // 分页
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const actuators = await Actuator.find(query)
+      .sort({ body_size: 1, action_type: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // 获取总数
+    const total = await Actuator.countDocuments(query);
     
     res.json({
       success: true,
-      count: actuators.length,
-      data: actuators
+      data: actuators,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     res.status(500).json({

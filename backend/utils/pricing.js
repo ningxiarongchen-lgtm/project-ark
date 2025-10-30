@@ -4,7 +4,7 @@
  * 提供价格计算、阶梯定价处理等功能
  * 
  * @module utils/pricing
- * @author C-MAX 技术团队
+ * @author Project Ark 技术团队
  * @date 2025-10-27
  */
 

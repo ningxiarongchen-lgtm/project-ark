@@ -9,7 +9,9 @@ const {
   addSelection,
   updateSelection,
   removeSelection,
-  getProjectStats
+  getProjectStats,
+  getTechnicalEngineers,
+  assignTechnicalEngineer
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/auth');
 const { checkProjectOwnership } = require('../middleware/ownership');
@@ -25,6 +27,9 @@ router.use(protect);
 // Statistics
 router.get('/stats/summary', getProjectStats);
 
+// Get technical engineers list
+router.get('/technical-engineers/list', getTechnicalEngineers);
+
 // CRUD operations
 router.route('/')
   .get(getProjects)
@@ -34,6 +39,9 @@ router.route('/:id')
   .get(getProjectById)
   .put(authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, projectValidation, validate, updateProject)
   .delete(authorize('Administrator'), deleteProject);
+
+// Assign technical engineer
+router.post('/:id/assign-technical', authorize('Sales Manager', 'Sales Engineer', 'Administrator'), assignTechnicalEngineer);
 
 // Product selections management
 router.post('/:id/selections', authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, addSelection);

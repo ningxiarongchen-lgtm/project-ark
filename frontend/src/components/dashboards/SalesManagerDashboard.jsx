@@ -15,6 +15,7 @@ import {
   FileTextOutlined, TrophyOutlined, ClockCircleOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
 
@@ -124,17 +125,8 @@ const SalesManagerDashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: 'white' }}>
-              <TrophyOutlined /> 销售经理控制台
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              Welcome to Project Ark，{user?.name}！团队目标达成率 {stats.achievementRate}%
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 业绩统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

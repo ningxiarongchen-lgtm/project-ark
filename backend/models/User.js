@@ -2,19 +2,21 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-  username: {
+  phone: {
     type: String,
-    required: [true, 'Please provide a username'],
+    required: [true, '请提供手机号'],
     unique: true,
     trim: true,
-    lowercase: true,
-    minlength: [3, 'Username must be at least 3 characters'],
-    maxlength: [20, 'Username must not exceed 20 characters'],
-    match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores and hyphens']
+    validate: {
+      validator: function(v) {
+        return /^1[3-9]\d{9}$/.test(v);
+      },
+      message: props => `${props.value} 不是有效的手机号码！请输入11位中国大陆手机号。`
+    }
   },
-  name: {
+  full_name: {
     type: String,
-    required: [true, 'Please provide a name'],
+    required: [true, '请提供姓名'],
     trim: true
   },
   password: {
@@ -25,14 +27,22 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer', 'Administrator'],
+    enum: [
+      'Administrator',
+      'Sales Manager',
+      'Technical Engineer',
+      'Sales Engineer',
+      'Procurement Specialist',
+      'Production Planner',
+      'QA Inspector',
+      'Logistics Specialist',
+      'After-sales Engineer',
+      'Shop Floor Worker'
+    ],
+    required: [true, '请提供用户角色'],
     default: 'Technical Engineer'
   },
   department: {
-    type: String,
-    trim: true
-  },
-  phone: {
     type: String,
     trim: true
   },
@@ -80,6 +90,11 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// 性能优化：为经常查询的字段添加索引
+userSchema.index({ phone: 1 }); // 手机号查询（登录）
+userSchema.index({ role: 1 }); // 按角色筛选
+userSchema.index({ createdAt: -1 }); // 按创建时间排序
 
 module.exports = mongoose.model('User', userSchema);
 

@@ -52,23 +52,21 @@ const cleanupOldTokens = async (userId) => {
 // @access  Private/Admin
 exports.register = async (req, res) => {
   try {
-    const { username, name, email, password, role, department, phone } = req.body;
+    const { phone, full_name, password, role, department } = req.body;
 
     // Check if user already exists
-    const userExists = await User.findOne({ username: username.toLowerCase() });
+    const userExists = await User.findOne({ phone });
     if (userExists) {
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ message: '该手机号已被注册' });
     }
 
     // Create user
     const user = await User.create({
-      username: username.toLowerCase(),
-      name,
-      email,
+      phone,
+      full_name,
       password,
       role,
-      department,
-      phone
+      department
     });
 
     if (user) {
@@ -97,9 +95,8 @@ exports.register = async (req, res) => {
       
       res.status(201).json({
         _id: user._id,
-        username: user.username,
-        name: user.name,
-        email: user.email,
+        phone: user.phone,
+        full_name: user.full_name,
         role: user.role,
         message: 'User registered successfully'
       });
@@ -116,15 +113,15 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { phone, password } = req.body;
 
-    // Validate username and password
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Please provide username and password' });
+    // Validate phone and password
+    if (!phone || !password) {
+      return res.status(400).json({ message: '请提供手机号和密码' });
     }
 
     // Check for user
-    const user = await User.findOne({ username: username.toLowerCase() }).select('+password');
+    const user = await User.findOne({ phone }).select('+password');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -177,9 +174,8 @@ exports.login = async (req, res) => {
     // 只返回用户信息，不返回 token（token 已经在 cookie 中）
     res.json({
       _id: user._id,
-      username: user.username,
-      name: user.name,
-      email: user.email,
+      phone: user.phone,
+      full_name: user.full_name,
       role: user.role,
       department: user.department,
       passwordChangeRequired: user.passwordChangeRequired,

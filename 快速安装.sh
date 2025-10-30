@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "================================================"
-echo "  C-MAX 系统 - 快速安装（使用国内镜像）"
+echo "  Project Ark 系统 - 快速安装（使用国内镜像）"
 echo "================================================"
 echo ""
 
@@ -134,9 +134,9 @@ echo "4. 浏览器访问："
 echo "   http://localhost:5173"
 echo ""
 echo -e "${YELLOW}登录账号：${NC}"
-echo "  管理员：admin@cmax.com / admin123"
-echo "  工程师：john@cmax.com / engineer123"
-echo "  销售：  sarah@cmax.com / sales123"
+echo "  管理员：admin@projectark.com / admin123"
+echo "  工程师：john@projectark.com / engineer123"
+echo "  销售：  sarah@projectark.com / sales123"
 echo ""
 echo "🎉 祝使用愉快！"
 

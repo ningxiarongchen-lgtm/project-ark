@@ -14,7 +14,7 @@ const Supplier = require('./models/Supplier');
 // 数据库连接
 async function connectDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/valve_selection', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

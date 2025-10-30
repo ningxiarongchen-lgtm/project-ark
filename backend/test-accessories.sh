@@ -10,7 +10,7 @@ echo ""
 
 # 配置
 BASE_URL="http://localhost:5001/api"
-ADMIN_EMAIL="admin@cmax.com"
+ADMIN_EMAIL="admin@projectark.com"
 ADMIN_PASSWORD="admin123"
 
 # 颜色输出

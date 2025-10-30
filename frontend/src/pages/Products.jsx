@@ -25,10 +25,13 @@ const Products = () => {
     setLoading(true)
     try {
       const response = await actuatorsAPI.getAll(filters)
-      setProducts(response.data.actuators || response.data)
+      // 后端返回格式: { success: true, data: [...], pagination: {...} }
+      const productData = response.data.data || response.data.actuators || response.data || []
+      setProducts(Array.isArray(productData) ? productData : [])
     } catch (error) {
       console.error('Failed to load products:', error)
       message.error('加载产品列表失败')
+      setProducts([]) // 确保错误时也设置为空数组
     } finally {
       setLoading(false)
     }

@@ -180,12 +180,19 @@ exports.validateEnum = (fieldName, allowedValues, required = true) => {
  * 用户注册验证
  */
 exports.userRegistrationValidation = [
-  body('name')
+  body('phone')
     .trim()
     .notEmpty()
-    .withMessage('用户名不能为空')
+    .withMessage('手机号不能为空')
+    .matches(/^1[3-9]\d{9}$/)
+    .withMessage('请输入有效的11位中国大陆手机号'),
+  
+  body('full_name')
+    .trim()
+    .notEmpty()
+    .withMessage('姓名不能为空')
     .isLength({ min: 2, max: 50 })
-    .withMessage('用户名必须在2-50个字符之间')
+    .withMessage('姓名必须在2-50个字符之间')
     .escape(),
   
   body('password')
@@ -199,12 +206,6 @@ exports.userRegistrationValidation = [
     .isIn(['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer', 'Administrator'])
     .withMessage('无效的用户角色'),
   
-  body('phone')
-    .optional()
-    .trim()
-    .isMobilePhone('zh-CN')
-    .withMessage('请输入有效的手机号码'),
-  
   body('department')
     .optional()
     .trim()
@@ -217,11 +218,12 @@ exports.userRegistrationValidation = [
  * 用户登录验证
  */
 exports.userLoginValidation = [
-  body('username')
+  body('phone')
     .trim()
     .notEmpty()
-    .withMessage('用户名不能为空')
-    .customSanitizer(value => value.toLowerCase()),
+    .withMessage('手机号不能为空')
+    .matches(/^1[3-9]\d{9}$/)
+    .withMessage('请输入有效的11位中国大陆手机号'),
   
   body('password')
     .notEmpty()
@@ -232,18 +234,18 @@ exports.userLoginValidation = [
  * 用户更新验证
  */
 exports.userUpdateValidation = [
-  body('name')
-    .optional()
-    .trim()
-    .isLength({ min: 2, max: 50 })
-    .withMessage('用户名必须在2-50个字符之间')
-    .escape(),
-  
   body('phone')
     .optional()
     .trim()
-    .isMobilePhone('zh-CN')
-    .withMessage('请输入有效的手机号码'),
+    .matches(/^1[3-9]\d{9}$/)
+    .withMessage('请输入有效的11位中国大陆手机号'),
+  
+  body('full_name')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('姓名必须在2-50个字符之间')
+    .escape(),
   
   body('department')
     .optional()
@@ -265,7 +267,7 @@ exports.projectValidation = [
     .withMessage('项目名称不能超过200个字符')
     .escape(),
   
-  body('customerName')
+  body('client.name')
     .trim()
     .notEmpty()
     .withMessage('客户名称不能为空')
@@ -273,22 +275,59 @@ exports.projectValidation = [
     .withMessage('客户名称不能超过200个字符')
     .escape(),
   
-  body('customerContact')
+  body('client.company')
     .optional()
     .trim()
-    .isLength({ max: 100 })
-    .withMessage('联系人不能超过100个字符')
+    .isLength({ max: 200 })
+    .withMessage('客户公司不能超过200个字符')
     .escape(),
   
-  body('phone')
+  body('client.phone')
+    .optional()
+    .trim(),
+  
+  body('client.address')
     .optional()
     .trim()
-    .isMobilePhone('zh-CN')
-    .withMessage('请输入有效的手机号码'),
+    .isLength({ max: 500 })
+    .withMessage('客户地址不能超过500个字符'),
+  
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('项目描述不能超过2000个字符'),
+  
+  body('application')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('应用场景不能超过500个字符'),
+  
+  body('technical_requirements')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('客户技术需求不能超过5000个字符'),
+  
+  body('industry')
+    .optional()
+    .isIn(['Oil & Gas', 'Water Treatment', 'Chemical', 'Power Generation', 'Manufacturing', 'Food & Beverage', 'Other'])
+    .withMessage('无效的行业类型'),
+  
+  body('budget')
+    .optional()
+    .isNumeric()
+    .withMessage('预算必须是数字'),
+  
+  body('priority')
+    .optional()
+    .isIn(['Low', 'Medium', 'High', 'Urgent'])
+    .withMessage('无效的优先级'),
   
   body('status')
     .optional()
-    .isIn(['Draft', 'In Progress', 'Completed', 'Cancelled'])
+    .isIn(['待指派技术', '选型中', '待商务报价', '已报价', '赢单', '失单', '待商务审核合同', '待客户盖章', '合同已签订'])
     .withMessage('无效的项目状态')
 ];
 

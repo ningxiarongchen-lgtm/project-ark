@@ -280,5 +280,5 @@ await mongoose.connection.close();
 
 **创建时间**: 2025-10-27  
 **版本**: v1.0  
-**作者**: C-MAX 开发团队
+**作者**: Project Ark 开发团队
 

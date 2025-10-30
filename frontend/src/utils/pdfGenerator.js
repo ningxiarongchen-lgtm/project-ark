@@ -25,11 +25,11 @@ export const generateQuotePDF = (quote) => {
   // Company header
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
-  doc.text('C-MAX', 20, 20)
+  doc.text('智能制造综合管理系统', 20, 20)
   
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text('SF-Series Pneumatic Actuator Systems', 20, 28)
+  doc.text('Intelligent Manufacturing Management System', 20, 28)
   
   // Quote title
   doc.setFontSize(16)
@@ -203,11 +203,11 @@ export const generateDatasheetPDF = (product) => {
   // Company header
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
-  doc.text('C-MAX', 20, 20)
+  doc.text('智能制造综合管理系统', 20, 20)
   
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  doc.text('SF-Series Pneumatic Actuator Systems', 20, 28)
+  doc.text('Intelligent Manufacturing Management System', 20, 28)
   
   // Product title
   doc.setFontSize(16)
@@ -302,7 +302,7 @@ export const generateSelectionSpecPDF = (selection, project) => {
   // ==================== 页眉 ====================
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
-  doc.text('C-MAX', 20, 20)
+  doc.text('智能制造综合管理系统', 20, 20)
   
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
@@ -562,7 +562,7 @@ export const generateSelectionQuotePDF = (selection, project) => {
   // ==================== 页眉 ====================
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
-  doc.text('C-MAX', 20, 20)
+  doc.text('智能制造综合管理系统', 20, 20)
   
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')

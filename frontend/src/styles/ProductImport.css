@@ -1,0 +1,69 @@
+.product-import-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.import-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.import-header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.import-header h2 {
+  margin: 16px 0 8px 0;
+}
+
+.step-card {
+  background: #f9f9f9;
+  border: 1px solid #e8e8e8;
+}
+
+.step-card .ant-card-head {
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 600;
+}
+
+.info-card {
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+}
+
+.info-card .ant-card-head {
+  background: #e6f7ff;
+  border-bottom: 1px solid #adc6ff;
+}
+
+/* Upload 区域样式 */
+.ant-upload-list {
+  margin-top: 16px;
+}
+
+/* 结果统计样式 */
+.ant-modal-body .ant-space-item > div {
+  text-align: center;
+}
+
+.ant-modal-body .ant-space-item > div > div:first-child {
+  margin-bottom: 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .product-import-container {
+    padding: 12px;
+  }
+
+  .import-header {
+    padding: 10px 0;
+  }
+
+  .import-header h2 {
+    font-size: 20px;
+  }
+}
+

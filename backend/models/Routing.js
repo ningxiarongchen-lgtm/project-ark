@@ -423,7 +423,7 @@ routingSchema.statics.findByProduct = async function(productId) {
     is_active: true
   }).populate('operations.work_center', 'code name type')
     .populate('operations.alternative_work_centers', 'code name type')
-    .populate('created_by', 'username')
+    .populate('created_by', 'full_name phone')
     .sort({ version: -1 });
 };
 
@@ -433,7 +433,7 @@ routingSchema.statics.getReleasedRoutings = async function() {
     status: '已发布',
     is_active: true
   }).populate('product.product_id', 'model_base version')
-    .populate('created_by', 'username')
+    .populate('created_by', 'full_name phone')
     .sort({ createdAt: -1 });
 };
 

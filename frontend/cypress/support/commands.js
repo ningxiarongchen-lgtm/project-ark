@@ -3,61 +3,90 @@
 // ***********************************************
 
 /**
- * 基础登录命令 - 使用用户名和密码
- * @param {string} username - 用户名
+ * 基础登录命令 - 使用手机号和密码
+ * @param {string} phone - 手机号（参数名保持为 phone，但向后兼容旧的 username 调用）
  * @param {string} password - 密码
+ * @param {object} options - 配置选项
+ * @param {boolean} options.forceChangePassword - 是否处理强制修改密码流程
+ * @param {string} options.newPassword - 新密码（如果需要修改密码）
  */
-Cypress.Commands.add('login', (username, password) => {
-  cy.log(`🔐 Logging in as ${username}`)
+Cypress.Commands.add('login', (phone, password, options = {}) => {
+  const { forceChangePassword = false, newPassword = 'NewStrongPassword123!' } = options
+  
+  cy.log(`🔐 Logging in with phone: ${phone}`)
   
   cy.visit('/login')
+  cy.wait(2000) // 等待页面完全加载
   
-  // 等待登录表单完全加载 - 使用更可靠的等待策略
-  cy.get('input[placeholder="用户名"]', { timeout: 15000 }).should('be.visible')
+  // 等待登录表单完全加载 - 使用 placeholder 作为更可靠的选择器
+  cy.get('input[placeholder="手机号"]', { timeout: 15000 }).should('be.visible')
   cy.get('input[placeholder="密码"]', { timeout: 15000 }).should('be.visible')
   
   // 填写登录表单
-  cy.get('input[placeholder="用户名"]').clear().type(username)
+  cy.get('input[placeholder="手机号"]').clear().type(phone)
   cy.get('input[placeholder="密码"]').clear().type(password)
-  cy.contains('button', '登录').click()
   
-  // 等待登录成功并跳转 - 检查URL变化或页面元素
-  cy.url().should('not.include', '/login', { timeout: 20000 })
-  cy.wait(2000) // 等待页面完全加载
+  // 点击登录按钮并等待网络请求
+  cy.intercept('POST', '**/api/auth/login').as('loginRequest')
+  cy.get('button[type="submit"]').click()
   
-  cy.log(`✅ Successfully logged in`)
+  // 等待登录请求完成
+  cy.wait('@loginRequest', { timeout: 15000 }).then((interception) => {
+    if (interception.response && interception.response.statusCode === 200) {
+      cy.log('✅ Login API successful')
+    } else {
+      cy.log('⚠️ Login API failed')
+    }
+  })
+  
+  // 等待URL变化（离开登录页）
+  cy.url({ timeout: 10000 }).should('not.include', '/login')
+  
+  // 等待页面稳定
+  cy.wait(2000)
+  
+  cy.log('✅ Successfully logged in')
 })
 
 /**
- * 登录命令 - 支持多角色登录
- * @param {string} userType - 用户类型 (admin, technicalEngineer, salesEngineer, etc.)
+ * 登录命令 - 支持多角色登录（从 test_data.json 读取）
+ * @param {string} userType - 用户类型 (admin, salesManager, techEngineer, salesEngineer, etc.)
+ * @param {object} options - 配置选项
+ * @param {boolean} options.forceChangePassword - 是否处理强制修改密码流程
  */
-Cypress.Commands.add('loginAs', (userType) => {
-  const users = Cypress.env('testUsers')
-  const user = users[userType]
-  
-  if (!user) {
-    throw new Error(`Unknown user type: ${userType}`)
-  }
-  
-  cy.log(`🔐 Logging in as ${user.role}`)
-  
-  cy.visit('/login')
-  
-  // 等待登录表单完全加载 - 使用更可靠的等待策略
-  cy.get('input[placeholder="用户名"]', { timeout: 15000 }).should('be.visible')
-  cy.get('input[placeholder="密码"]', { timeout: 15000 }).should('be.visible')
-  
-  // 填写登录表单
-  cy.get('input[placeholder="用户名"]').clear().type(user.username)
-  cy.get('input[placeholder="密码"]').clear().type(user.password)
-  cy.contains('button', '登录').click()
-  
-  // 等待登录成功并跳转 - 检查URL变化
-  cy.url().should('not.include', '/login', { timeout: 20000 })
-  cy.wait(2000) // 等待页面完全加载
-  
-  cy.log(`✅ Successfully logged in as ${user.role}`)
+Cypress.Commands.add('loginAs', (userType, options = {}) => {
+  // 优先从 test_data.json 读取用户信息
+  cy.fixture('test_data.json').then((testData) => {
+    const user = testData.users[userType]
+    
+    if (!user) {
+      // 如果 test_data.json 中没有，尝试从环境变量读取（向后兼容）
+      const envUsers = Cypress.env('testUsers')
+      const envUser = envUsers?.[userType]
+      
+      if (!envUser) {
+        throw new Error(`Unknown user type: ${userType}. Available users: ${Object.keys(testData.users).join(', ')}`)
+      }
+      
+      cy.log(`🔐 Logging in as ${envUser.role} (from env)`)
+      cy.login(envUser.phone || envUser.username, envUser.password, {
+        ...options,
+        newPassword: options.newPassword || `${envUser.password}_new`
+      })
+      cy.log(`✅ Successfully logged in as ${envUser.role}`)
+      return
+    }
+    
+    cy.log(`🔐 Logging in as ${user.role} (${user.fullName})`)
+    
+    // 使用基础 login 命令，传递手机号
+    cy.login(user.phone, user.password, {
+      ...options,
+      newPassword: options.newPassword || `${user.password}_new`
+    })
+    
+    cy.log(`✅ Successfully logged in as ${user.role}`)
+  })
 })
 
 /**
@@ -447,6 +476,217 @@ Cypress.Commands.add('cleanupAllTestData', () => {
     } else {
       cy.log(`⚠️  清空失败: ${response.body?.message || '未知错误'}`)
     }
+  })
+})
+
+/**
+ * 创建E2E测试用户
+ * 从 test_data.json 读取用户数据并调用后端API创建测试账户
+ * 
+ * 用法：
+ *   before(() => {
+ *     cy.seedTestUsers();
+ *   });
+ */
+Cypress.Commands.add('seedTestUsers', () => {
+  cy.log('👥 创建E2E测试用户账户...')
+  
+  const apiUrl = Cypress.env('apiUrl') || 'http://localhost:5001'
+  
+  // 读取 test_data.json 并调用后端API
+  cy.fixture('test_data.json').then((testData) => {
+    cy.request({
+      method: 'POST',
+      url: `${apiUrl}/api/testing/seed-users`,
+      body: {
+        users: testData.users
+      },
+      failOnStatusCode: false
+    }).then((response) => {
+      if (response.status === 200) {
+        const { message, users } = response.body
+        cy.log(`✅ ${message}`)
+        cy.log(`   创建的用户：`)
+        users.forEach(user => {
+          cy.log(`   - ${user.fullName} (${user.role})`)
+        })
+      } else if (response.status === 404) {
+        cy.log('⚠️  测试用户创建接口不可用（可能未在测试环境运行）')
+        cy.log('   请确保后端使用 NODE_ENV=test 启动')
+      } else {
+        cy.log(`⚠️  创建失败: ${response.body?.message || '未知错误'}`)
+        if (response.body?.details) {
+          cy.log('   错误详情:', response.body.details)
+        }
+      }
+    })
+  })
+})
+
+/**
+ * 初始化测试环境
+ * 包括：创建测试用户、清理旧数据
+ * 
+ * 用法：
+ *   before(() => {
+ *     cy.initTestEnvironment();
+ *   });
+ */
+Cypress.Commands.add('initTestEnvironment', (options = {}) => {
+  const { cleanupFirst = true } = options
+  
+  cy.log('🚀 初始化测试环境...')
+  
+  if (cleanupFirst) {
+    cy.log('🧹 清理旧测试数据...')
+    cy.fixture('test_data.json').then((testData) => {
+      cy.cleanupTestData(testData.projectTemplate.namePrefix)
+    })
+    cy.wait(1000)
+  }
+  
+  cy.log('👥 创建测试用户...')
+  cy.seedTestUsers()
+  cy.wait(2000) // 等待用户创建完成
+  
+  cy.log('✅ 测试环境初始化完成')
+})
+
+/**
+ * 创建一个已报价的项目（用于后续测试）
+ * 包含完整的售前流程：创建项目 → 技术选型 → 生成BOM → 生成报价
+ * 
+ * @param {string} projectName - 项目名称
+ * @returns {string} 项目ID (通过 Cypress alias 'quotedProjectId' 访问)
+ * 
+ * 用法：
+ *   cy.createQuotedProject('Test-Project-123').then((projectId) => {
+ *     cy.log(`已创建项目: ${projectId}`)
+ *   })
+ */
+Cypress.Commands.add('createQuotedProject', (projectName) => {
+  cy.log(`🔧 创建已报价项目: ${projectName}`)
+  
+  cy.fixture('test_data.json').then((testData) => {
+    let projectId = null
+    
+    // 1. 销售经理创建项目
+    cy.log('第1步：销售经理创建项目')
+    cy.login(testData.users.salesManager.phone, testData.users.salesManager.password)
+    cy.wait(2000)
+    
+    cy.visit('/projects')
+    cy.wait(1000)
+    cy.contains('button', '新建项目').click()
+    cy.wait(500)
+    
+    cy.get('input[name="projectName"]').clear().type(projectName)
+    cy.get('input[name="clientName"]').clear().type(testData.projectTemplate.client.name)
+    cy.get('input[name="clientContact"]').clear().type(testData.projectTemplate.client.contact)
+    cy.get('input[name="clientPhone"]').clear().type(testData.projectTemplate.client.phone)
+    cy.get('textarea[name="description"]').clear().type(testData.projectTemplate.description)
+    
+    cy.contains('button', '创建').click()
+    cy.wait(2000)
+    
+    cy.url().then((url) => {
+      const matches = url.match(/\/projects\/([^\/\?]+)/)
+      if (matches && matches[1]) {
+        projectId = matches[1]
+        cy.wrap(projectId).as('quotedProjectId')
+      }
+    })
+    cy.logout()
+    
+    // 2. 技术工程师添加选型
+    cy.log('第2步：技术工程师添加选型')
+    cy.login(testData.users.techEngineer.phone, testData.users.techEngineer.password)
+    cy.wait(2000)
+    
+    cy.visit('/projects')
+    cy.wait(1000)
+    cy.contains('td', projectName).click()
+    cy.wait(1000)
+    
+    cy.contains('.ant-tabs-tab', '选型明细').click()
+    cy.wait(500)
+    
+    cy.get('body').then(($body) => {
+      if ($body.text().includes('添加选型')) {
+        cy.contains('button', /添加选型|新增选型/).click()
+        cy.wait(500)
+        
+        const selection1 = testData.selectionTemplate.selection1
+        cy.get('select[name="actuatorType"]').select(selection1.actuatorType)
+        cy.get('input[name="valveSize"]').clear().type(selection1.valveSize)
+        cy.get('input[name="workingPressure"]').clear().type(selection1.workingPressure)
+        cy.get('input[name="workingTemperature"]').clear().type(selection1.workingTemperature)
+        cy.get('input[name="torque"]').clear().type(selection1.torque)
+        cy.get('input[name="quantity"]').clear().type(selection1.quantity)
+        
+        cy.contains('button', '确定').click()
+        cy.wait(2000)
+      }
+    })
+    cy.logout()
+    
+    // 3. 商务工程师生成BOM和报价
+    cy.log('第3步：商务工程师生成BOM和报价')
+    cy.login(testData.users.salesEngineer.phone, testData.users.salesEngineer.password)
+    cy.wait(2000)
+    
+    cy.visit('/projects')
+    cy.wait(1000)
+    cy.contains('td', projectName).click()
+    cy.wait(1000)
+    
+    cy.contains('.ant-tabs-tab', 'BOM清单').click()
+    cy.wait(500)
+    
+    // 生成BOM
+    cy.get('body').then(($body) => {
+      if ($body.text().includes('从选型自动生成')) {
+        cy.contains('button', '从选型自动生成').click()
+        cy.wait(500)
+        cy.get('.ant-modal').then(($modal) => {
+          if ($modal.length > 0) {
+            cy.contains('.ant-modal button', '确定').click()
+            cy.wait(2000)
+          }
+        })
+      }
+    })
+    
+    // 生成报价
+    cy.get('body').then(($body) => {
+      if ($body.text().includes('生成报价')) {
+        cy.contains('button', '生成报价').click()
+        cy.wait(500)
+        
+        cy.get('.ant-modal').then(($modal) => {
+          if ($modal.length > 0) {
+            cy.get('input[name="validityPeriod"]').then(($input) => {
+              if ($input.length > 0) cy.wrap($input).clear().type('30')
+            })
+            cy.get('input[name="deliveryTime"]').then(($input) => {
+              if ($input.length > 0) cy.wrap($input).clear().type('45')
+            })
+            cy.get('input[name="paymentTerms"]').then(($input) => {
+              if ($input.length > 0) cy.wrap($input).clear().type(testData.orderTemplate.paymentTerms)
+            })
+            
+            cy.contains('.ant-modal button', /生成报价|确认/).click()
+            cy.wait(2000)
+          }
+        })
+      }
+    })
+    
+    cy.logout()
+    cy.log('✅ 已报价项目创建完成')
+    
+    // 返回项目ID
+    cy.get('@quotedProjectId')
   })
 })
 

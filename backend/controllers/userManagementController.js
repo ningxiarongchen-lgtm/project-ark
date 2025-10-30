@@ -11,16 +11,10 @@ const bcrypt = require('bcryptjs');
 function validateUser(data) {
   const errors = [];
   
-  // 验证用户名格式
-  const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-  if (data.username && !usernameRegex.test(data.username)) {
-    errors.push('用户名只能包含字母、数字、下划线和连字符，长度3-20位');
-  }
-  
-  // 验证邮箱格式（如果提供）
-  const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-  if (data.email && !emailRegex.test(data.email)) {
-    errors.push('无效的邮箱格式');
+  // 验证手机号格式（11位中国大陆手机号）
+  const phoneRegex = /^1[3-9]\d{9}$/;
+  if (data.phone && !phoneRegex.test(data.phone)) {
+    errors.push('请输入有效的11位中国大陆手机号（以1开头）');
   }
   
   // 验证密码长度（仅在创建新用户时）
@@ -34,8 +28,8 @@ function validateUser(data) {
 // 创建User CRUD控制器
 const userController = createCrudController(User, {
   populateFields: [],
-  searchFields: ['name', 'username', 'department', 'role'],
-  uniqueField: 'username',
+  searchFields: ['full_name', 'phone', 'department', 'role'],
+  uniqueField: 'phone',
   customValidation: validateUser
 });
 
@@ -141,8 +135,8 @@ userController.toggleUserStatus = async (req, res) => {
       message: `用户已${user.isActive ? '激活' : '停用'}`,
       data: {
         _id: user._id,
-        name: user.name,
-        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone,
         isActive: user.isActive
       }
     });

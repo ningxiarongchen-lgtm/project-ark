@@ -1,5 +1,6 @@
 const SalesOrder = require('../models/SalesOrder');
 const Project = require('../models/Project');
+const ProductionOrder = require('../models/ProductionOrder');
 
 /**
  * 从项目创建销售订单
@@ -116,20 +117,23 @@ exports.createOrderFromProject = async (req, res) => {
     // 保存订单
     await salesOrder.save();
 
-    // 更新项目状态为 "已转订单" (可选)
-    // project.status = 'Order Created';
-    // await project.save();
+    // 🔒 锁定项目，防止修改报价数据
+    project.is_locked = true;
+    project.locked_at = new Date();
+    project.locked_reason = '已转化为合同订单';
+    await project.save();
 
     // 填充关联数据
     await salesOrder.populate([
-      { path: 'project', select: 'projectNumber projectName status' },
+      { path: 'project', select: 'projectNumber projectName status is_locked' },
       { path: 'created_by', select: 'name email' }
     ]);
 
     res.status(201).json({
       success: true,
-      message: 'Sales order created successfully from project',
-      data: salesOrder
+      message: 'Sales order created successfully from project. Project is now locked.',
+      data: salesOrder,
+      projectLocked: true
     });
 
   } catch (error) {
@@ -166,12 +170,20 @@ exports.getAllOrders = async (req, res) => {
       if (endDate) query.orderDate.$lte = new Date(endDate);
     }
 
+    // 🔒 销售经理权限过滤：只能看到自己作为owner的项目的订单
+    if (req.user.role === 'Sales Manager') {
+      // 先查找该销售经理作为owner的项目
+      const userProjects = await Project.find({ owner: req.user._id }).select('_id');
+      const projectIds = userProjects.map(p => p._id);
+      query.project = { $in: projectIds };
+    }
+
     // 分页
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     // 查询订单
     const orders = await SalesOrder.find(query)
-      .populate('project', 'projectNumber projectName status')
+      .populate('project', 'projectNumber projectName status owner')
       .populate('created_by', 'name email')
       .populate('assigned_to', 'name email')
       .populate('approval.approved_by', 'name email')
@@ -459,6 +471,297 @@ exports.deleteOrder = async (req, res) => {
 };
 
 /**
+ * 确认收到70%尾款（商务工程师）
+ */
+exports.confirmFinalPayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { payment_amount, payment_method, payment_reference, notes } = req.body;
+
+    const salesOrder = await SalesOrder.findById(id);
+    if (!salesOrder) {
+      return res.status(404).json({ message: 'Sales order not found' });
+    }
+
+    // 检查订单状态
+    if (salesOrder.status !== 'QC Passed') {
+      return res.status(400).json({ 
+        message: 'Only QC passed orders can confirm final payment',
+        currentStatus: salesOrder.status
+      });
+    }
+
+    // 记录付款
+    if (payment_amount) {
+      salesOrder.payment.payment_records.push({
+        date: new Date(),
+        amount: payment_amount,
+        method: payment_method || 'Bank Transfer',
+        reference: payment_reference || '',
+        notes: notes || '尾款（70%）'
+      });
+      salesOrder.payment.paid_amount += payment_amount;
+    }
+
+    // 更新付款状态
+    if (salesOrder.payment.paid_amount >= salesOrder.financial.total_amount) {
+      salesOrder.payment.payment_status = 'Paid';
+    } else {
+      salesOrder.payment.payment_status = 'Partial';
+    }
+
+    // 标记尾款已确认
+    salesOrder.payment.final_payment_confirmed = true;
+    salesOrder.payment.final_payment_confirmed_by = req.user._id;
+    salesOrder.payment.final_payment_confirmed_at = new Date();
+
+    await salesOrder.save();
+
+    res.json({
+      success: true,
+      message: 'Final payment confirmed successfully',
+      data: salesOrder
+    });
+
+  } catch (error) {
+    console.error('Error confirming final payment:', error);
+    res.status(500).json({ 
+      message: 'Failed to confirm final payment',
+      error: error.message 
+    });
+  }
+};
+
+/**
+ * 准备发货（商务工程师确认尾款后）
+ */
+exports.markAsReadyToShip = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const salesOrder = await SalesOrder.findById(id);
+    if (!salesOrder) {
+      return res.status(404).json({ message: 'Sales order not found' });
+    }
+
+    // 检查订单状态
+    if (salesOrder.status !== 'QC Passed') {
+      return res.status(400).json({ 
+        message: 'Only QC passed orders can be marked as ready to ship',
+        currentStatus: salesOrder.status
+      });
+    }
+
+    // 检查是否确认尾款
+    if (!salesOrder.payment.final_payment_confirmed) {
+      return res.status(400).json({ 
+        message: 'Please confirm final payment (70%) before marking as ready to ship'
+      });
+    }
+
+    // 更新订单状态
+    salesOrder.status = 'Ready to Ship';
+    
+    // 同时更新生产订单状态
+    const productionOrder = await ProductionOrder.findOne({ salesOrder: id });
+    if (productionOrder) {
+      productionOrder.status = 'Ready to Ship';
+      productionOrder.addLog(
+        'Ready to Ship',
+        notes || '已确认尾款，准备发货',
+        req.user._id
+      );
+      await productionOrder.save();
+    }
+
+    await salesOrder.save();
+
+    res.json({
+      success: true,
+      message: 'Order marked as ready to ship',
+      data: salesOrder
+    });
+
+  } catch (error) {
+    console.error('Error marking order as ready to ship:', error);
+    res.status(500).json({ 
+      message: 'Failed to mark order as ready to ship',
+      error: error.message 
+    });
+  }
+};
+
+/**
+ * 录入物流信息（物流人员）
+ */
+exports.addShipmentInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      tracking_number,
+      carrier,
+      carrier_contact,
+      shipment_date,
+      estimated_delivery_date,
+      items,
+      packaging,
+      notes
+    } = req.body;
+
+    const salesOrder = await SalesOrder.findById(id);
+    if (!salesOrder) {
+      return res.status(404).json({ message: 'Sales order not found' });
+    }
+
+    // 检查订单状态
+    if (salesOrder.status !== 'Ready to Ship') {
+      return res.status(400).json({ 
+        message: 'Only orders in "Ready to Ship" status can add shipment information',
+        currentStatus: salesOrder.status
+      });
+    }
+
+    // 生成发货批次号
+    const shipmentNumber = `SH-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(salesOrder.shipments.length + 1).padStart(4, '0')}`;
+
+    // 添加发货记录
+    const shipment = {
+      shipment_number: shipmentNumber,
+      tracking_number,
+      carrier,
+      carrier_contact,
+      shipment_date: shipment_date || new Date(),
+      estimated_delivery_date,
+      items: items || salesOrder.orderItems.map(item => ({
+        item_type: item.item_type,
+        model_name: item.model_name,
+        quantity: item.quantity,
+        notes: item.notes
+      })),
+      status: 'Shipped',
+      packaging,
+      notes,
+      created_by: req.user._id,
+      created_at: new Date()
+    };
+
+    salesOrder.shipments.push(shipment);
+
+    // 更新订单状态为已发货
+    salesOrder.status = 'Shipped';
+    salesOrder.delivery.tracking_number = tracking_number;
+
+    // 同时更新生产订单状态
+    const productionOrder = await ProductionOrder.findOne({ salesOrder: id });
+    if (productionOrder) {
+      productionOrder.status = 'Shipped';
+      productionOrder.addLog(
+        'Shipped',
+        `订单已发货，物流单号：${tracking_number}`,
+        req.user._id
+      );
+      await productionOrder.save();
+    }
+
+    await salesOrder.save();
+
+    res.json({
+      success: true,
+      message: 'Shipment information added successfully',
+      data: {
+        salesOrder,
+        shipment
+      }
+    });
+
+  } catch (error) {
+    console.error('Error adding shipment info:', error);
+    res.status(500).json({ 
+      message: 'Failed to add shipment information',
+      error: error.message 
+    });
+  }
+};
+
+/**
+ * 获取待发货订单列表（物流人员）
+ */
+exports.getReadyToShipOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const orders = await SalesOrder.find({ status: 'Ready to Ship' })
+      .populate('project', 'projectNumber projectName')
+      .populate('assigned_to', 'name email phone')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await SalesOrder.countDocuments({ status: 'Ready to Ship' });
+
+    res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching ready to ship orders:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch ready to ship orders',
+      error: error.message 
+    });
+  }
+};
+
+/**
+ * 获取质检通过的订单列表（商务工程师）
+ */
+exports.getQCPassedOrders = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const orders = await SalesOrder.find({ status: 'QC Passed' })
+      .populate('project', 'projectNumber projectName')
+      .populate('assigned_to', 'name email phone')
+      .populate('payment.final_payment_confirmed_by', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await SalesOrder.countDocuments({ status: 'QC Passed' });
+
+    res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching QC passed orders:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch QC passed orders',
+      error: error.message 
+    });
+  }
+};
+
+/**
  * 获取订单统计信息
  */
 exports.getOrderStatistics = async (req, res) => {
@@ -467,13 +770,16 @@ exports.getOrderStatistics = async (req, res) => {
     const pendingOrders = await SalesOrder.countDocuments({ status: 'Pending' });
     const confirmedOrders = await SalesOrder.countDocuments({ status: 'Confirmed' });
     const inProductionOrders = await SalesOrder.countDocuments({ status: 'In Production' });
+    const awaitingQCOrders = await SalesOrder.countDocuments({ status: 'Awaiting QC' });
+    const qcPassedOrders = await SalesOrder.countDocuments({ status: 'QC Passed' });
+    const readyToShipOrders = await SalesOrder.countDocuments({ status: 'Ready to Ship' });
     const shippedOrders = await SalesOrder.countDocuments({ status: 'Shipped' });
     const deliveredOrders = await SalesOrder.countDocuments({ status: 'Delivered' });
     const completedOrders = await SalesOrder.countDocuments({ status: 'Completed' });
 
     // 计算总收入（已确认的订单）
     const revenueResult = await SalesOrder.aggregate([
-      { $match: { status: { $in: ['Confirmed', 'In Production', 'Shipped', 'Delivered', 'Completed'] } } },
+      { $match: { status: { $in: ['Confirmed', 'In Production', 'Awaiting QC', 'QC Passed', 'Ready to Ship', 'Shipped', 'Delivered', 'Completed'] } } },
       { $group: { _id: null, totalRevenue: { $sum: '$financial.total_amount' } } }
     ]);
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;

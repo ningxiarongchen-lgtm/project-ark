@@ -27,7 +27,16 @@ const selectionSchema = new mongoose.Schema({
   // - needs_manual_override: 是否需要手动操作装置
   // - max_budget: 最大预算
   // - special_requirements: 其他要求
+  // - fail_safe_position: 故障安全位置 ('Fail Close' / 'Fail Open' / 'Not Applicable')
   // 以及任何其他前端发送的选型参数
+  
+  // 故障安全位置（独立字段，用于单作用执行器）
+  fail_safe_position: {
+    type: String,
+    enum: ['Fail Close', 'Fail Open', 'Not Applicable'],
+    default: 'Not Applicable',
+    trim: true
+  },
   
   // 选中的执行器配置
   selected_actuator: {
@@ -144,7 +153,7 @@ const projectSchema = new mongoose.Schema({
   // 项目状态
   project_status: {
     type: String,
-    enum: ['草稿', '进行中', '审核中', '已报价', '已确认', '已完成', '已取消'],
+    enum: ['草稿', '进行中', '选型进行中', '已提交审核', '选型修正中', '已报价', '已确认', '已完成', '已取消'],
     default: '草稿'
   },
   
@@ -424,7 +433,283 @@ const projectSchema = new mongoose.Schema({
   internal_notes: {
     type: String,
     trim: true
-  }
+  },
+  
+  // 🔒 技术清单版本管理
+  technical_list_versions: [{
+    // 版本号
+    version: {
+      type: String,
+      required: true,
+      trim: true
+      // 例如: 'v1.0', 'v2.0'
+    },
+    
+    // 创建时间
+    created_at: {
+      type: Date,
+      default: Date.now,
+      required: true
+    },
+    
+    // 创建者（技术工程师）
+    created_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true
+    },
+    
+    // 版本状态
+    status: {
+      type: String,
+      enum: ['草稿', '已提交', '已驳回', '已确认'],
+      default: '草稿'
+    },
+    
+    // 选型配置快照（该版本的技术清单）
+    selections_snapshot: [selectionSchema],
+    
+    // 版本说明
+    notes: {
+      type: String,
+      trim: true
+    }
+  }],
+  
+  // 🔒 当前活动的技术清单版本号
+  current_technical_version: {
+    type: String,
+    trim: true
+    // 例如: 'v2.0'
+  },
+  
+  // 🔒 是否锁定技术清单（技术工程师提交后锁定）
+  technical_list_locked: {
+    type: Boolean,
+    default: false
+  },
+  
+  // 🔒 锁定时间
+  technical_list_locked_at: {
+    type: Date
+  },
+  
+  // 🔒 报价BOM基于的技术清单版本号
+  quotation_based_on_version: {
+    type: String,
+    trim: true
+    // 例如: 'v1.0', 'v2.0', 记录此报价基于哪个技术清单版本
+  },
+  
+  // 🔒 项目锁定状态（转化为合同订单后锁定，防止修改报价）
+  is_locked: {
+    type: Boolean,
+    default: false
+  },
+  
+  // 🔒 锁定时间
+  locked_at: {
+    type: Date
+  },
+  
+  // 🔒 锁定原因
+  locked_reason: {
+    type: String,
+    trim: true
+    // 例如: '已转化为合同订单', '已签订合同'
+  },
+  
+  // 🔒 报价BOM（商务工程师从技术清单生成的报价物料清单）
+  quotation_bom: [{
+    // 项目类型
+    item_type: {
+      type: String,
+      required: true,
+      enum: ['Actuator', 'Manual Override', 'Accessory', 'Valve', 'Manual', 'Other'],
+      trim: true
+    },
+    
+    // 型号名称
+    model_name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    
+    // 数量
+    quantity: {
+      type: Number,
+      required: true,
+      min: [1, '数量必须大于0'],
+      default: 1
+    },
+    
+    // 基础价格（来自系统）
+    base_price: {
+      type: Number,
+      required: true,
+      min: [0, '基础价格不能为负数']
+    },
+    
+    // 成本价格（用于利润计算，仅授权角色可见）
+    cost_price: {
+      type: Number,
+      min: [0, '成本价格不能为负数']
+    },
+    
+    // 临时定价规则
+    pricing_rules: {
+      // 定价类型: 'standard' | 'tiered' | 'manual_override'
+      type: {
+        type: String,
+        enum: ['standard', 'tiered', 'manual_override'],
+        default: 'standard'
+      },
+      
+      // 阶梯定价规则
+      tiers: [{
+        min_quantity: {
+          type: Number,
+          required: true,
+          min: 1
+        },
+        unit_price: {
+          type: Number,
+          required: true,
+          min: 0
+        }
+      }],
+      
+      // 手动覆盖价格
+      manual_price: {
+        type: Number,
+        min: 0
+      },
+      
+      // 折扣百分比（用于显示）
+      discount_percentage: {
+        type: Number,
+        min: 0,
+        max: 100
+      },
+      
+      // 定价决策备注
+      notes: String
+    },
+    
+    // 计算后的单价（基于定价规则和数量）
+    unit_price: {
+      type: Number,
+      required: true,
+      min: [0, '单价不能为负数']
+    },
+    
+    // 总价
+    total_price: {
+      type: Number,
+      required: true,
+      min: [0, '总价不能为负数']
+    },
+    
+    // 描述（可选）
+    description: {
+      type: String,
+      trim: true
+    },
+    
+    // 规格详情（可选）
+    specifications: {
+      type: mongoose.Schema.Types.Mixed
+    },
+    
+    // 备注（可选）
+    notes: {
+      type: String,
+      trim: true
+    },
+    
+    // 覆盖的位号（可选）
+    covered_tags: [{
+      type: String,
+      trim: true,
+      uppercase: true
+    }],
+    
+    // 是否为手动条目
+    is_manual: {
+      type: Boolean,
+      default: false
+    },
+    
+    // 创建时间
+    created_at: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  
+  // 🔒 商务工程师的修改建议列表
+  modification_requests: [{
+    // 请求ID
+    request_id: {
+      type: String,
+      default: () => `REQ-${Date.now()}`
+    },
+    
+    // 请求时间
+    requested_at: {
+      type: Date,
+      default: Date.now
+    },
+    
+    // 请求人（商务工程师）
+    requested_by: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    
+    // 针对的技术清单版本
+    target_version: {
+      type: String,
+      trim: true
+    },
+    
+    // 修改建议内容
+    suggestions: [{
+      // 位号
+      tag_number: String,
+      
+      // 原型号
+      original_model: String,
+      
+      // 建议型号
+      suggested_model: String,
+      
+      // 修改原因
+      reason: String,
+      
+      // 建议详情
+      details: String
+    }],
+    
+    // 请求状态
+    status: {
+      type: String,
+      enum: ['待处理', '处理中', '已接受', '已拒绝'],
+      default: '待处理'
+    },
+    
+    // 技术工程师回复
+    response: {
+      type: String,
+      trim: true
+    },
+    
+    // 回复时间
+    responded_at: {
+      type: Date
+    }
+  }]
   
 }, {
   timestamps: true
@@ -594,6 +879,202 @@ projectSchema.statics.getUserProjects = async function(userId) {
       { assigned_to: userId }
     ]
   }).sort({ createdAt: -1 });
+};
+
+// 🔒 实例方法：技术工程师提交技术清单（锁定版本）
+projectSchema.methods.submitTechnicalList = function(userId, notes = '') {
+  // 生成新版本号
+  const versionNumber = this.technical_list_versions.length + 1;
+  const version = `v${versionNumber}.0`;
+  
+  // 创建版本快照
+  const versionSnapshot = {
+    version: version,
+    created_by: userId,
+    status: '已提交',
+    selections_snapshot: JSON.parse(JSON.stringify(this.selections)), // 深拷贝
+    notes: notes || `技术清单版本 ${version} 提交审核`,
+    created_at: new Date()
+  };
+  
+  this.technical_list_versions.push(versionSnapshot);
+  this.current_technical_version = version;
+  this.technical_list_locked = true;
+  this.technical_list_locked_at = new Date();
+  this.project_status = '已提交审核';
+  
+  return this.save();
+};
+
+// 🔒 实例方法：商务工程师驳回并提出修改建议
+projectSchema.methods.rejectWithSuggestions = function(userId, suggestions, targetVersion) {
+  // 创建修改请求
+  const modificationRequest = {
+    requested_by: userId,
+    target_version: targetVersion || this.current_technical_version,
+    suggestions: suggestions,
+    status: '待处理',
+    requested_at: new Date()
+  };
+  
+  this.modification_requests.push(modificationRequest);
+  
+  // 更新版本状态为已驳回
+  const versionIndex = this.technical_list_versions.findIndex(
+    v => v.version === (targetVersion || this.current_technical_version)
+  );
+  if (versionIndex !== -1) {
+    this.technical_list_versions[versionIndex].status = '已驳回';
+  }
+  
+  // 解锁技术清单，允许技术工程师修改
+  this.technical_list_locked = false;
+  this.project_status = '选型修正中';
+  
+  return this.save();
+};
+
+// 🔒 实例方法：技术工程师回复修改建议
+projectSchema.methods.respondToModificationRequest = function(requestId, response, accept = true) {
+  const request = this.modification_requests.find(r => r.request_id === requestId);
+  
+  if (request) {
+    request.response = response;
+    request.status = accept ? '已接受' : '已拒绝';
+    request.responded_at = new Date();
+    
+    if (accept) {
+      // 如果接受建议，可以选择应用建议的修改
+      this.project_status = '选型进行中';
+    }
+  }
+  
+  return this.save();
+};
+
+// 🔒 实例方法：商务工程师确认技术清单版本
+projectSchema.methods.confirmTechnicalVersion = function(version) {
+  const versionIndex = this.technical_list_versions.findIndex(v => v.version === version);
+  
+  if (versionIndex !== -1) {
+    this.technical_list_versions[versionIndex].status = '已确认';
+    this.current_technical_version = version;
+    // 保持锁定状态，商务可以基于此版本进行报价
+    this.technical_list_locked = true;
+  }
+  
+  return this.save();
+};
+
+// 🔒 实例方法：获取当前活动的技术清单版本
+projectSchema.methods.getCurrentTechnicalVersion = function() {
+  if (!this.current_technical_version) {
+    return null;
+  }
+  
+  return this.technical_list_versions.find(
+    v => v.version === this.current_technical_version
+  );
+};
+
+// 🔒 实例方法：获取待处理的修改请求
+projectSchema.methods.getPendingModificationRequests = function() {
+  return this.modification_requests.filter(r => r.status === '待处理');
+};
+
+// 🔒 实例方法：从技术清单生成报价BOM
+projectSchema.methods.generateQuotationBomFromTechnicalList = function(version) {
+  // 如果未指定版本，使用当前活动版本
+  const targetVersion = version || this.current_technical_version;
+  
+  if (!targetVersion) {
+    throw new Error('未找到技术清单版本');
+  }
+  
+  // 查找指定版本的技术清单
+  const technicalVersion = this.technical_list_versions.find(
+    v => v.version === targetVersion
+  );
+  
+  if (!technicalVersion) {
+    throw new Error(`未找到技术清单版本 ${targetVersion}`);
+  }
+  
+  if (technicalVersion.status !== '已提交' && technicalVersion.status !== '已确认') {
+    throw new Error(`技术清单版本 ${targetVersion} 尚未提交或确认`);
+  }
+  
+  // 从技术清单快照生成报价BOM
+  const quotationItems = [];
+  
+  if (technicalVersion.selections_snapshot && technicalVersion.selections_snapshot.length > 0) {
+    technicalVersion.selections_snapshot.forEach(selection => {
+      // 添加执行器
+      if (selection.selected_actuator && selection.selected_actuator.actuator_id) {
+        const basePrice = selection.selected_actuator.price || 0;
+        quotationItems.push({
+          item_type: 'Actuator',
+          model_name: selection.selected_actuator.final_model_name || 
+                     selection.selected_actuator.recommended_model || 
+                     selection.selected_actuator.model_base,
+          quantity: 1,
+          base_price: basePrice,
+          unit_price: basePrice,
+          total_price: basePrice,
+          description: `位号: ${selection.tag_number || 'N/A'}`,
+          specifications: selection.input_params,
+          notes: selection.notes,
+          covered_tags: selection.tag_number ? [selection.tag_number] : [],
+          is_manual: false
+        });
+      }
+      
+      // 添加手动操作装置
+      if (selection.selected_override && selection.selected_override.override_id) {
+        const basePrice = selection.selected_override.price || 0;
+        quotationItems.push({
+          item_type: 'Manual Override',
+          model_name: selection.selected_override.model,
+          quantity: 1,
+          base_price: basePrice,
+          unit_price: basePrice,
+          total_price: basePrice,
+          description: `位号: ${selection.tag_number || 'N/A'}`,
+          notes: selection.selected_override.notes,
+          covered_tags: selection.tag_number ? [selection.tag_number] : [],
+          is_manual: false
+        });
+      }
+      
+      // 添加配件
+      if (selection.selected_accessories && selection.selected_accessories.length > 0) {
+        selection.selected_accessories.forEach(accessory => {
+          const quantity = accessory.quantity || 1;
+          const unitPrice = accessory.unit_price || 0;
+          const totalPrice = accessory.total_price || (unitPrice * quantity);
+          
+          quotationItems.push({
+            item_type: 'Accessory',
+            model_name: accessory.name,
+            quantity: quantity,
+            base_price: unitPrice,
+            unit_price: unitPrice,
+            total_price: totalPrice,
+            description: accessory.category || '',
+            notes: accessory.notes,
+            covered_tags: selection.tag_number ? [selection.tag_number] : [],
+            is_manual: false
+          });
+        });
+      }
+    });
+  }
+  
+  // 设置报价BOM和版本号
+  this.quotation_bom = quotationItems;
+  this.quotation_based_on_version = targetVersion;
+  
+  return this.save();
 };
 
 module.exports = mongoose.model('NewProject', projectSchema);

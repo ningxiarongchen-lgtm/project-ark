@@ -8,14 +8,18 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Row, Col, Card, Statistic, Button, Table, Tag, Space, Typography,
-  Progress, Alert, Spin
+  Progress, Alert, Spin, Badge, Empty, Divider
 } from 'antd'
 import { 
   UserOutlined, ProjectOutlined, ShoppingCartOutlined, 
   ToolOutlined, TeamOutlined, RiseOutlined, SettingOutlined,
-  DashboardOutlined
+  DashboardOutlined, CheckCircleOutlined, CloseCircleOutlined,
+  EyeOutlined, FileDoneOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
+import axios from 'axios'
+import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
 
@@ -23,6 +27,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [pendingOrdersLoading, setPendingOrdersLoading] = useState(false)
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalProjects: 0,
@@ -30,9 +35,11 @@ const AdminDashboard = () => {
     totalRevenue: 0,
     activeTickets: 0,
   })
+  const [pendingApprovalOrders, setPendingApprovalOrders] = useState([])
 
   useEffect(() => {
     fetchAdminStats()
+    fetchPendingApprovalOrders()
   }, [])
 
   const fetchAdminStats = async () => {
@@ -53,6 +60,20 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Failed to fetch admin stats:', error)
       setLoading(false)
+    }
+  }
+
+  const fetchPendingApprovalOrders = async () => {
+    setPendingOrdersLoading(true)
+    try {
+      const response = await axios.get('/api/purchase-orders/pending-admin-approval')
+      if (response.data.success) {
+        setPendingApprovalOrders(response.data.data || [])
+      }
+    } catch (error) {
+      console.error('获取待审批订单失败:', error)
+    } finally {
+      setPendingOrdersLoading(false)
     }
   }
 
@@ -80,20 +101,92 @@ const AdminDashboard = () => {
     },
   ]
 
+  const pendingApprovalColumns = [
+    {
+      title: '订单号',
+      dataIndex: 'order_number',
+      key: 'order_number',
+      render: (text) => <strong style={{ color: '#1890ff' }}>{text}</strong>
+    },
+    {
+      title: '供应商',
+      dataIndex: ['supplier_id', 'name'],
+      key: 'supplier',
+    },
+    {
+      title: '订单金额',
+      dataIndex: 'total_amount',
+      key: 'total_amount',
+      render: (amount) => (
+        <strong style={{ color: '#f5222d' }}>
+          ¥{(amount || 0).toLocaleString()}
+        </strong>
+      ),
+      sorter: (a, b) => (a.total_amount || 0) - (b.total_amount || 0),
+    },
+    {
+      title: '创建人',
+      dataIndex: ['created_by', 'full_name'],
+      key: 'creator',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => navigate(`/purchase-orders/${record._id}`)}
+        >
+          查看审批
+        </Button>
+      )
+    }
+  ]
+
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: 'white' }}>
-              管理员控制台
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              欢迎回来，{user?.name}！Welcome to Project Ark - 系统运行正常
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
+
+        {/* 待审批提醒 - 如果有待审批订单，显示醒目提示 */}
+        {pendingApprovalOrders.length > 0 && (
+          <Alert
+            message={
+              <Space>
+                <FileDoneOutlined style={{ fontSize: 18 }} />
+                <strong>待审批提醒</strong>
+              </Space>
+            }
+            description={`您有 ${pendingApprovalOrders.length} 个采购订单待审批，请及时处理！`}
+            type="warning"
+            showIcon={false}
+            style={{ marginBottom: 24 }}
+            action={
+              <Button 
+                type="primary" 
+                size="small"
+                onClick={() => {
+                  const element = document.getElementById('pending-approvals')
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }
+                }}
+              >
+                立即查看
+              </Button>
+            }
+          />
+        )}
 
         {/* 系统统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -143,6 +236,65 @@ const AdminDashboard = () => {
             </Card>
           </Col>
         </Row>
+
+        {/* 待我审批区域 */}
+        <Card 
+          id="pending-approvals"
+          title={
+            <Space>
+              <FileDoneOutlined style={{ color: '#faad14', fontSize: 20 }} />
+              <span style={{ fontSize: 18 }}>待我审批</span>
+              {pendingApprovalOrders.length > 0 && (
+                <Badge count={pendingApprovalOrders.length} showZero={false} />
+              )}
+            </Space>
+          }
+          style={{ marginBottom: 24 }}
+          extra={
+            <Button 
+              icon={<ToolOutlined />}
+              onClick={fetchPendingApprovalOrders}
+              loading={pendingOrdersLoading}
+            >
+              刷新
+            </Button>
+          }
+        >
+          {pendingOrdersLoading ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin />
+            </div>
+          ) : pendingApprovalOrders.length > 0 ? (
+            <>
+              <Alert
+                message="审批说明"
+                description="以下是来自"临时供应商"且订单金额超过 ¥100,000 的采购订单，需要您进行审批。合作供应商的订单无需审批，可直接进入商务审核流程。"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Table
+                columns={pendingApprovalColumns}
+                dataSource={pendingApprovalOrders}
+                rowKey="_id"
+                pagination={{
+                  pageSize: 5,
+                  showTotal: (total) => `共 ${total} 个待审批订单`,
+                }}
+                scroll={{ x: 800 }}
+              />
+            </>
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <span style={{ color: '#999' }}>
+                  暂无待审批的采购订单
+                </span>
+              }
+            />
+          )}
+        </Card>
 
         <Row gutter={[16, 16]}>
           {/* 快捷操作 */}

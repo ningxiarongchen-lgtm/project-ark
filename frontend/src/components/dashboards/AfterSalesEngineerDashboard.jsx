@@ -16,6 +16,7 @@ import {
   SmileOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
 
@@ -107,17 +108,8 @@ const AfterSalesEngineerDashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: '#333' }}>
-              <CustomerServiceOutlined /> 售后工程师工作台
-            </Title>
-            <Text style={{ color: '#666' }}>
-              Welcome to Project Ark，{user?.name}！客户满意度 <Rate disabled value={stats.satisfaction} style={{ fontSize: 14 }} />
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 服务统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

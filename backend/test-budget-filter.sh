@@ -18,7 +18,7 @@ echo ""
 echo -e "${YELLOW}📝 登录获取token...${NC}"
 TOKEN=$(curl -s -X POST ${BASE_URL}/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@cmax.com","password":"admin123"}' \
+  -d '{"email":"admin@projectark.com","password":"admin123"}' \
   | grep -o '"token":"[^"]*' | cut -d'"' -f4)
 
 if [ -z "$TOKEN" ]; then

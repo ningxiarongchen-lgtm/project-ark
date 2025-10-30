@@ -14,14 +14,19 @@ import {
   Row,
   Col,
   Divider,
-  Popconfirm
+  Popconfirm,
+  Tag,
+  notification
 } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   SaveOutlined,
   ArrowLeftOutlined,
-  ShoppingCartOutlined
+  ShoppingCartOutlined,
+  CheckCircleOutlined,
+  SafetyOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import { purchaseOrdersAPI, suppliersAPI } from '../services/api';
 import dayjs from 'dayjs';
@@ -63,11 +68,17 @@ const CreatePurchaseOrder = () => {
     calculateTotal();
   }, [items]);
 
-  // 获取供应商列表
+  // 获取供应商列表 - 获取所有合格的供应商（合作+临时）
   const fetchSuppliers = async () => {
     try {
-      const response = await suppliersAPI.getAll({ status: 'active' });
-      setSuppliers(response.data.data);
+      const response = await suppliersAPI.getAll();
+      // 只显示"合作供应商"和"临时供应商"
+      const validSuppliers = response.data.data.filter(
+        supplier => 
+          supplier.status === '合作供应商 (Partner)' || 
+          supplier.status === '临时供应商 (Temporary)'
+      );
+      setSuppliers(validSuppliers);
     } catch (error) {
       message.error('获取供应商列表失败');
       console.error(error);
@@ -194,19 +205,95 @@ const CreatePurchaseOrder = () => {
       };
 
       if (isEditMode) {
-        await purchaseOrdersAPI.update(id, orderData);
+        const response = await purchaseOrdersAPI.update(id, orderData);
         message.success('采购订单更新成功');
+        navigate('/purchase-orders');
       } else {
-        await purchaseOrdersAPI.create(orderData);
-        message.success('采购订单创建成功');
-      }
+        // 创建订单 - 后端会自动判断审批流程
+        const response = await purchaseOrdersAPI.create(orderData);
+        
+        // 获取返回的订单信息和风控信息
+        const { data, message: responseMessage, riskControl } = response.data;
+        
+        // 显示详细的成功通知
+        const statusMessages = {
+          '待管理员审批 (Pending Admin Approval)': {
+            icon: <SafetyOutlined style={{ color: '#faad14' }} />,
+            description: '该订单来自临时供应商且金额超过 ¥100,000，已提交给管理员审批。',
+            color: '#faad14'
+          },
+          '待商务审核 (Pending Commercial Review)': {
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            description: riskControl?.isPartnerSupplier 
+              ? '该订单来自合作供应商，已直接进入商务审核流程。'
+              : '该订单金额在阈值范围内，已直接进入商务审核流程。',
+            color: '#52c41a'
+          }
+        };
 
-      navigate('/purchase-orders');
+        const statusInfo = statusMessages[data.status] || {
+          icon: <CheckCircleOutlined style={{ color: '#1890ff' }} />,
+          description: '订单已成功创建。',
+          color: '#1890ff'
+        };
+
+        // 显示通知
+        notification.success({
+          message: (
+            <span>
+              {statusInfo.icon}
+              <strong style={{ marginLeft: 8 }}>采购订单创建成功！</strong>
+            </span>
+          ),
+          description: (
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>订单号：</strong>{data.order_number}
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>订单金额：</strong>
+                <span style={{ color: '#f5222d', fontWeight: 'bold' }}>
+                  ¥{(riskControl?.totalAmount || 0).toLocaleString()}
+                </span>
+              </div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>当前状态：</strong>
+                <Tag color={statusInfo.color} style={{ marginLeft: 4 }}>
+                  {data.status}
+                </Tag>
+              </div>
+              <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
+                {statusInfo.description}
+              </div>
+            </div>
+          ),
+          duration: 8,
+          placement: 'topRight'
+        });
+
+        // 延迟跳转，让用户看到通知
+        setTimeout(() => {
+          navigate('/purchase-orders');
+        }, 1000);
+      }
     } catch (error) {
-      message.error(
-        error.response?.data?.message ||
-          (isEditMode ? '更新失败' : '创建失败')
-      );
+      const errorMsg = error.response?.data?.message || (isEditMode ? '更新失败' : '创建失败');
+      const hint = error.response?.data?.hint;
+      
+      notification.error({
+        message: '操作失败',
+        description: (
+          <div>
+            <div>{errorMsg}</div>
+            {hint && (
+              <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                💡 提示：{hint}
+              </div>
+            )}
+          </div>
+        ),
+        duration: 6
+      });
       console.error(error);
     } finally {
       setLoading(false);
@@ -398,21 +485,39 @@ const CreatePurchaseOrder = () => {
                   name="supplier_id"
                   label="供应商"
                   rules={[{ required: true, message: '请选择供应商' }]}
+                  tooltip="选择供应商时，合作供应商的订单无需审批；临时供应商的大额订单（>10万）需要管理员审批"
                 >
                   <Select
                     placeholder="请选择供应商"
                     showSearch
-                    filterOption={(input, option) =>
-                      option.children
-                        .toLowerCase()
-                        .indexOf(input.toLowerCase()) >= 0
-                    }
+                    optionFilterProp="children"
+                    filterOption={(input, option) => {
+                      const name = option.children?.props?.children?.[0]?.props?.children || '';
+                      return name.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+                    }}
                   >
-                    {suppliers.map((supplier) => (
-                      <Select.Option key={supplier._id} value={supplier._id}>
-                        {supplier.name}
-                      </Select.Option>
-                    ))}
+                    {suppliers.map((supplier) => {
+                      // 确定供应商类型的标签样式
+                      const isPartner = supplier.status === '合作供应商 (Partner)';
+                      const tagColor = isPartner ? 'green' : 'blue';
+                      const tagIcon = isPartner ? <CheckCircleOutlined /> : <UserOutlined />;
+                      const tagText = isPartner ? '合作' : '临时';
+                      
+                      return (
+                        <Select.Option key={supplier._id} value={supplier._id}>
+                          <Space>
+                            <span>{supplier.name}</span>
+                            <Tag 
+                              color={tagColor} 
+                              icon={tagIcon}
+                              style={{ fontSize: 11, marginLeft: 4 }}
+                            >
+                              {tagText}
+                            </Tag>
+                          </Space>
+                        </Select.Option>
+                      );
+                    })}
                   </Select>
                 </Form.Item>
               </Col>
@@ -423,28 +528,16 @@ const CreatePurchaseOrder = () => {
               </Col>
             </Row>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item name="payment_terms" label="付款条款">
-                  <Select>
-                    <Select.Option value="货到付款">货到付款</Select.Option>
-                    <Select.Option value="预付30%">预付30%</Select.Option>
-                    <Select.Option value="预付50%">预付50%</Select.Option>
-                    <Select.Option value="月结30天">月结30天</Select.Option>
-                    <Select.Option value="月结60天">月结60天</Select.Option>
-                    <Select.Option value="其他">其他</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="status" label="订单状态">
-                  <Select>
-                    <Select.Option value="draft">草稿</Select.Option>
-                    <Select.Option value="pending">待审核</Select.Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+            <Form.Item name="payment_terms" label="付款条款">
+              <Select>
+                <Select.Option value="货到付款">货到付款</Select.Option>
+                <Select.Option value="预付30%">预付30%</Select.Option>
+                <Select.Option value="预付50%">预付50%</Select.Option>
+                <Select.Option value="月结30天">月结30天</Select.Option>
+                <Select.Option value="月结60天">月结60天</Select.Option>
+                <Select.Option value="其他">其他</Select.Option>
+              </Select>
+            </Form.Item>
           </Card>
 
           <Card title="收货信息" style={{ marginBottom: 16 }}>

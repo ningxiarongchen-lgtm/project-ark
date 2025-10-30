@@ -53,8 +53,13 @@ const ProductionSchedule = () => {
   // 筛选条件
   const [filters, setFilters] = useState({
     status: undefined,
+    materialStatus: undefined, // 🔒 新增物料状态筛选
     dateRange: null
   })
+  
+  // 🔒 物料详情Modal
+  const [materialDetailModalVisible, setMaterialDetailModalVisible] = useState(false)
+  const [selectedMaterialDetails, setSelectedMaterialDetails] = useState(null)
 
   // APS排程Modal
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false)
@@ -109,7 +114,8 @@ const ProductionSchedule = () => {
       const params = {
         page: 1,
         limit: 100,
-        status: filters.status
+        status: filters.status,
+        material_readiness_status: filters.materialStatus // 🔒 新增物料状态筛选
       }
 
       if (filters.dateRange && filters.dateRange.length === 2) {
@@ -125,6 +131,18 @@ const ProductionSchedule = () => {
     } finally {
       setLoading(false)
     }
+  }
+  
+  // 🔒 显示物料详情
+  const showMaterialDetails = (record) => {
+    setSelectedMaterialDetails({
+      orderNumber: record.productionOrderNumber,
+      status: record.material_readiness_status,
+      updatedAt: record.material_status_updated_at,
+      shortageDetails: record.material_shortage_details || [],
+      productionItems: record.productionItems || []
+    })
+    setMaterialDetailModalVisible(true)
   }
 
   // 执行APS智能排程
@@ -259,6 +277,40 @@ const ProductionSchedule = () => {
           'Completed': '已完成'
         }
         return <Tag color={colorMap[status]}>{nameMap[status] || status}</Tag>
+      }
+    },
+    {
+      title: '🔧 物料齐套',
+      dataIndex: 'material_readiness_status',
+      key: 'material_readiness_status',
+      width: 130,
+      fixed: 'left',
+      render: (status, record) => {
+        const colorMap = {
+          '待分析': 'default',
+          '部分可用': 'warning',
+          '全部可用(齐套)': 'success',
+          '采购延迟': 'error'
+        }
+        const iconMap = {
+          '待分析': '⏳',
+          '部分可用': '⚠️',
+          '全部可用(齐套)': '✅',
+          '采购延迟': '🔴'
+        }
+        return (
+          <Tag 
+            color={colorMap[status] || 'default'}
+            style={{ 
+              fontWeight: status === '全部可用(齐套)' ? 'bold' : 'normal',
+              fontSize: status === '全部可用(齐套)' ? '14px' : '12px',
+              cursor: 'pointer'
+            }}
+            onClick={() => showMaterialDetails(record)}
+          >
+            {iconMap[status]} {status || '待分析'}
+          </Tag>
+        )
       }
     },
     {
@@ -452,6 +504,22 @@ const ProductionSchedule = () => {
               <Option value="待质检">待质检</Option>
               <Option value="已完成">已完成</Option>
             </Select>
+            
+            {/* 🔒 物料齐套状态筛选 */}
+            <Select
+              placeholder="🔧 物料齐套状态"
+              allowClear
+              style={{ width: 170 }}
+              value={filters.materialStatus}
+              onChange={(value) => {
+                setFilters({ ...filters, materialStatus: value })
+              }}
+            >
+              <Option value="全部可用(齐套)">✅ 全部可用(齐套)</Option>
+              <Option value="部分可用">⚠️ 部分可用</Option>
+              <Option value="采购延迟">🔴 采购延迟</Option>
+              <Option value="待分析">⏳ 待分析</Option>
+            </Select>
 
             <RangePicker
               placeholder={['计划开始', '计划结束']}
@@ -591,6 +659,154 @@ const ProductionSchedule = () => {
               showIcon
               style={{ marginTop: 16 }}
             />
+          </div>
+        )}
+      </Modal>
+      
+      {/* 🔒 物料详情Modal */}
+      <Modal
+        title={
+          <Space>
+            <ToolOutlined style={{ color: '#1890ff' }} />
+            物料准备详情
+          </Space>
+        }
+        open={materialDetailModalVisible}
+        onCancel={() => setMaterialDetailModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setMaterialDetailModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={800}
+      >
+        {selectedMaterialDetails && (
+          <div>
+            <Card size="small" style={{ marginBottom: 16, background: '#f5f5f5' }}>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <strong>生产订单:</strong> {selectedMaterialDetails.orderNumber}
+                </Col>
+                <Col span={8}>
+                  <strong>当前状态:</strong>{' '}
+                  {selectedMaterialDetails.status === '全部可用(齐套)' ? (
+                    <Tag color="success">✅ {selectedMaterialDetails.status}</Tag>
+                  ) : selectedMaterialDetails.status === '部分可用' ? (
+                    <Tag color="warning">⚠️ {selectedMaterialDetails.status}</Tag>
+                  ) : selectedMaterialDetails.status === '采购延迟' ? (
+                    <Tag color="error">🔴 {selectedMaterialDetails.status}</Tag>
+                  ) : (
+                    <Tag color="default">⏳ {selectedMaterialDetails.status}</Tag>
+                  )}
+                </Col>
+                <Col span={8}>
+                  <strong>更新时间:</strong>{' '}
+                  {selectedMaterialDetails.updatedAt 
+                    ? dayjs(selectedMaterialDetails.updatedAt).format('YYYY-MM-DD HH:mm')
+                    : '-'
+                  }
+                </Col>
+              </Row>
+            </Card>
+
+            {/* 生产物料需求 */}
+            <h4 style={{ marginBottom: 12 }}>📦 生产物料需求</h4>
+            <Table
+              dataSource={selectedMaterialDetails.productionItems}
+              rowKey={(record, index) => index}
+              pagination={false}
+              size="small"
+              style={{ marginBottom: 24 }}
+              columns={[
+                {
+                  title: '物料名称',
+                  dataIndex: 'model_name',
+                  key: 'model_name',
+                  render: (text) => <strong>{text}</strong>
+                },
+                {
+                  title: '需求数量',
+                  dataIndex: 'ordered_quantity',
+                  key: 'ordered_quantity',
+                  render: (qty) => <Tag color="blue">{qty}</Tag>
+                },
+                {
+                  title: '生产状态',
+                  dataIndex: 'production_status',
+                  key: 'production_status',
+                  render: (status) => {
+                    const colorMap = {
+                      'Pending': 'default',
+                      'In Production': 'processing',
+                      'Completed': 'success'
+                    }
+                    return <Tag color={colorMap[status] || 'default'}>{status}</Tag>
+                  }
+                }
+              ]}
+            />
+
+            {/* 缺料明细 */}
+            {selectedMaterialDetails.shortageDetails.length > 0 ? (
+              <>
+                <h4 style={{ marginBottom: 12 }}>⚠️ 缺料明细</h4>
+                <Table
+                  dataSource={selectedMaterialDetails.shortageDetails}
+                  rowKey={(record, index) => index}
+                  pagination={false}
+                  size="small"
+                  columns={[
+                    {
+                      title: '物料名称',
+                      dataIndex: 'item_name',
+                      key: 'item_name',
+                      render: (text) => <strong style={{ color: '#ff4d4f' }}>{text}</strong>
+                    },
+                    {
+                      title: '需求数量',
+                      dataIndex: 'required_quantity',
+                      key: 'required_quantity',
+                      render: (qty) => <Tag color="blue">{qty}</Tag>
+                    },
+                    {
+                      title: '可用数量',
+                      dataIndex: 'available_quantity',
+                      key: 'available_quantity',
+                      render: (qty) => <Tag color="green">{qty}</Tag>
+                    },
+                    {
+                      title: '缺料数量',
+                      dataIndex: 'shortage_quantity',
+                      key: 'shortage_quantity',
+                      render: (qty) => <Tag color="red">{qty}</Tag>
+                    },
+                    {
+                      title: '预计到货',
+                      dataIndex: 'expected_arrival_date',
+                      key: 'expected_arrival_date',
+                      render: (date) => {
+                        if (!date) return '-'
+                        const arrivalDate = dayjs(date)
+                        const isOverdue = arrivalDate.isBefore(dayjs())
+                        return (
+                          <span style={{ color: isOverdue ? '#ff4d4f' : '#52c41a' }}>
+                            {arrivalDate.format('YYYY-MM-DD')}
+                            {isOverdue && ' (延迟)'}
+                          </span>
+                        )
+                      }
+                    }
+                  ]}
+                />
+              </>
+            ) : (
+              <Alert
+                message="✅ 物料齐套"
+                description="所有生产物料已准备就绪，可以安排全面生产！"
+                type="success"
+                showIcon
+              />
+            )}
           </div>
         )}
       </Modal>
