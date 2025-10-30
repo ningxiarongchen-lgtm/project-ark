@@ -10,6 +10,7 @@ const {
   updateSelection,
   removeSelection,
   getProjectStats,
+  getSalesEngineerStats,
   getTechnicalEngineers,
   assignTechnicalEngineer
 } = require('../controllers/projectController');
@@ -26,6 +27,7 @@ router.use(protect);
 
 // Statistics
 router.get('/stats/summary', getProjectStats);
+router.get('/stats/sales-engineer', authorize('Sales Engineer', 'Administrator'), getSalesEngineerStats);
 
 // Get technical engineers list
 router.get('/technical-engineers/list', getTechnicalEngineers);

@@ -651,4 +651,131 @@ exports.getProjectStats = async (req, res) => {
   }
 };
 
+// @desc    Get sales engineer dashboard stats
+// @route   GET /api/projects/stats/sales-engineer
+// @access  Private (Sales Engineer only)
+exports.getSalesEngineerStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // 基础查询条件 - 只看自己负责的项目
+    let baseQuery = {
+      $or: [
+        { owner: userId },
+        { createdBy: userId },
+        { assignedTo: userId }
+      ]
+    };
+    
+    // 管理员可以看所有项目
+    if (req.user.role === 'Administrator') {
+      baseQuery = {};
+    }
+    
+    // 1. 总项目数
+    const totalProjects = await Project.countDocuments(baseQuery);
+    
+    // 2. 待报价项目
+    const pendingQuotation = await Project.countDocuments({
+      ...baseQuery,
+      status: '待商务报价'
+    });
+    
+    // 3. 报价中
+    const quotationInProgress = await Project.countDocuments({
+      ...baseQuery,
+      status: '待商务报价'
+    });
+    
+    // 4. 已报价待确认
+    const quotationCompleted = await Project.countDocuments({
+      ...baseQuery,
+      status: '已报价-询价中'
+    });
+    
+    // 5. 待审核合同
+    const pendingContracts = await Project.countDocuments({
+      ...baseQuery,
+      status: '待商务审核合同'
+    });
+    
+    // 6. 待催款项目
+    const pendingPayments = await Project.countDocuments({
+      ...baseQuery,
+      status: '待预付款'
+    });
+    
+    // 7. 计算本月成交金额
+    const currentMonth = new Date();
+    currentMonth.setDate(1);
+    currentMonth.setHours(0, 0, 0, 0);
+    
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    const wonProjects = await Project.find({
+      ...baseQuery,
+      $or: [
+        { status: '合同已签订-赢单' },
+        { status: '赢单' }
+      ],
+      updatedAt: {
+        $gte: currentMonth,
+        $lt: nextMonth
+      }
+    });
+    
+    // 计算本月成交金额
+    let monthlyRevenue = 0;
+    wonProjects.forEach(project => {
+      if (project.bill_of_materials && Array.isArray(project.bill_of_materials)) {
+        const projectTotal = project.bill_of_materials.reduce((sum, item) => {
+          return sum + (item.total_price || 0);
+        }, 0);
+        monthlyRevenue += projectTotal;
+      }
+    });
+    
+    // 8. 待跟进客户数（已报价3天未更新的项目）
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    
+    const followUpProjects = await Project.find({
+      ...baseQuery,
+      status: '已报价-询价中',
+      updatedAt: { $lt: threeDaysAgo }
+    });
+    
+    // 提取唯一客户
+    const uniqueCustomers = new Set();
+    followUpProjects.forEach(project => {
+      if (project.client && project.client.name) {
+        uniqueCustomers.add(project.client.name);
+      }
+    });
+    
+    const followUpCustomers = uniqueCustomers.size;
+    
+    res.json({
+      success: true,
+      data: {
+        totalProjects,
+        pendingQuotation,
+        quotationInProgress,
+        quotationCompleted,
+        monthlyRevenue,
+        pendingContracts,
+        pendingPayments,
+        followUpCustomers
+      }
+    });
+  } catch (error) {
+    console.error('获取商务工程师统计数据失败:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+};
+
 

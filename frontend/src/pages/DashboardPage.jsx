@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom'
 // 引入各角色的专属仪表盘组件
 import AdminDashboard from '../components/dashboards/AdminDashboard'
 import TechnicalEngineerDashboard from '../components/dashboards/TechnicalEngineerDashboard'
-import EnhancedSalesEngineerDashboard from '../components/dashboards/EnhancedSalesEngineerDashboard'
+import SalesEngineerDashboard from '../components/dashboards/SalesEngineerDashboard'
 import SalesManagerDashboard from '../components/dashboards/SalesManagerDashboard'
 import ProcurementSpecialistDashboard from '../components/dashboards/ProcurementSpecialistDashboard'
 import ProductionPlannerDashboard from '../components/dashboards/ProductionPlannerDashboard'
@@ -62,7 +62,7 @@ const DashboardPage = () => {
       return <TechnicalEngineerDashboard />
 
     case 'Sales Engineer':
-      return <EnhancedSalesEngineerDashboard />
+      return <SalesEngineerDashboard />
 
     case 'Sales Manager':
       return <SalesManagerDashboard />
