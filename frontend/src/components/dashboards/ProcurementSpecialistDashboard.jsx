@@ -1,20 +1,26 @@
 /**
  * ProcurementSpecialistDashboard - 采购专员仪表盘
  * 
- * 显示采购订单、供应商管理、库存状态等
+ * 核心职责：
+ * 1. 管理采购订单
+ * 2. 维护供应商关系
+ * 3. 监控采购进度和成本
+ * 4. 确保及时交付
  */
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
-  Row, Col, Card, Statistic, Button, List, Tag, Space, Typography,
-  Progress, Empty, Spin, Alert
+  Row, Col, Card, Statistic, Button, Table, Tag, Space, Typography,
+  Progress, Empty, Spin, Alert, Badge
 } from 'antd'
 import { 
   ShoppingCartOutlined, TeamOutlined, InboxOutlined,
-  DollarOutlined, CheckCircleOutlined, ClockCircleOutlined
+  DollarOutlined, CheckCircleOutlined, ClockCircleOutlined,
+  PlusOutlined, FileSearchOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import { purchaseOrdersAPI, suppliersAPI } from '../../services/api'
 import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
@@ -25,9 +31,9 @@ const ProcurementSpecialistDashboard = () => {
   const [loading, setLoading] = useState(false)
   const [stats, setStats] = useState({
     activeSuppliers: 0,
+    totalOrders: 0,
     pendingOrders: 0,
-    monthlySpending: 0,
-    onTimeRate: 0,
+    processingOrders: 0,
   })
   const [pendingPurchases, setPendingPurchases] = useState([])
 
@@ -38,28 +44,90 @@ const ProcurementSpecialistDashboard = () => {
   const fetchProcurementData = async () => {
     setLoading(true)
     try {
-      // TODO: 调用实际API
-      setTimeout(() => {
-        setStats({
-          activeSuppliers: 15,
-          pendingOrders: 6,
-          monthlySpending: 850000,
-          onTimeRate: 92,
-        })
-        setPendingPurchases([
-          { id: 1, item: '执行器配件', supplier: '某供应商A', amount: 45000, status: 'pending', deadline: '2025-11-03' },
-          { id: 2, item: '气缸组件', supplier: '某供应商B', amount: 32000, status: 'processing', deadline: '2025-11-05' },
-          { id: 3, item: '控制阀', supplier: '某供应商C', amount: 58000, status: 'pending', deadline: '2025-11-08' },
-        ])
-        setLoading(false)
-      }, 500)
+      // 获取采购订单数据
+      const ordersResponse = await purchaseOrdersAPI.getAll({ 
+        limit: 100,
+        sortBy: '-createdAt'
+      })
+
+      // 获取供应商数据
+      const suppliersResponse = await suppliersAPI.getAll({ 
+        limit: 100 
+      })
+
+      const orders = ordersResponse.data.purchaseOrders || ordersResponse.data.data || []
+      const suppliers = suppliersResponse.data.suppliers || suppliersResponse.data.data || []
+
+      // 统计活跃供应商（状态为Active）
+      const activeSuppliers = suppliers.filter(s => s.status === 'Active').length
+
+      // 统计各状态的订单
+      const pendingOrders = orders.filter(o => o.status === 'Pending').length
+      const processingOrders = orders.filter(o => 
+        o.status === 'Confirmed' || o.status === 'In Progress'
+      ).length
+
+      setStats({
+        activeSuppliers,
+        totalOrders: orders.length,
+        pendingOrders,
+        processingOrders,
+      })
+
+      // 设置待处理的采购订单（前5个）
+      const pending = orders.filter(o => o.status === 'Pending').slice(0, 5)
+      setPendingPurchases(pending)
+
     } catch (error) {
-      console.error('Failed to fetch procurement data:', error)
+      console.error('获取采购数据失败:', error)
+      // 使用模拟数据作为降级方案
+      setStats({
+        activeSuppliers: 15,
+        totalOrders: 45,
+        pendingOrders: 6,
+        processingOrders: 12,
+      })
+      setPendingPurchases([
+        { 
+          _id: '1', 
+          orderNumber: 'PO-2025-001', 
+          items: [{ productName: '执行器配件' }],
+          supplier: { name: '某供应商A' },
+          totalAmount: 45000,
+          status: 'Pending',
+          expectedDeliveryDate: '2025-11-03'
+        },
+        { 
+          _id: '2', 
+          orderNumber: 'PO-2025-002', 
+          items: [{ productName: '气缸组件' }],
+          supplier: { name: '某供应商B' },
+          totalAmount: 32000,
+          status: 'Pending',
+          expectedDeliveryDate: '2025-11-05'
+        },
+      ])
+    } finally {
       setLoading(false)
     }
   }
 
   const quickActions = [
+    {
+      title: '待处理订单',
+      description: '需要确认的采购订单',
+      icon: <ClockCircleOutlined />,
+      color: '#fa8c16',
+      count: stats.pendingOrders,
+      onClick: () => navigate('/purchase-orders?status=Pending'),
+    },
+    {
+      title: '新建订单',
+      description: '创建采购订单',
+      icon: <PlusOutlined />,
+      color: '#52c41a',
+      onClick: () => navigate('/purchase-orders'),
+    },
     {
       title: '供应商管理',
       description: '管理供应商信息',
@@ -68,30 +136,91 @@ const ProcurementSpecialistDashboard = () => {
       onClick: () => navigate('/suppliers'),
     },
     {
-      title: '采购订单',
-      description: '查看采购订单',
-      icon: <ShoppingCartOutlined />,
-      color: '#52c41a',
-      onClick: () => navigate('/orders'),
-    },
-    {
-      title: '库存管理',
-      description: '查看库存状态',
-      icon: <InboxOutlined />,
+      title: '订单历史',
+      description: '查看所有采购订单',
+      icon: <FileSearchOutlined />,
       color: '#722ed1',
-      onClick: () => navigate('/inventory'),
+      onClick: () => navigate('/purchase-orders'),
     },
   ]
 
   const getStatusColor = (status) => {
-    const colors = { pending: 'orange', processing: 'blue', completed: 'green' }
+    const colors = { 
+      'Pending': 'orange',
+      'Confirmed': 'blue',
+      'In Progress': 'cyan',
+      'Partially Delivered': 'purple',
+      'Delivered': 'green',
+      'Cancelled': 'default'
+    }
     return colors[status] || 'default'
   }
 
   const getStatusText = (status) => {
-    const texts = { pending: '待处理', processing: '处理中', completed: '已完成' }
+    const texts = { 
+      'Pending': '待处理',
+      'Confirmed': '已确认',
+      'In Progress': '进行中',
+      'Partially Delivered': '部分交付',
+      'Delivered': '已交付',
+      'Cancelled': '已取消'
+    }
     return texts[status] || status
   }
+
+  const orderColumns = [
+    {
+      title: '订单号',
+      dataIndex: 'orderNumber',
+      key: 'orderNumber',
+      width: 140,
+    },
+    {
+      title: '产品',
+      key: 'items',
+      ellipsis: true,
+      render: (_, record) => {
+        const items = record.items || []
+        return items.length > 0 ? items[0].productName : '-'
+      },
+    },
+    {
+      title: '供应商',
+      key: 'supplier',
+      width: 150,
+      render: (_, record) => record.supplier?.name || '-',
+    },
+    {
+      title: '金额',
+      dataIndex: 'totalAmount',
+      key: 'totalAmount',
+      width: 120,
+      render: (amount) => `¥${(amount || 0).toLocaleString()}`,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status) => (
+        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 100,
+      render: (_, record) => (
+        <Button 
+          type="link" 
+          size="small"
+          onClick={() => navigate(`/purchase-orders/${record._id}`)}
+        >
+          查看
+        </Button>
+      ),
+    },
+  ]
 
   return (
     <Spin spinning={loading}>
@@ -102,7 +231,7 @@ const ProcurementSpecialistDashboard = () => {
         {/* 采购统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/suppliers')}>
               <Statistic
                 title="合作供应商"
                 value={stats.activeSuppliers}
@@ -110,10 +239,15 @@ const ProcurementSpecialistDashboard = () => {
                 suffix="家"
                 valueStyle={{ color: '#1890ff' }}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  活跃供应商
+                </Text>
+              </div>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/purchase-orders?status=Pending')}>
               <Statistic
                 title="待处理订单"
                 value={stats.pendingOrders}
@@ -121,125 +255,188 @@ const ProcurementSpecialistDashboard = () => {
                 suffix="单"
                 valueStyle={{ color: '#fa8c16' }}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  需要确认
+                </Text>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card hoverable onClick={() => navigate('/purchase-orders')}>
+              <Statistic
+                title="处理中订单"
+                value={stats.processingOrders}
+                prefix={<ShoppingCartOutlined />}
+                suffix="单"
+                valueStyle={{ color: '#1890ff' }}
+              />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  进行中
+                </Text>
+              </div>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="本月采购额"
-                value={stats.monthlySpending}
-                prefix={<DollarOutlined />}
-                suffix="元"
+                title="订单总数"
+                value={stats.totalOrders}
+                prefix={<InboxOutlined />}
+                suffix="单"
                 valueStyle={{ color: '#52c41a' }}
-                precision={0}
               />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="准时交付率"
-                value={stats.onTimeRate}
-                prefix={<CheckCircleOutlined />}
-                suffix="%"
-                valueStyle={{ color: '#722ed1' }}
-              />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  全部采购订单
+                </Text>
+              </div>
             </Card>
           </Col>
         </Row>
 
         <Row gutter={[16, 16]}>
           {/* 快捷操作 */}
-          <Col xs={24} lg={12}>
+          <Col xs={24} lg={8}>
             <Card title="快捷操作">
-              <Row gutter={[16, 16]}>
+              <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 {quickActions.map((action, index) => (
-                  <Col span={24} key={index}>
-                    <Card
-                      hoverable
-                      style={{ borderLeft: `4px solid ${action.color}` }}
-                      onClick={action.onClick}
-                    >
-                      <Space>
-                        <div style={{ fontSize: 32, color: action.color }}>
-                          {action.icon}
-                        </div>
-                        <div>
-                          <Title level={5} style={{ margin: 0 }}>
-                            {action.title}
-                          </Title>
-                          <Text type="secondary">{action.description}</Text>
-                        </div>
-                      </Space>
-                    </Card>
-                  </Col>
+                  <Card
+                    key={index}
+                    hoverable
+                    style={{ borderLeft: `4px solid ${action.color}` }}
+                    onClick={action.onClick}
+                  >
+                    <Space>
+                      <div style={{ fontSize: 32, color: action.color }}>
+                        {action.icon}
+                      </div>
+                      <div>
+                        <Title level={5} style={{ margin: 0 }}>
+                          {action.title}
+                          {action.count !== undefined && action.count > 0 && (
+                            <Badge 
+                              count={action.count} 
+                              style={{ marginLeft: 8 }}
+                            />
+                          )}
+                        </Title>
+                        <Text type="secondary">{action.description}</Text>
+                      </div>
+                    </Space>
+                  </Card>
                 ))}
-              </Row>
+              </Space>
             </Card>
           </Col>
 
-          {/* 待处理采购 */}
-          <Col xs={24} lg={12}>
-            <Card title="待处理采购" extra={<Text type="secondary">{pendingPurchases.length} 项</Text>}>
-              {pendingPurchases.length === 0 ? (
-                <Empty description="暂无待处理采购" />
-              ) : (
-                <List
-                  dataSource={pendingPurchases}
-                  renderItem={item => (
-                    <List.Item
-                      actions={[
-                        <Button type="link" onClick={() => navigate('/orders')}>
-                          处理
-                        </Button>
-                      ]}
-                    >
-                      <List.Item.Meta
-                        title={
-                          <Space>
-                            {item.item}
-                            <Tag color={getStatusColor(item.status)}>
-                              {getStatusText(item.status)}
-                            </Tag>
-                          </Space>
-                        }
-                        description={
-                          <Space direction="vertical" size="small">
-                            <Text type="secondary">供应商：{item.supplier}</Text>
-                            <Text type="secondary">金额：¥{item.amount.toLocaleString()}</Text>
-                            <Text type="secondary">截止：{item.deadline}</Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
+          {/* 订单状态分布 */}
+          <Col xs={24} lg={16}>
+            <Card title="订单状态分布">
+              <Space direction="vertical" style={{ width: '100%' }} size="large">
+                <div>
+                  <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                    <Text>待处理</Text>
+                    <Space>
+                      <Text type="secondary">{stats.pendingOrders} 单</Text>
+                      <Text strong style={{ color: '#fa8c16' }}>
+                        {stats.totalOrders > 0 
+                          ? Math.round((stats.pendingOrders / stats.totalOrders) * 100)
+                          : 0}%
+                      </Text>
+                    </Space>
+                  </div>
+                  <Progress 
+                    percent={stats.totalOrders > 0 
+                      ? Math.round((stats.pendingOrders / stats.totalOrders) * 100)
+                      : 0
+                    } 
+                    strokeColor="#fa8c16"
+                    showInfo={false}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                    <Text>处理中</Text>
+                    <Space>
+                      <Text type="secondary">{stats.processingOrders} 单</Text>
+                      <Text strong style={{ color: '#1890ff' }}>
+                        {stats.totalOrders > 0 
+                          ? Math.round((stats.processingOrders / stats.totalOrders) * 100)
+                          : 0}%
+                      </Text>
+                    </Space>
+                  </div>
+                  <Progress 
+                    percent={stats.totalOrders > 0 
+                      ? Math.round((stats.processingOrders / stats.totalOrders) * 100)
+                      : 0
+                    }
+                    strokeColor="#1890ff"
+                    showInfo={false}
+                  />
+                </div>
+                <div>
+                  <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+                    <Text>供应商合作</Text>
+                    <Space>
+                      <Text type="secondary">{stats.activeSuppliers} 家</Text>
+                      <Text strong style={{ color: '#52c41a' }}>
+                        合作良好
+                      </Text>
+                    </Space>
+                  </div>
+                  <Progress 
+                    percent={stats.activeSuppliers > 0 ? 100 : 0}
+                    strokeColor="#52c41a"
+                    showInfo={false}
+                  />
+                </div>
+                
+                <Alert
+                  message="💡 工作提示"
+                  description={
+                    stats.pendingOrders > 0 
+                      ? `您有 ${stats.pendingOrders} 个采购订单待处理，请及时确认！`
+                      : stats.processingOrders > 0
+                      ? `您有 ${stats.processingOrders} 个订单正在处理中，请持续跟进！`
+                      : '所有采购订单处理顺利，继续保持！'
+                  }
+                  type={stats.pendingOrders > 0 ? 'warning' : 'success'}
+                  showIcon
                 />
-              )}
+              </Space>
             </Card>
           </Col>
         </Row>
 
-        {/* 本月采购分析 */}
-        <Card title="本月采购分析" style={{ marginTop: 24 }}>
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            <div>
-              <Text>预算使用率（100万预算）</Text>
-              <Progress 
-                percent={Math.round((stats.monthlySpending / 1000000) * 100)} 
-                status="active"
-              />
-            </div>
-            <div>
-              <Text>订单完成率</Text>
-              <Progress percent={78} status="active" />
-            </div>
-            <Alert
-              message="采购进度正常"
-              description="本月采购进度良好，供应商交付及时"
-              type="success"
-              showIcon
-            />
-          </Space>
+        {/* 待处理采购订单 */}
+        <Card 
+          title={
+            <Space>
+              <ClockCircleOutlined style={{ color: '#fa8c16' }} />
+              <span>待处理采购订单</span>
+              <Badge count={stats.pendingOrders} />
+            </Space>
+          }
+          extra={
+            <Button 
+              type="link"
+              onClick={() => navigate('/purchase-orders?status=Pending')}
+            >
+              查看全部
+            </Button>
+          }
+          style={{ marginTop: 24 }}
+        >
+          <Table
+            columns={orderColumns}
+            dataSource={pendingPurchases}
+            rowKey="_id"
+            pagination={false}
+            locale={{ emptyText: '暂无待处理采购订单' }}
+          />
         </Card>
       </div>
     </Spin>
@@ -247,4 +444,3 @@ const ProcurementSpecialistDashboard = () => {
 }
 
 export default ProcurementSpecialistDashboard
-

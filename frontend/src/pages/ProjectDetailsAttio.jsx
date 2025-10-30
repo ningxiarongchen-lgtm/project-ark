@@ -51,9 +51,22 @@ const ProjectDetailsAttio = () => {
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   // Fetch project data
   useEffect(() => {
-    fetchProject()
+    if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的项目ID')
+        navigate('/projects')
+        return
+      }
+      fetchProject()
+    }
   }, [id])
 
   const fetchProject = async () => {

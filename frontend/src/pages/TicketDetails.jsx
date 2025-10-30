@@ -60,8 +60,21 @@ const TicketDetails = () => {
   const [processingAction, setProcessingAction] = useState(false)
   const [savingReport, setSavingReport] = useState(false)
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   useEffect(() => {
-    fetchTicket()
+    if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的工单ID')
+        navigate('/service-center')
+        return
+      }
+      fetchTicket()
+    }
   }, [id])
 
   const fetchTicket = async () => {

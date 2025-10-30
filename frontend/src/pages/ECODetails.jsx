@@ -51,8 +51,19 @@ const ECODetails = () => {
   const [approvalForm] = Form.useForm()
   const [submittingApproval, setSubmittingApproval] = useState(false)
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   useEffect(() => {
     if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的ECO ID')
+        navigate('/data-management')
+        return
+      }
       fetchEcoDetails()
     }
   }, [id])

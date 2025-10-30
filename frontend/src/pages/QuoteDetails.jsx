@@ -12,8 +12,21 @@ const QuoteDetails = () => {
   const [quote, setQuote] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   useEffect(() => {
-    fetchQuote()
+    if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的报价ID')
+        navigate('/quotes')
+        return
+      }
+      fetchQuote()
+    }
   }, [id])
 
   const fetchQuote = async () => {

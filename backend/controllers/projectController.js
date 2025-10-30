@@ -204,25 +204,199 @@ exports.updateProject = async (req, res) => {
     const project = await Project.findById(req.params.id);
 
     if (!project) {
-      return res.status(404).json({ message: 'Project not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Project not found' 
+      });
     }
 
-    // Check permissions
-    if (req.user.role !== 'administrator' &&
-        !project.createdBy.equals(req.user._id) &&
-        !project.assignedTo.some(user => user.equals(req.user._id))) {
-      return res.status(403).json({ message: 'Not authorized to update this project' });
+    // 🔒 状态流转权限校验（v2.0）
+    if (req.body.status && req.body.status !== project.status) {
+      const currentStatus = project.status;
+      const newStatus = req.body.status;
+      const userRole = req.user.role;
+      
+      console.log(`🔄 状态流转请求: ${currentStatus} → ${newStatus}, 操作人: ${userRole}`);
+      
+      // 定义状态流转规则和权限
+      const statusTransitionRules = {
+        // 选型中 → 待商务报价（只有技术工程师）
+        '选型中': {
+          '待商务报价': {
+            allowedRoles: ['Technical Engineer', 'Administrator'],
+            description: '提交技术选型'
+          }
+        },
+        // 待商务报价 → 已报价-询价中（只有商务专员）
+        '待商务报价': {
+          '已报价-询价中': {
+            allowedRoles: ['Sales Engineer', 'Administrator'],
+            description: '完成商务报价'
+          }
+        },
+        // 已报价-询价中 → 待上传合同/失单（销售经理）
+        '已报价-询价中': {
+          '待上传合同': {
+            allowedRoles: ['Sales Manager', 'Administrator'],
+            description: '客户接受报价'
+          },
+          '失单': {
+            allowedRoles: ['Sales Manager', 'Administrator'],
+            description: '客户拒绝报价'
+          }
+        },
+        // 待上传合同 → 待商务审核合同（销售经理上传合同后自动流转）
+        '待上传合同': {
+          '待商务审核合同': {
+            allowedRoles: ['Sales Manager', 'Administrator'],
+            description: '上传销售合同'
+          }
+        },
+        // 待商务审核合同 → 待客户盖章（商务专员上传盖章合同后自动流转）
+        '待商务审核合同': {
+          '待客户盖章': {
+            allowedRoles: ['Sales Engineer', 'Administrator'],
+            description: '审核并上传公司盖章合同'
+          }
+        },
+        // 待客户盖章 → 待预付款（销售经理上传客户盖章合同后自动流转，正式赢单）
+        '待客户盖章': {
+          '待预付款': {
+            allowedRoles: ['Sales Manager', 'Administrator'],
+            description: '上传客户盖章合同，正式赢单'
+          },
+          '合同已签订-赢单': {
+            allowedRoles: ['Sales Manager', 'Administrator'],
+            description: '上传客户盖章合同，正式赢单（兼容）'
+          }
+        },
+        // 待预付款/合同已签订-赢单 → 生产准备中（商务专员确认预付款）
+        '待预付款': {
+          '生产准备中': {
+            allowedRoles: ['Sales Engineer', 'Administrator'],
+            description: '确认预付款到账'
+          }
+        },
+        '合同已签订-赢单': {
+          '生产准备中': {
+            allowedRoles: ['Sales Engineer', 'Administrator'],
+            description: '确认预付款到账'
+          }
+        },
+        // 生产准备中 → 采购中/生产中（生产员）
+        '生产准备中': {
+          '采购中': {
+            allowedRoles: ['Production Planner', 'Administrator'],
+            description: '开始采购'
+          },
+          '生产中': {
+            allowedRoles: ['Production Planner', 'Administrator'],
+            description: '开始生产'
+          }
+        },
+        // 采购中 → 生产中（生产员）
+        '采购中': {
+          '生产中': {
+            allowedRoles: ['Production Planner', 'Administrator'],
+            description: '采购完成，开始生产'
+          }
+        },
+        // 生产中 → 已完成（生产员）
+        '生产中': {
+          '已完成': {
+            allowedRoles: ['Production Planner', 'Administrator'],
+            description: '生产完成'
+          }
+        }
+      };
+      
+      // 检查状态流转是否合法
+      const allowedTransitions = statusTransitionRules[currentStatus];
+      if (!allowedTransitions) {
+        return res.status(400).json({ 
+          success: false,
+          message: `当前状态"${currentStatus}"不允许流转到其他状态` 
+        });
+      }
+      
+      const transitionRule = allowedTransitions[newStatus];
+      if (!transitionRule) {
+        const allowedStatuses = Object.keys(allowedTransitions).join('、');
+        return res.status(400).json({ 
+          success: false,
+          message: `状态"${currentStatus}"只能流转到：${allowedStatuses}` 
+        });
+      }
+      
+      // 检查用户角色权限
+      if (!transitionRule.allowedRoles.includes(userRole)) {
+        return res.status(403).json({ 
+          success: false,
+          message: `只有${transitionRule.allowedRoles.join('或')}可以${transitionRule.description}` 
+        });
+      }
+      
+      console.log(`✅ 状态流转校验通过: ${currentStatus} → ${newStatus}`);
+      
+      // 记录状态流转到操作历史
+      if (!project.operation_history) {
+        project.operation_history = [];
+      }
+      
+      project.operation_history.push({
+        operation_type: 'project_status_changed',
+        operator: req.user._id,
+        operator_name: req.user.full_name || req.user.phone,
+        operator_role: userRole,
+        operation_time: new Date(),
+        description: `状态流转: ${currentStatus} → ${newStatus}`,
+        details: {
+          old_status: currentStatus,
+          new_status: newStatus,
+          action: transitionRule.description
+        }
+      });
     }
 
-    const updatedProject = await Project.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate('createdBy assignedTo selections.product selections.accessories.accessory');
+    // Check basic permissions
+    const hasAccess = 
+      req.user.role === 'Administrator' ||
+      (project.createdBy && project.createdBy.equals(req.user._id)) ||
+      (project.owner && project.owner.equals(req.user._id)) ||
+      (project.technical_support && project.technical_support.equals(req.user._id)) ||
+      (project.assignedTo && project.assignedTo.some(user => user.equals(req.user._id)));
+      
+    if (!hasAccess) {
+      return res.status(403).json({ 
+        success: false,
+        message: 'Not authorized to update this project' 
+      });
+    }
 
-    res.json(updatedProject);
+    // 更新项目
+    Object.assign(project, req.body);
+    await project.save();
+
+    // 重新查询并populate
+    const updatedProject = await Project.findById(req.params.id)
+      .populate('createdBy', 'phone full_name role')
+      .populate('owner', 'phone full_name role')
+      .populate('technical_support', 'phone full_name role')
+      .populate('assignedTo', 'phone full_name role')
+      .populate('selections.product')
+      .populate('selections.accessories.accessory');
+
+    res.json({
+      success: true,
+      message: req.body.status ? '项目状态已更新' : '项目已更新',
+      data: updatedProject
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('❌ 项目更新失败:', error);
+    res.status(400).json({ 
+      success: false,
+      message: error.message 
+    });
   }
 };
 

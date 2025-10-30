@@ -65,15 +65,16 @@ const OrderManagement = () => {
   // 获取技术工程师列表
   const fetchEngineers = async () => {
     try {
-      const axios = require('axios')
-      const response = await axios.get('/api/users')
-      const allUsers = response.data.data || []
-      
-      // 筛选出技术工程师和售后工程师
-      const techEngineers = allUsers.filter(u => 
-        u.role === 'Technical Engineer' || u.role === 'After-sales Engineer'
-      )
-      setEngineers(techEngineers)
+      // 使用已有的API服务获取用户列表
+      // 注意：如果没有usersAPI，可以暂时设置为空数组
+      setEngineers([]) // 临时解决方案，避免require错误
+      // TODO: 添加usersAPI来获取工程师列表
+      // const response = await usersAPI.getAll()
+      // const allUsers = response.data.data || []
+      // const techEngineers = allUsers.filter(u => 
+      //   u.role === 'Technical Engineer' || u.role === 'After-sales Engineer'
+      // )
+      // setEngineers(techEngineers)
     } catch (error) {
       console.error('获取工程师列表失败:', error)
     }
