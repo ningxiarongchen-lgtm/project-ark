@@ -105,12 +105,15 @@ const Dashboard = () => {
         pendingTicketCount
       })
 
-      // 技术工程师：按紧急度显示需要选型的项目
+      // 技术工程师：按紧急度显示需要选型的项目（分配给我的或待分配的）
       if (user?.role === 'Technical Engineer') {
-        const myProjects = projects.filter(p => 
-          p.technical_support?._id === user._id &&
-          (p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿')
-        )
+        const myProjects = projects.filter(p => {
+          // 项目状态是待选型相关的
+          const isSelectionStatus = p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿' || p.status === '待指派技术'
+          // 分配给我的 或 还没分配技术工程师的
+          const isAssignedToMe = p.technical_support?._id === user._id || !p.technical_support
+          return isSelectionStatus && isAssignedToMe
+        })
         // 按紧急度排序：Urgent > High > Normal > Low
         const priorityOrder = { 'Urgent': 4, 'High': 3, 'Normal': 2, 'Low': 1 }
         const sortedProjects = myProjects.sort((a, b) => {
@@ -463,8 +466,42 @@ const Dashboard = () => {
                 </Space>
               </Col>
             </Row>
+          ) : user?.role === 'Technical Engineer' ? (
+            // 🔧 技术工程师专属使用指南
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#1890ff' }}>1.</span> 接收选型任务
+                  </Title>
+                  <Text type="secondary">
+                    销售经理创建项目后会分配给您，在待选型项目列表中查看任务详情和客户需求。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#52c41a' }}>2.</span> 技术选型
+                  </Title>
+                  <Text type="secondary">
+                    打开项目详情，查看技术文件和参数要求，使用智能选型功能为客户推荐合适的产品。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={8}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#722ed1' }}>3.</span> 提交报价
+                  </Title>
+                  <Text type="secondary">
+                    完成技术选型后，提交给商务团队进行报价，或处理商务团队反馈的修改建议。
+                  </Text>
+                </Space>
+              </Col>
+            </Row>
           ) : (
-            // 其他角色（技术工程师、商务工程师等）的使用指南
+            // 其他角色（商务工程师等）的使用指南
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
                 <Space direction="vertical">
