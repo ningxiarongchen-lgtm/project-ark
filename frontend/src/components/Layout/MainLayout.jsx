@@ -28,23 +28,24 @@ const menuConfig = [
     icon: <DashboardOutlined />,
     roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
   },
+  // 👑 管理员专属菜单
   {
-    key: '/projects',
-    label: '项目管理',
-    icon: <ProjectOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager'],
+    key: '/admin',
+    label: '用户管理',
+    icon: <UserOutlined />,
+    roles: ['Administrator'],
   },
   {
-    key: '/orders',
-    label: '订单管理',
-    icon: <FileDoneOutlined />,
-    roles: ['Administrator', 'Sales Manager', 'Production Planner'],
+    key: '/product-import',
+    label: '产品批量导入',
+    icon: <UploadOutlined />,
+    roles: ['Administrator'],
   },
   {
-    key: '/production-schedule',
-    label: '生产排期',
-    icon: <ScheduleOutlined />,
-    roles: ['Administrator', 'Production Planner'],
+    key: '/data-management',
+    label: '产品数据库',
+    icon: <DatabaseOutlined />,
+    roles: ['Administrator', 'Procurement Specialist'],
   },
   {
     key: '/suppliers',
@@ -52,41 +53,42 @@ const menuConfig = [
     icon: <TeamOutlined />,
     roles: ['Administrator', 'Procurement Specialist'],
   },
+  // 🔒 业务菜单（管理员不可见）
+  {
+    key: '/projects',
+    label: '项目管理',
+    icon: <ProjectOutlined />,
+    roles: ['Technical Engineer', 'Sales Engineer', 'Sales Manager'],  // 移除 Administrator
+  },
+  {
+    key: '/orders',
+    label: '订单管理',
+    icon: <FileDoneOutlined />,
+    roles: ['Sales Manager', 'Production Planner'],  // 移除 Administrator
+  },
+  {
+    key: '/production-schedule',
+    label: '生产排期',
+    icon: <ScheduleOutlined />,
+    roles: ['Production Planner'],  // 移除 Administrator
+  },
   {
     key: '/purchase-orders',
     label: '采购管理',
     icon: <ShoppingCartOutlined />,
-    roles: ['Administrator', 'Procurement Specialist'],
+    roles: ['Procurement Specialist'],  // 移除 Administrator
   },
   {
     key: '/service-center',
     label: '售后服务',
     icon: <CustomerServiceOutlined />,
-    roles: ['Administrator', 'After-sales Engineer', 'Sales Manager', 'Technical Engineer'],
+    roles: ['After-sales Engineer', 'Sales Manager', 'Technical Engineer'],  // 移除 Administrator
   },
   {
     key: '/product-catalog',
     label: '产品目录',
     icon: <DatabaseOutlined />,
     roles: ['Sales Manager'],
-  },
-  {
-    key: '/data-management',
-    label: '产品数据管理',
-    icon: <DatabaseOutlined />,
-    roles: ['Administrator', 'Procurement Specialist'],  // 🔒 移除技术工程师权限
-  },
-  {
-    key: '/product-import',
-    label: '产品批量导入',
-    icon: <UploadOutlined />,
-    roles: ['Administrator'],  // 🔒 移除技术工程师权限
-  },
-  {
-    key: '/admin',
-    label: '用户管理',
-    icon: <UserOutlined />,
-    roles: ['Administrator'],
   },
 ]
 
