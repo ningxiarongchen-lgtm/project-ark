@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Table, Button, Input, Space, Card, Modal, Form, 
-  message, Popconfirm, Tag, Typography, InputNumber 
+  message, Popconfirm, Tag, Typography, InputNumber,
+  Row, Col, Statistic
 } from 'antd'
 import { 
   PlusOutlined, SearchOutlined, EditOutlined, 
   DeleteOutlined, FolderOpenOutlined, ReloadOutlined,
-  InboxOutlined
+  InboxOutlined, ProjectOutlined, DollarOutlined,
+  CustomerServiceOutlined
 } from '@ant-design/icons'
 import { projectsAPI } from '../services/api'
 import CloudUpload from '../components/CloudUpload'
@@ -27,6 +29,13 @@ const Projects = () => {
   const [fileList, setFileList] = useState([])
   const [uploadedFiles, setUploadedFiles] = useState([])
   const navigate = useNavigate()
+  
+  // 统计数据
+  const [stats, setStats] = useState({
+    totalProjects: 0,
+    totalQuotes: 0,
+    totalTickets: 0
+  })
 
   useEffect(() => {
     fetchProjects()
@@ -49,8 +58,29 @@ const Projects = () => {
     try {
       setLoading(true)
       const response = await projectsAPI.getAll()
-      setProjects(response.data || [])
-      setFilteredProjects(response.data || [])
+      const projectsData = response.data || []
+      setProjects(projectsData)
+      setFilteredProjects(projectsData)
+      
+      // 计算统计数据
+      const totalProjects = projectsData.length
+      
+      // 统计已报价的项目数（状态为"已报价"或"待商务报价"）
+      const totalQuotes = projectsData.filter(p => 
+        p.status === '已报价' || p.status === '待商务报价'
+      ).length
+      
+      // 统计有售后工单的项目数（假设项目有service_tickets字段）
+      // 如果没有这个字段，我们可以从项目的其他标识来判断
+      const totalTickets = projectsData.filter(p => 
+        p.service_tickets && p.service_tickets.length > 0
+      ).length
+      
+      setStats({
+        totalProjects,
+        totalQuotes,
+        totalTickets
+      })
     } catch (error) {
       message.error('获取项目列表失败')
     } finally {
@@ -218,6 +248,44 @@ const Projects = () => {
 
   return (
     <div>
+      {/* 统计卡片 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="总项目数"
+              value={stats.totalProjects}
+              prefix={<ProjectOutlined />}
+              suffix="个"
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="总报价数"
+              value={stats.totalQuotes}
+              prefix={<DollarOutlined />}
+              suffix="个"
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card>
+            <Statistic
+              title="总售后问题数"
+              value={stats.totalTickets}
+              prefix={<CustomerServiceOutlined />}
+              suffix="个"
+              valueStyle={{ color: '#fa8c16' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* 项目列表卡片 */}
       <Card
         title={
           <Space>
