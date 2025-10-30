@@ -1,18 +1,19 @@
 /**
  * TechnicalEngineerDashboard - 技术工程师仪表盘
  * 
- * 显示售后任务、工单处理等
+ * 显示技术选型任务和售后工单
  */
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Row, Col, Card, Statistic, Button, List, Tag, Space, Typography,
-  Empty, Spin, message, Table, Badge, Divider, Alert
+  Empty, Spin, message, Table, Badge, Divider, Alert, Tabs
 } from 'antd'
 import { 
   CustomerServiceOutlined, CheckCircleOutlined, ClockCircleOutlined,
-  WarningOutlined, RocketOutlined, EyeOutlined, CheckOutlined
+  WarningOutlined, RocketOutlined, EyeOutlined, CheckOutlined,
+  ProjectOutlined, FileSearchOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
 import { ticketsAPI } from '../../services/api'
@@ -21,59 +22,114 @@ import dayjs from 'dayjs'
 import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
+const { TabPane } = Tabs
 
 const TechnicalEngineerDashboard = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [myProjects, setMyProjects] = useState([])
   const [myTickets, setMyTickets] = useState([])
   const [stats, setStats] = useState({
-    pending: 0,        // 待技术受理
-    inProgress: 0,     // 技术处理中
-    waitingFeedback: 0, // 等待客户反馈
-    resolved: 0        // 问题已解决-待确认
+    pendingProjects: 0,      // 待我选型的项目
+    completedProjects: 0,    // 我已完成选型的项目
+    pendingTickets: 0,       // 待我处理的售后工单
+    completedTickets: 0      // 我已完成的售后工单
   })
   const [acceptingTicket, setAcceptingTicket] = useState(null)
 
   useEffect(() => {
-    fetchMyTickets()
+    fetchData()
   }, [])
 
-  // 获取我的售后工单（只显示分配给我且未关闭的）
-  const fetchMyTickets = async () => {
+  // 获取项目和售后工单数据
+  const fetchData = async () => {
     setLoading(true)
     try {
-      // 获取分配给当前用户的所有工单
+      await Promise.all([
+        fetchMyProjects(),
+        fetchMyTickets()
+      ])
+    } catch (error) {
+      console.error('获取数据失败:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 获取分配给我的技术选型项目
+  const fetchMyProjects = async () => {
+    try {
+      const response = await axios.get('/api/projects', {
+        params: {
+          sortBy: '-createdAt',
+          limit: 100
+        }
+      })
+
+      const allProjects = response.data.data || []
+      
+      // 筛选分配给当前技术工程师的项目
+      const myProjects = allProjects.filter(project => 
+        project.technical_support?._id === user._id || 
+        project.technical_support === user._id
+      )
+
+      setMyProjects(myProjects)
+
+      // 计算项目统计
+      // 待选型：选型中、待选型、待指派技术等状态
+      const pendingStatuses = ['选型中', '待选型', '待指派技术', '选型进行中']
+      // 已完成：待商务报价、已报价、已确认等后续状态
+      const completedStatuses = ['待商务报价', '已报价', '已确认', '已完成', 'Won', 'Lost']
+
+      return {
+        pendingProjects: myProjects.filter(p => 
+          pendingStatuses.includes(p.project_status) || 
+          pendingStatuses.includes(p.status)
+        ).length,
+        completedProjects: myProjects.filter(p => 
+          completedStatuses.includes(p.project_status) || 
+          completedStatuses.includes(p.status)
+        ).length
+      }
+    } catch (error) {
+      console.error('获取项目数据失败:', error)
+      return { pendingProjects: 0, completedProjects: 0 }
+    }
+  }
+
+  // 获取我的售后工单
+  const fetchMyTickets = async () => {
+    try {
       const response = await axios.get('/api/tickets', {
         params: {
-          assignedEngineer: user.id || user._id,
+          assignedEngineer: user._id,
           sortBy: '-createdAt'
         }
       })
 
       const tickets = response.data.data || []
-      
-      // 过滤掉已关闭的工单
-      const activeTickets = tickets.filter(
-        ticket => ticket.status !== '已关闭' && ticket.status !== 'Closed'
-      )
+      setMyTickets(tickets)
 
-      setMyTickets(activeTickets)
+      // 计算售后工单统计
+      // 待处理：待技术受理、技术处理中、等待客户反馈
+      const pendingStatuses = ['待技术受理', '技术处理中', '等待客户反馈', 'In Progress']
+      // 已完成：问题已解决-待确认、已关闭
+      const completedStatuses = ['问题已解决-待确认', '已关闭', 'Resolved', 'Closed']
 
-      // 计算统计数据
-      const newStats = {
-        pending: activeTickets.filter(t => t.status === '待技术受理').length,
-        inProgress: activeTickets.filter(t => t.status === '技术处理中' || t.status === 'In Progress').length,
-        waitingFeedback: activeTickets.filter(t => t.status === '等待客户反馈').length,
-        resolved: activeTickets.filter(t => t.status === '问题已解决-待确认' || t.status === 'Resolved').length
-      }
-      setStats(newStats)
+      const projectStats = await fetchMyProjects()
+
+      setStats({
+        pendingProjects: projectStats.pendingProjects,
+        completedProjects: projectStats.completedProjects,
+        pendingTickets: tickets.filter(t => pendingStatuses.includes(t.status)).length,
+        completedTickets: tickets.filter(t => completedStatuses.includes(t.status)).length
+      })
 
     } catch (error) {
       console.error('获取售后工单失败:', error)
       message.error('获取售后工单失败')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -222,6 +278,78 @@ const TechnicalEngineerDashboard = () => {
     }
   ]
 
+  // 项目列表表格列定义
+  const projectColumns = [
+    {
+      title: '项目编号',
+      dataIndex: 'projectNumber',
+      key: 'projectNumber',
+      width: 150,
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() => navigate(`/projects/${record._id}`)}
+          style={{ padding: 0, fontWeight: 'bold' }}
+        >
+          {text || record.project_number}
+        </Button>
+      )
+    },
+    {
+      title: '项目名称',
+      dataIndex: 'projectName',
+      key: 'projectName',
+      width: 200,
+      ellipsis: true,
+      render: (text, record) => text || record.project_name
+    },
+    {
+      title: '客户',
+      key: 'client',
+      width: 150,
+      render: (_, record) => record.client?.name || record.client_name || '-'
+    },
+    {
+      title: '状态',
+      key: 'status',
+      width: 100,
+      render: (_, record) => {
+        const status = record.project_status || record.status
+        const statusColors = {
+          '选型中': 'processing',
+          '选型进行中': 'processing',
+          '待商务报价': 'success',
+          '已报价': 'success',
+          '已确认': 'default'
+        }
+        return <Tag color={statusColors[status] || 'default'}>{status}</Tag>
+      }
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 120,
+      render: (date) => dayjs(date).format('YYYY-MM-DD')
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 100,
+      fixed: 'right',
+      render: (_, record) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => navigate(`/projects/${record._id}`)}
+        >
+          查看
+        </Button>
+      )
+    }
+  ]
+
   return (
     <Spin spinning={loading}>
       <div>
@@ -229,10 +357,13 @@ const TechnicalEngineerDashboard = () => {
         <GreetingWidget />
 
         {/* 提示信息 */}
-        {stats.pending > 0 && (
+        {(stats.pendingProjects > 0 || stats.pendingTickets > 0) && (
           <Alert
-            message={`您有 ${stats.pending} 个新的售后工单等待受理`}
-            description="请及时查看并接受任务，确保及时为客户提供服务"
+            message={
+              `您有 ${stats.pendingProjects} 个项目待选型` +
+              (stats.pendingTickets > 0 ? `，${stats.pendingTickets} 个售后工单待处理` : '')
+            }
+            description="请及时处理您的任务"
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -246,9 +377,9 @@ const TechnicalEngineerDashboard = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="待技术受理"
-                value={stats.pending}
-                prefix={<ClockCircleOutlined />}
+                title="待我选型的项目"
+                value={stats.pendingProjects}
+                prefix={<ProjectOutlined />}
                 suffix="个"
                 valueStyle={{ color: '#fa8c16' }}
               />
@@ -257,9 +388,20 @@ const TechnicalEngineerDashboard = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="技术处理中"
-                value={stats.inProgress}
-                prefix={<RocketOutlined />}
+                title="我已完成选型的项目"
+                value={stats.completedProjects}
+                prefix={<CheckCircleOutlined />}
+                suffix="个"
+                valueStyle={{ color: '#52c41a' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="待我处理的售后工单"
+                value={stats.pendingTickets}
+                prefix={<ClockCircleOutlined />}
                 suffix="个"
                 valueStyle={{ color: '#1890ff' }}
               />
@@ -268,72 +410,95 @@ const TechnicalEngineerDashboard = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="等待客户反馈"
-                value={stats.waitingFeedback}
+                title="我已完成的售后工单"
+                value={stats.completedTickets}
                 prefix={<CustomerServiceOutlined />}
                 suffix="个"
                 valueStyle={{ color: '#722ed1' }}
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="已解决-待确认"
-                value={stats.resolved}
-                prefix={<CheckCircleOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
         </Row>
 
-        {/* 我的售后任务列表 */}
+        {/* 我的任务列表 - 分Tab显示项目和售后工单 */}
         <Card
           title={
             <Space>
-              <CustomerServiceOutlined />
-              <span style={{ fontSize: 16, fontWeight: 'bold' }}>我的售后任务</span>
-              <Badge count={myTickets.length} style={{ backgroundColor: '#1890ff' }} />
+              <FileSearchOutlined />
+              <span style={{ fontSize: 16, fontWeight: 'bold' }}>我的任务</span>
+              <Badge 
+                count={myProjects.length + myTickets.length} 
+                style={{ backgroundColor: '#1890ff' }} 
+              />
             </Space>
           }
-          extra={
-            <Button
-              type="primary"
-              onClick={() => navigate('/service-center')}
-            >
-              查看全部工单
-            </Button>
-          }
         >
-          {myTickets.length === 0 ? (
-            <Empty 
-              description="暂无分配给您的售后工单"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          ) : (
-            <>
-              <Divider orientation="left">工单列表</Divider>
-              <Table
-                columns={columns}
-                dataSource={myTickets}
-                rowKey="_id"
-                pagination={{
-                  pageSize: 10,
-                  showTotal: (total) => `共 ${total} 个工单`,
-                  showSizeChanger: true,
-                  showQuickJumper: true
-                }}
-                scroll={{ x: 1200 }}
-                rowClassName={(record) => {
-                  if (record.status === '待技术受理') return 'pending-row'
-                  if (record.priority === '紧急' || record.priority === 'Urgent') return 'urgent-row'
-                  return ''
-                }}
-              />
-            </>
-          )}
+          <Tabs defaultActiveKey="projects" type="card">
+            <TabPane
+              tab={
+                <span>
+                  <ProjectOutlined />
+                  技术选型项目 ({myProjects.length})
+                </span>
+              }
+              key="projects"
+            >
+              {myProjects.length === 0 ? (
+                <Empty 
+                  description="暂无分配给您的选型项目"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                <Table
+                  columns={projectColumns}
+                  dataSource={myProjects}
+                  rowKey="_id"
+                  pagination={{
+                    pageSize: 10,
+                    showTotal: (total) => `共 ${total} 个项目`,
+                    showSizeChanger: true,
+                    showQuickJumper: true
+                  }}
+                  scroll={{ x: 1000 }}
+                />
+              )}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <span>
+                  <CustomerServiceOutlined />
+                  售后工单 ({myTickets.length})
+                </span>
+              }
+              key="tickets"
+            >
+              {myTickets.length === 0 ? (
+                <Empty 
+                  description="暂无分配给您的售后工单"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={myTickets}
+                  rowKey="_id"
+                  pagination={{
+                    pageSize: 10,
+                    showTotal: (total) => `共 ${total} 个工单`,
+                    showSizeChanger: true,
+                    showQuickJumper: true
+                  }}
+                  scroll={{ x: 1200 }}
+                  rowClassName={(record) => {
+                    if (record.status === '待技术受理') return 'pending-row'
+                    if (record.priority === '紧急' || record.priority === 'Urgent') return 'urgent-row'
+                    return ''
+                  }}
+                />
+              )}
+            </TabPane>
+          </Tabs>
         </Card>
       </div>
 
