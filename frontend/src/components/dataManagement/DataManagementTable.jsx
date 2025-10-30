@@ -41,6 +41,8 @@ const DataManagementTable = ({
   FormComponent,
   // Statistics configuration
   renderStatistics,
+  // Button text
+  addButtonText = '新增',
   // Row key
   rowKey = '_id',
   // Default page size
@@ -71,13 +73,18 @@ const DataManagementTable = ({
         ...params
       });
       
-      setData(response.data.data);
+      // 安全地提取数据，支持多种返回格式
+      const responseData = response.data?.data || response.data || [];
+      const arrayData = Array.isArray(responseData) ? responseData : [];
+      
+      setData(arrayData);
       setPagination({
         ...pagination,
-        total: response.data.pagination.total
+        total: response.data?.pagination?.total || arrayData.length
       });
     } catch (error) {
       message.error('加载数据失败: ' + (error.response?.data?.message || error.message));
+      setData([]); // 出错时设置为空数组
     } finally {
       setLoading(false);
     }
@@ -320,7 +327,7 @@ const DataManagementTable = ({
                 icon={<PlusOutlined />}
                 onClick={handleAdd}
               >
-                新增用户
+                {addButtonText}
               </Button>
             </RoleBasedAccess>
             <Button
@@ -370,7 +377,7 @@ const DataManagementTable = ({
       <Table
         rowKey={rowKey}
         columns={columnsWithActions}
-        dataSource={data}
+        dataSource={Array.isArray(data) ? data : []}
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}

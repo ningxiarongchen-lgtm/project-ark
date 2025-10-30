@@ -18,6 +18,7 @@ import {
   SettingOutlined,
   SearchOutlined,
   UploadOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { colors } from '../../styles/theme'
@@ -51,15 +52,15 @@ const menuConfig = [
   },
   {
     key: '/data-management',
-    label: '产品数据库',
+    label: '数据管理',
     icon: <DatabaseOutlined />,
     roles: ['Administrator', 'Procurement Specialist'],
   },
   {
-    key: '/suppliers',
-    label: '供应商管理',
-    icon: <TeamOutlined />,
-    roles: ['Administrator', 'Procurement Specialist'],
+    key: '/admin/reports',
+    label: '系统报表',
+    icon: <BarChartOutlined />,
+    roles: ['Administrator'],
   },
   // 🔒 业务菜单（管理员不可见）
   {

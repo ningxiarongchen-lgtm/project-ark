@@ -2,14 +2,22 @@
  * Supplier管理组件
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tag, Row, Col, Statistic, Rate } from 'antd';
 import DataManagementTable from './DataManagementTable';
 import SupplierForm from './forms/SupplierForm';
 import { dataManagementAPI } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 const SupplierManagement = () => {
-  const columns = [
+  const { user } = useAuthStore();
+  
+  // 技术工程师不能查看价格敏感信息
+  const isTechnicalEngineer = user?.role === 'Technical Engineer';
+  // 只有管理员和商务可以查看价格敏感信息
+  const canViewPrice = user?.role === 'Administrator' || user?.role === 'Sales Manager';
+  
+  const allColumns = [
     {
       title: '供应商名称',
       dataIndex: 'name',
@@ -79,6 +87,14 @@ const SupplierManagement = () => {
     }
   ];
   
+  // 根据用户角色过滤列 - 技术工程师不显示累计交易额
+  const columns = useMemo(() => {
+    if (isTechnicalEngineer) {
+      return allColumns.filter(col => col.key !== 'total_transaction_value');
+    }
+    return allColumns;
+  }, [isTechnicalEngineer]);
+  
   const renderStatistics = (stats) => (
     <Row gutter={16}>
       <Col span={6}>
@@ -116,6 +132,7 @@ const SupplierManagement = () => {
       title="供应商"
       FormComponent={SupplierForm}
       renderStatistics={renderStatistics}
+      addButtonText="新增供应商"
     />
   );
 };
