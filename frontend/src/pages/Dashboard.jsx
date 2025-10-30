@@ -8,9 +8,9 @@ import {
   ProjectOutlined, DatabaseOutlined, ThunderboltOutlined,
   PlusOutlined, FolderOpenOutlined, RightOutlined,
   UserOutlined, CheckCircleOutlined, DollarOutlined,
-  ToolOutlined, ClockCircleOutlined
+  ToolOutlined, ClockCircleOutlined, CustomerServiceOutlined
 } from '@ant-design/icons'
-import { projectsAPI } from '../services/api'
+import { projectsAPI, ticketsAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GreetingWidget from '../components/dashboards/GreetingWidget'
 import dayjs from 'dayjs'
@@ -25,7 +25,8 @@ const Dashboard = () => {
     projectCount: 0,
     pendingQuoteCount: 0,      // 待完成报价数
     pendingSelectionCount: 0,  // 待完成选型数
-    pendingProjectCount: 0     // 待项目完成数量
+    pendingProjectCount: 0,    // 待项目完成数量
+    pendingTicketCount: 0      // 待处理售后工单数
   })
   const [recentProjects, setRecentProjects] = useState([])
 
@@ -53,13 +54,21 @@ const Dashboard = () => {
         p.status === 'Awaiting Quotation'
       ).length
 
-      // 待完成选型：状态为"待选型"或"进行中"的项目
-      const pendingSelectionCount = projects.filter(p => 
-        p.status === '待选型' || 
-        p.status === '进行中' ||
-        p.status === 'In Progress' ||
-        p.status === 'Awaiting Selection'
-      ).length
+      // 待完成选型：分配给当前技术工程师且状态为待选型的项目
+      let pendingSelectionCount = 0
+      if (user?.role === 'Technical Engineer') {
+        pendingSelectionCount = projects.filter(p => 
+          p.technical_support?._id === user._id &&
+          (p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿')
+        ).length
+      } else {
+        pendingSelectionCount = projects.filter(p => 
+          p.status === '待选型' || 
+          p.status === '进行中' ||
+          p.status === 'In Progress' ||
+          p.status === 'Awaiting Selection'
+        ).length
+      }
 
       // 待项目完成：所有未完成的项目（不包括"已完成"、"已取消"）
       const pendingProjectCount = projects.filter(p => 
@@ -69,18 +78,54 @@ const Dashboard = () => {
         p.status !== 'Cancelled'
       ).length
 
+      // 获取售后工单数据
+      let pendingTicketCount = 0
+      if (user?.role === 'Technical Engineer' || user?.role === 'After-sales Engineer') {
+        try {
+          const ticketsRes = await ticketsAPI.getAll()
+          const tickets = Array.isArray(ticketsRes.data?.data) 
+            ? ticketsRes.data.data 
+            : (Array.isArray(ticketsRes.data) ? ticketsRes.data : [])
+          
+          // 待处理售后工单：分配给当前技术工程师且状态为待处理或处理中的工单
+          pendingTicketCount = tickets.filter(t => 
+            t.assigned_to?._id === user._id &&
+            (t.status === '待处理' || t.status === '处理中')
+          ).length
+        } catch (error) {
+          console.error('Failed to fetch tickets:', error)
+        }
+      }
+
       setStats({
         projectCount: projects.length,
         pendingQuoteCount,
         pendingSelectionCount,
-        pendingProjectCount
+        pendingProjectCount,
+        pendingTicketCount
       })
 
-      // 获取最近的5个项目
-      const sortedProjects = [...projects].sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      )
-      setRecentProjects(sortedProjects.slice(0, 5))
+      // 技术工程师：按紧急度显示需要选型的项目
+      if (user?.role === 'Technical Engineer') {
+        const myProjects = projects.filter(p => 
+          p.technical_support?._id === user._id &&
+          (p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿')
+        )
+        // 按紧急度排序：Urgent > High > Normal > Low
+        const priorityOrder = { 'Urgent': 4, 'High': 3, 'Normal': 2, 'Low': 1 }
+        const sortedProjects = myProjects.sort((a, b) => {
+          const aPriority = priorityOrder[a.priority] || 0
+          const bPriority = priorityOrder[b.priority] || 0
+          return bPriority - aPriority
+        })
+        setRecentProjects(sortedProjects.slice(0, 5))
+      } else {
+        // 其他角色：按创建时间显示最近项目
+        const sortedProjects = [...projects].sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        )
+        setRecentProjects(sortedProjects.slice(0, 5))
+      }
 
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
@@ -111,7 +156,26 @@ const Dashboard = () => {
       }
     )
   } 
-  // 其他角色（技术工程师、商务工程师等）
+  // 技术工程师专属快捷操作
+  else if (user?.role === 'Technical Engineer') {
+    quickActions.push(
+      {
+        icon: <ToolOutlined />,
+        title: '产品数据管理',
+        description: '查看产品技术数据',
+        color: '#722ed1',
+        onClick: () => navigate('/data-management')
+      },
+      {
+        icon: <CustomerServiceOutlined />,
+        title: '售后服务',
+        description: '处理售后工单',
+        color: '#fa8c16',
+        onClick: () => navigate('/service-center')
+      }
+    )
+  }
+  // 其他角色（商务工程师等）
   else {
     quickActions.push(
       {
@@ -155,52 +219,83 @@ const Dashboard = () => {
         {/* 动态问候语 */}
         <GreetingWidget />
 
-        {/* 统计卡片 - 只显示4个业务相关指标 */}
+        {/* 统计卡片 - 根据角色显示不同指标 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="我的项目"
-                value={stats.projectCount}
-                prefix={<ProjectOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="待项目完成数量"
-                value={stats.pendingProjectCount}
-                prefix={<ClockCircleOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#fa8c16' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="待完成报价数"
-                value={stats.pendingQuoteCount}
-                prefix={<DollarOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="待完成选型数"
-                value={stats.pendingSelectionCount}
-                prefix={<ToolOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#722ed1' }}
-              />
-            </Card>
-          </Col>
+          {user?.role === 'Technical Engineer' ? (
+            // 技术工程师：只显示待完成选型数和待售后处理数
+            <>
+              <Col xs={24} sm={12}>
+                <Card>
+                  <Statistic
+                    title="待完成选型数"
+                    value={stats.pendingSelectionCount}
+                    prefix={<ToolOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#722ed1' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Card>
+                  <Statistic
+                    title="待售后处理数"
+                    value={stats.pendingTicketCount}
+                    prefix={<CustomerServiceOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#fa8c16' }}
+                  />
+                </Card>
+              </Col>
+            </>
+          ) : (
+            // 其他角色：显示完整的4个指标
+            <>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="我的项目"
+                    value={stats.projectCount}
+                    prefix={<ProjectOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#1890ff' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="待项目完成数量"
+                    value={stats.pendingProjectCount}
+                    prefix={<ClockCircleOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#fa8c16' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="待完成报价数"
+                    value={stats.pendingQuoteCount}
+                    prefix={<DollarOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="待完成选型数"
+                    value={stats.pendingSelectionCount}
+                    prefix={<ToolOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: '#722ed1' }}
+                  />
+                </Card>
+              </Col>
+            </>
+          )}
         </Row>
 
         <Row gutter={[16, 16]}>
@@ -242,7 +337,7 @@ const Dashboard = () => {
           {/* 最近项目 */}
           <Col xs={24} lg={12}>
             <Card 
-              title="最近项目"
+              title={user?.role === 'Technical Engineer' ? '待选型项目（按紧急度）' : '最近项目'}
               extra={
                 <Button 
                   type="link" 
@@ -254,42 +349,75 @@ const Dashboard = () => {
             >
               {recentProjects.length === 0 ? (
                 <Alert
-                  message="还没有项目"
-                  description="点击快捷操作创建您的第一个项目"
+                  message={user?.role === 'Technical Engineer' ? '暂无待选型项目' : '还没有项目'}
+                  description={user?.role === 'Technical Engineer' ? '目前没有分配给您的选型任务' : '点击快捷操作创建您的第一个项目'}
                   type="info"
                   showIcon
                 />
               ) : (
                 <List
                   dataSource={recentProjects}
-                  renderItem={project => (
-                    <List.Item
-                      key={project._id}
-                      actions={[
-                        <Button
-                          type="link"
-                          icon={<FolderOpenOutlined />}
-                          onClick={() => navigate(`/selection-engine?projectId=${project._id}`)}
-                        >
-                          打开
-                        </Button>
-                      ]}
-                    >
-                      <List.Item.Meta
-                        avatar={<ProjectOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
-                        title={project.project_name}
-                        description={
-                          <Space size="small">
-                            <Text type="secondary">{project.client_name || '无客户'}</Text>
-                            <Tag color="blue">{project.selections?.length || 0} 个选型</Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              {dayjs(project.createdAt).format('MM-DD HH:mm')}
-                            </Text>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
+                  renderItem={project => {
+                    // 紧急度颜色映射
+                    const getPriorityColor = (priority) => {
+                      const colorMap = {
+                        'Urgent': 'red',
+                        'High': 'orange',
+                        'Normal': 'blue',
+                        'Low': 'default'
+                      }
+                      return colorMap[priority] || 'default'
+                    }
+                    
+                    return (
+                      <List.Item
+                        key={project._id}
+                        actions={[
+                          <Button
+                            type="link"
+                            icon={<FolderOpenOutlined />}
+                            onClick={() => navigate(`/projects/${project._id}`)}
+                          >
+                            打开
+                          </Button>
+                        ]}
+                      >
+                        <List.Item.Meta
+                          avatar={<ProjectOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                          title={
+                            <Space>
+                              {project.projectName || project.project_name || '未命名项目'}
+                              {user?.role === 'Technical Engineer' && project.priority && (
+                                <Tag color={getPriorityColor(project.priority)}>
+                                  {project.priority === 'Urgent' ? '紧急' : 
+                                   project.priority === 'High' ? '高' :
+                                   project.priority === 'Normal' ? '正常' : '低'}
+                                </Tag>
+                              )}
+                            </Space>
+                          }
+                          description={
+                            <Space size="small" wrap>
+                              <Text type="secondary">{project.client?.name || project.client_name || '无客户'}</Text>
+                              {user?.role !== 'Technical Engineer' && (
+                                <Tag color="blue">{project.selections?.length || project.technical_item_list?.length || 0} 个选型</Tag>
+                              )}
+                              <Tag color={
+                                project.status === '选型进行中' ? 'processing' :
+                                project.status === '选型修正中' ? 'warning' :
+                                project.status === '草稿' ? 'default' : 'success'
+                              }>
+                                {project.status}
+                              </Tag>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {dayjs(project.createdAt).format('MM-DD HH:mm')}
+                              </Text>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )
+                  }}
                 />
               )}
             </Card>
