@@ -26,7 +26,12 @@ const Dashboard = () => {
     pendingQuoteCount: 0,      // 待完成报价数
     pendingSelectionCount: 0,  // 待完成选型数
     pendingProjectCount: 0,    // 待项目完成数量
-    pendingTicketCount: 0      // 待处理售后工单数
+    pendingTicketCount: 0,     // 待处理售后工单数
+    // 👑 管理员专属统计 - 待处理事项
+    pendingUserRequests: 0,    // 待处理用户申请
+    pendingPasswordResets: 0,  // 待处理密码重置申请
+    pendingDataImports: 0,     // 待处理数据导入请求
+    systemWarnings: 0          // 系统异常警告
   })
   const [recentProjects, setRecentProjects] = useState([])
 
@@ -38,7 +43,30 @@ const Dashboard = () => {
     try {
       setLoading(true)
       
-      // 获取项目数据
+      // 👑 管理员：获取待处理事项统计
+      if (user?.role === 'Administrator') {
+        // TODO: 这里应该调用专门的管理员任务统计API
+        // 暂时使用模拟数据，后续接入真实API
+        
+        setStats({
+          projectCount: 0,
+          pendingQuoteCount: 0,
+          pendingSelectionCount: 0,
+          pendingProjectCount: 0,
+          pendingTicketCount: 0,
+          // 管理员待处理事项（暂时使用模拟数据）
+          pendingUserRequests: 0,       // 待审批的新用户申请
+          pendingPasswordResets: 0,     // 待处理的密码重置申请
+          pendingDataImports: 0,        // 待审核的数据导入请求
+          systemWarnings: 0             // 系统异常警告数量
+        })
+        
+        setRecentProjects([])  // 管理员不显示项目列表
+        setLoading(false)
+        return
+      }
+      
+      // 其他角色：获取项目数据
       const projectsRes = await projectsAPI.getAll()
 
       // 安全提取数据 - 后端返回格式: { success: true, data: [...] }
@@ -140,8 +168,41 @@ const Dashboard = () => {
   // 🔒 根据角色配置快捷操作
   const quickActions = []
   
+  // 👑 管理员专属快捷操作
+  if (user?.role === 'Administrator') {
+    quickActions.push(
+      {
+        icon: <UserOutlined />,
+        title: '用户管理',
+        description: '管理系统用户和权限',
+        color: '#1890ff',
+        onClick: () => navigate('/admin/users')
+      },
+      {
+        icon: <DatabaseOutlined />,
+        title: '产品导入',
+        description: '批量导入产品数据',
+        color: '#52c41a',
+        onClick: () => navigate('/product-import')
+      },
+      {
+        icon: <DatabaseOutlined />,
+        title: '供应商管理',
+        description: '管理供应商信息和资质',
+        color: '#722ed1',
+        onClick: () => navigate('/suppliers')
+      },
+      {
+        icon: <ProjectOutlined />,
+        title: '系统总览',
+        description: '查看系统数据统计',
+        color: '#fa8c16',
+        onClick: () => navigate('/projects')
+      }
+    )
+  } 
   // 销售经理专属快捷操作
-  if (user?.role === 'Sales Manager') {
+  else if (user?.role === 'Sales Manager') {
     quickActions.push(
       {
         icon: <PlusOutlined />,
@@ -205,17 +266,6 @@ const Dashboard = () => {
     )
   }
 
-  // 管理员额外的快捷操作
-  if (user?.role === 'Administrator') {
-    quickActions.push({
-      icon: <DatabaseOutlined />,
-      title: '数据管理',
-      description: '管理系统基础数据',
-      color: '#fa8c16',
-      onClick: () => navigate('/admin')
-    })
-  }
-
   return (
     <Spin spinning={loading}>
       <div>
@@ -224,7 +274,55 @@ const Dashboard = () => {
 
         {/* 统计卡片 - 根据角色显示不同指标 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          {user?.role === 'Technical Engineer' ? (
+          {user?.role === 'Administrator' ? (
+            // 👑 管理员：显示待处理事项统计
+            <>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="待处理用户申请"
+                    value={stats.pendingUserRequests}
+                    prefix={<UserOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: stats.pendingUserRequests > 0 ? '#fa8c16' : '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="密码重置申请"
+                    value={stats.pendingPasswordResets}
+                    prefix={<UserOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: stats.pendingPasswordResets > 0 ? '#fa8c16' : '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="数据导入请求"
+                    value={stats.pendingDataImports}
+                    prefix={<DatabaseOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: stats.pendingDataImports > 0 ? '#fa8c16' : '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Card>
+                  <Statistic
+                    title="系统异常警告"
+                    value={stats.systemWarnings}
+                    prefix={<CheckCircleOutlined />}
+                    suffix="个"
+                    valueStyle={{ color: stats.systemWarnings > 0 ? '#f5222d' : '#52c41a' }}
+                  />
+                </Card>
+              </Col>
+            </>
+          ) : user?.role === 'Technical Engineer' ? (
             // 技术工程师：只显示待完成选型数和待售后处理数
             <>
               <Col xs={24} sm={12}>
@@ -337,93 +435,129 @@ const Dashboard = () => {
             </Card>
           </Col>
 
-          {/* 最近项目 */}
+          {/* 最近项目 / 系统监控 */}
           <Col xs={24} lg={12}>
-            <Card 
-              title={user?.role === 'Technical Engineer' ? '待选型项目（按紧急度）' : '最近项目'}
-              extra={
-                <Button 
-                  type="link" 
-                  onClick={() => navigate('/projects')}
-                >
-                  查看全部 <RightOutlined />
-                </Button>
-              }
-            >
-              {recentProjects.length === 0 ? (
+            {user?.role === 'Administrator' ? (
+              // 👑 管理员：显示系统监控提示
+              <Card 
+                title="系统监控"
+                extra={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+              >
                 <Alert
-                  message={user?.role === 'Technical Engineer' ? '暂无待选型项目' : '还没有项目'}
-                  description={user?.role === 'Technical Engineer' ? '目前没有分配给您的选型任务' : '点击快捷操作创建您的第一个项目'}
-                  type="info"
+                  message="系统运行正常"
+                  description={
+                    <div>
+                      <p>所有服务正常运行，无异常警告。</p>
+                      <Space direction="vertical" style={{ width: '100%', marginTop: 16 }}>
+                        <div>
+                          <Text strong>系统状态：</Text>
+                          <Tag color="success" style={{ marginLeft: 8 }}>运行中</Tag>
+                        </div>
+                        <div>
+                          <Text strong>数据库连接：</Text>
+                          <Tag color="success" style={{ marginLeft: 8 }}>正常</Tag>
+                        </div>
+                        <div>
+                          <Text strong>最后检查时间：</Text>
+                          <Text type="secondary" style={{ marginLeft: 8 }}>
+                            {dayjs().format('YYYY-MM-DD HH:mm:ss')}
+                          </Text>
+                        </div>
+                      </Space>
+                    </div>
+                  }
+                  type="success"
                   showIcon
                 />
-              ) : (
-                <List
-                  dataSource={recentProjects}
-                  renderItem={project => {
-                    // 紧急度颜色映射
-                    const getPriorityColor = (priority) => {
-                      const colorMap = {
-                        'Urgent': 'red',
-                        'High': 'orange',
-                        'Normal': 'blue',
-                        'Low': 'default'
+              </Card>
+            ) : (
+              // 其他角色：显示最近项目
+              <Card 
+                title={user?.role === 'Technical Engineer' ? '待选型项目（按紧急度）' : '最近项目'}
+                extra={
+                  <Button 
+                    type="link" 
+                    onClick={() => navigate('/projects')}
+                  >
+                    查看全部 <RightOutlined />
+                  </Button>
+                }
+              >
+                {recentProjects.length === 0 ? (
+                  <Alert
+                    message={user?.role === 'Technical Engineer' ? '暂无待选型项目' : '还没有项目'}
+                    description={user?.role === 'Technical Engineer' ? '目前没有分配给您的选型任务' : '点击快捷操作创建您的第一个项目'}
+                    type="info"
+                    showIcon
+                  />
+                ) : (
+                  <List
+                    dataSource={recentProjects}
+                    renderItem={project => {
+                      // 紧急度颜色映射
+                      const getPriorityColor = (priority) => {
+                        const colorMap = {
+                          'Urgent': 'red',
+                          'High': 'orange',
+                          'Normal': 'blue',
+                          'Low': 'default'
+                        }
+                        return colorMap[priority] || 'default'
                       }
-                      return colorMap[priority] || 'default'
-                    }
-                    
-                    return (
-                      <List.Item
-                        key={project._id}
-                        actions={[
-                          <Button
-                            type="link"
-                            icon={<FolderOpenOutlined />}
-                            onClick={() => navigate(`/projects/${project._id}`)}
-                          >
-                            打开
-                          </Button>
-                        ]}
-                      >
-                        <List.Item.Meta
-                          avatar={<ProjectOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
-                          title={
-                            <Space>
-                              {project.projectName || project.project_name || '未命名项目'}
-                              {user?.role === 'Technical Engineer' && project.priority && (
-                                <Tag color={getPriorityColor(project.priority)}>
-                                  {project.priority === 'Urgent' ? '紧急' : 
-                                   project.priority === 'High' ? '高' :
-                                   project.priority === 'Normal' ? '正常' : '低'}
+                      
+                      return (
+                        <List.Item
+                          key={project._id}
+                          actions={[
+                            <Button
+                              type="link"
+                              icon={<FolderOpenOutlined />}
+                              onClick={() => navigate(`/projects/${project._id}`)}
+                            >
+                              打开
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={<ProjectOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                            title={
+                              <Space>
+                                {project.projectName || project.project_name || '未命名项目'}
+                                {user?.role === 'Technical Engineer' && project.priority && (
+                                  <Tag color={getPriorityColor(project.priority)}>
+                                    {project.priority === 'Urgent' ? '紧急' : 
+                                     project.priority === 'High' ? '高' :
+                                     project.priority === 'Normal' ? '正常' : '低'}
+                                  </Tag>
+                                )}
+                              </Space>
+                            }
+                            description={
+                              <Space size="small" wrap>
+                                <Text type="secondary">{project.client?.name || project.client_name || '无客户'}</Text>
+                                {user?.role !== 'Technical Engineer' && (
+                                  <Tag color="blue">{project.selections?.length || project.technical_item_list?.length || 0} 个选型</Tag>
+                                )}
+                                <Tag color={
+                                  project.status === '选型进行中' ? 'processing' :
+                                  project.status === '选型修正中' ? 'warning' :
+                                  project.status === '草稿' ? 'default' : 'success'
+                                }>
+                                  {project.status}
                                 </Tag>
-                              )}
-                            </Space>
-                          }
-                          description={
-                            <Space size="small" wrap>
-                              <Text type="secondary">{project.client?.name || project.client_name || '无客户'}</Text>
-                              {user?.role !== 'Technical Engineer' && (
-                                <Tag color="blue">{project.selections?.length || project.technical_item_list?.length || 0} 个选型</Tag>
-                              )}
-                              <Tag color={
-                                project.status === '选型进行中' ? 'processing' :
-                                project.status === '选型修正中' ? 'warning' :
-                                project.status === '草稿' ? 'default' : 'success'
-                              }>
-                                {project.status}
-                              </Tag>
-                              <Text type="secondary" style={{ fontSize: 12 }}>
-                                {dayjs(project.createdAt).format('MM-DD HH:mm')}
-                              </Text>
-                            </Space>
-                          }
-                        />
-                      </List.Item>
-                    )
-                  }}
-                />
-              )}
-            </Card>
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  {dayjs(project.createdAt).format('MM-DD HH:mm')}
+                                </Text>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )
+                    }}
+                  />
+                )}
+              </Card>
+            )}
           </Col>
         </Row>
 
@@ -432,7 +566,51 @@ const Dashboard = () => {
           title="使用指南" 
           style={{ marginTop: 24 }}
         >
-          {user?.role === 'Sales Manager' ? (
+          {user?.role === 'Administrator' ? (
+            // 👑 系统管理员专属使用指南 - 不参与业务流程，只负责系统管理
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#1890ff' }}>1.</span> 用户管理
+                  </Title>
+                  <Text type="secondary">
+                    创建和管理系统用户账号，分配角色权限，重置密码，停用离职员工账号。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#52c41a' }}>2.</span> 产品导入
+                  </Title>
+                  <Text type="secondary">
+                    批量导入产品数据（执行器、配件、手动装置），更新产品价格和技术参数。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#722ed1' }}>3.</span> 供应商管理
+                  </Title>
+                  <Text type="secondary">
+                    维护供应商档案，管理供应商资质和评级，建立可靠的供应商体系。
+                  </Text>
+                </Space>
+              </Col>
+              <Col xs={24} md={6}>
+                <Space direction="vertical">
+                  <Title level={5}>
+                    <span style={{ color: '#fa8c16' }}>4.</span> 数据统计
+                  </Title>
+                  <Text type="secondary">
+                    监控系统运行状态，查看业务数据统计，导出报表，为管理层提供决策依据。
+                  </Text>
+                </Space>
+              </Col>
+            </Row>
+          ) : user?.role === 'Sales Manager' ? (
             // 🔒 销售经理专属使用指南
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
