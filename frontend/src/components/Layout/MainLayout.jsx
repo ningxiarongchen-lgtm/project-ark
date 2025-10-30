@@ -14,6 +14,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   CustomerServiceOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 
@@ -61,7 +62,7 @@ const menuConfig = [
     key: '/service-center',
     label: '售后服务',
     icon: <CustomerServiceOutlined />,
-    roles: ['Administrator', 'After-sales Engineer', 'Sales Manager'],
+    roles: ['Administrator', 'After-sales Engineer', 'Sales Manager', 'Technical Engineer'],
   },
   {
     key: '/product-catalog',
@@ -70,16 +71,16 @@ const menuConfig = [
     roles: ['Sales Manager'],
   },
   {
-    key: '/products',
-    label: '产品数据库',
-    icon: <DatabaseOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
-  },
-  {
     key: '/data-management',
-    label: '数据管理',
+    label: '产品数据管理',
     icon: <DatabaseOutlined />,
     roles: ['Administrator', 'Technical Engineer', 'Procurement Specialist'],
+  },
+  {
+    key: '/product-import',
+    label: '产品批量导入',
+    icon: <UploadOutlined />,
+    roles: ['Administrator', 'Technical Engineer'],
   },
   {
     key: '/admin',

@@ -38,12 +38,12 @@ const DataManagement = () => {
       <Card
         title={
           <span>
-            <DatabaseOutlined /> 数据管理中心
+            <DatabaseOutlined /> 产品数据管理
           </span>
         }
         extra={
           <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>
-            管理系统核心数据
+            管理系统核心产品数据
           </span>
         }
       >

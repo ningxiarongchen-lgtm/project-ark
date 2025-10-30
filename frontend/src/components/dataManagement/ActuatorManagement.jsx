@@ -2,15 +2,21 @@
  * Actuator管理组件
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tag, Row, Col, Statistic } from 'antd';
 import DataManagementTable from './DataManagementTable';
 import ActuatorForm from './forms/ActuatorForm';
 import { dataManagementAPI } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 const ActuatorManagement = () => {
+  const { user } = useAuthStore();
+  
+  // 检查用户角色，技术工程师不显示价格
+  const isTechnicalEngineer = user?.role === 'Technical Engineer';
+  
   // 表格列定义
-  const columns = [
+  const allColumns = [
     {
       title: '型号',
       dataIndex: 'model_base',
@@ -75,6 +81,16 @@ const ActuatorManagement = () => {
       }
     }
   ];
+  
+  // 根据用户角色过滤列 - 技术工程师不显示价格相关列
+  const columns = useMemo(() => {
+    if (isTechnicalEngineer) {
+      return allColumns.filter(col => 
+        col.key !== 'pricing_model' && col.key !== 'base_price'
+      );
+    }
+    return allColumns;
+  }, [isTechnicalEngineer]);
   
   // 渲染统计信息
   const renderStatistics = (stats) => (

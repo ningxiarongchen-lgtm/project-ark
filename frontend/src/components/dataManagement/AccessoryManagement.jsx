@@ -2,14 +2,20 @@
  * Accessory管理组件
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Tag, Row, Col, Statistic } from 'antd';
 import DataManagementTable from './DataManagementTable';
 import AccessoryForm from './forms/AccessoryForm';
 import { dataManagementAPI } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 
 const AccessoryManagement = () => {
-  const columns = [
+  const { user } = useAuthStore();
+  
+  // 检查用户角色，技术工程师不显示价格
+  const isTechnicalEngineer = user?.role === 'Technical Engineer';
+  
+  const allColumns = [
     {
       title: '名称',
       dataIndex: 'name',
@@ -73,27 +79,56 @@ const AccessoryManagement = () => {
     }
   ];
   
-  const renderStatistics = (stats) => (
-    <Row gutter={16}>
-      <Col span={6}>
-        <Statistic title="总数量" value={stats.totalCount} />
-      </Col>
-      <Col span={6}>
-        <Statistic 
-          title="类别数" 
-          value={stats.byCategory?.length || 0} 
-        />
-      </Col>
-      <Col span={6}>
-        <Statistic 
-          title="库存总价值" 
-          value={stats.totalStockValue || 0}
-          prefix="¥"
-          precision={2}
-        />
-      </Col>
-    </Row>
-  );
+  // 根据用户角色过滤列 - 技术工程师不显示价格相关列
+  const columns = useMemo(() => {
+    if (isTechnicalEngineer) {
+      return allColumns.filter(col => 
+        col.key !== 'pricing_model' && col.key !== 'base_price'
+      );
+    }
+    return allColumns;
+  }, [isTechnicalEngineer]);
+  
+  const renderStatistics = (stats) => {
+    // 技术工程师不显示价格相关统计
+    if (isTechnicalEngineer) {
+      return (
+        <Row gutter={16}>
+          <Col span={8}>
+            <Statistic title="总数量" value={stats.totalCount} />
+          </Col>
+          <Col span={8}>
+            <Statistic 
+              title="类别数" 
+              value={stats.byCategory?.length || 0} 
+            />
+          </Col>
+        </Row>
+      );
+    }
+    
+    return (
+      <Row gutter={16}>
+        <Col span={6}>
+          <Statistic title="总数量" value={stats.totalCount} />
+        </Col>
+        <Col span={6}>
+          <Statistic 
+            title="类别数" 
+            value={stats.byCategory?.length || 0} 
+          />
+        </Col>
+        <Col span={6}>
+          <Statistic 
+            title="库存总价值" 
+            value={stats.totalStockValue || 0}
+            prefix="¥"
+            precision={2}
+          />
+        </Col>
+      </Row>
+    );
+  };
   
   return (
     <DataManagementTable

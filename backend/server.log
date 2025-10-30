@@ -41,3 +41,214 @@
 [0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 5.221 ms - -[0m
 [0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 9.198 ms - -[0m
 [0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 3.532 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 38.820 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 3.812 ms - -[0m
+[0mPOST /api/auth/login [32m200[0m 207.931 ms - 193[0m
+[0mGET /api/projects [36m304[0m 168.871 ms - -[0m
+[0mGET /api/projects [36m304[0m 15.019 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 119.654 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 8.090 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [32m200[0m 19.154 ms - 9090[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 6.035 ms - -[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 2.109 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.072 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.775 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 11.444 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 4.995 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.127 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.153 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.279 ms - 131[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 14.705 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 7.549 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 15.038 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 5.850 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 10.308 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 4.813 ms - -[0m
+[0mGET /api/projects [36m304[0m 14.425 ms - -[0m
+[0mGET /api/projects [36m304[0m 7.101 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 26.755 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 6.410 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 31.350 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 4.949 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 15.655 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 6.264 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 65.636 ms - -[0m
+[0mGET /api/projects/6903037e7e05a3402ece2337 [36m304[0m 7.242 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 92.124 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 7.602 ms - -[0m
+[0mGET /api/projects/6903007ed2d989cc49a7fc4e [32m200[0m 21.383 ms - 1656[0m
+[0mGET /api/projects/6903007ed2d989cc49a7fc4e [36m304[0m 7.516 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 209.546 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 14.476 ms - -[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 6.950 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 21.511 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 8.137 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.391 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 6.742 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.725 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.441 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.587 ms - 131[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 27.100 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 11.392 ms - -[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 3.384 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.858 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 3.330 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.906 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 5.050 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 3.640 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.847 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.589 ms - 131[0m
+[0mGET /api/data-management/accessories?page=1&limit=20&search= [32m200[0m 22.438 ms - 6229[0m
+[0mGET /api/data-management/accessories?page=1&limit=20&search= [36m304[0m 6.077 ms - -[0m
+[0mGET /api/data-management/accessories/statistics [32m200[0m 39.024 ms - 229[0m
+[0mGET /api/data-management/accessories/statistics [32m200[0m 3.687 ms - 229[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 44.612 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 6.966 ms - -[0m
+[0mGET /api/actuators/new [31m500[0m 8.576 ms - 162[0m
+Get version history error: CastError: Cast to ObjectId failed for value "new" (type string) at path "_id" for model "Actuator"
+    at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async exports.getVersionHistory (/Users/hexiaoxiao/Desktop/Model Selection System/backend/controllers/actuatorController.js:547:27) {
+  stringValue: '"new"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'new',
+  path: '_id',
+  reason: BSONError: Argument passed in must be a string of 12 bytes or a string of 24 hex characters or an integer
+      at new ObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/bson/lib/bson.cjs:2055:23)
+      at castObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast/objectid.js:25:12)
+      at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:248:12)
+      at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+      at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+      at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+      at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+      at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+      at model.Query._findOne (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2533:8)
+      at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28),
+  valueType: 'string',
+  model: Model { Actuator }
+}
+[0mGET /api/actuators/new/versions [31m500[0m 11.273 ms - 159[0m
+Get ECOs by product error: CastError: Cast to ObjectId failed for value "new" (type string) at path "actuator_id" for model "EngineeringChangeOrder"
+    at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._find (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2263:8)
+    at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async exports.getEcosByProduct (/Users/hexiaoxiao/Desktop/Model Selection System/backend/controllers/ecoController.js:464:18) {
+  stringValue: '"new"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'new',
+  path: 'actuator_id',
+  reason: BSONError: Argument passed in must be a string of 12 bytes or a string of 24 hex characters or an integer
+      at new ObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/bson/lib/bson.cjs:2055:23)
+      at castObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast/objectid.js:25:12)
+      at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:248:12)
+      at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+      at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+      at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+      at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+      at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+      at model.Query._find (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2263:8)
+      at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28),
+  valueType: 'string',
+  model: Model { EngineeringChangeOrder }
+}
+[0mGET /api/ecos/by-product/new [31m500[0m 13.544 ms - 184[0m
+[0mGET /api/actuators/new [31m500[0m 3.296 ms - 162[0m
+Get ECOs by product error: CastError: Cast to ObjectId failed for value "new" (type string) at path "actuator_id" for model "EngineeringChangeOrder"
+    at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._find (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2263:8)
+    at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async exports.getEcosByProduct (/Users/hexiaoxiao/Desktop/Model Selection System/backend/controllers/ecoController.js:464:18) {
+  stringValue: '"new"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'new',
+  path: 'actuator_id',
+  reason: BSONError: Argument passed in must be a string of 12 bytes or a string of 24 hex characters or an integer
+      at new ObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/bson/lib/bson.cjs:2055:23)
+      at castObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast/objectid.js:25:12)
+      at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:248:12)
+      at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+      at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+      at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+      at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+      at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+      at model.Query._find (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2263:8)
+      at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28),
+  valueType: 'string',
+  model: Model { EngineeringChangeOrder }
+}
+[0mGET /api/ecos/by-product/new [31m500[0m 4.780 ms - 184[0m
+Get version history error: CastError: Cast to ObjectId failed for value "new" (type string) at path "_id" for model "Actuator"
+    at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:250:11)
+    at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+    at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+    at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+    at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+    at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+    at model.Query._findOne (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2533:8)
+    at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async exports.getVersionHistory (/Users/hexiaoxiao/Desktop/Model Selection System/backend/controllers/actuatorController.js:547:27) {
+  stringValue: '"new"',
+  messageFormat: undefined,
+  kind: 'ObjectId',
+  value: 'new',
+  path: '_id',
+  reason: BSONError: Argument passed in must be a string of 12 bytes or a string of 24 hex characters or an integer
+      at new ObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/bson/lib/bson.cjs:2055:23)
+      at castObjectId (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast/objectid.js:25:12)
+      at ObjectId.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schema/objectid.js:248:12)
+      at SchemaType.applySetters (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1219:12)
+      at SchemaType.castForQuery (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/schematype.js:1633:15)
+      at cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/cast.js:389:32)
+      at Query.cast (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4927:12)
+      at Query._castConditions (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2237:10)
+      at model.Query._findOne (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:2533:8)
+      at model.Query.exec (/Users/hexiaoxiao/Desktop/Model Selection System/backend/node_modules/mongoose/lib/query.js:4447:28),
+  valueType: 'string',
+  model: Model { Actuator }
+}
+[0mGET /api/actuators/new/versions [31m500[0m 26.111 ms - 159[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 34.758 ms - -[0m
+[0mGET /api/projects?page=1&limit=10 [36m304[0m 5.693 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 12.451 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 9.858 ms - -[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 2.714 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.655 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 2.524 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.649 ms - 131[0m
+[0mGET /api/data-management/actuators/template [33m403[0m 2.357 ms - 131[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 10.781 ms - -[0m
+[0mGET /api/actuators?search=&series=&action_type=&status= [36m304[0m 6.661 ms - -[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 7.093 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 28.163 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 2.698 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 3.596 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 33.797 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 25.331 ms - 131[0m
+[0mGET /api/data-management/actuators?page=1&limit=20&search= [33m403[0m 1.432 ms - 131[0m
+[0mGET /api/data-management/actuators/statistics [33m403[0m 1.254 ms - 131[0m
+[0mGET /api/projects [36m304[0m 62.172 ms - -[0m
+[0mGET /api/projects [36m304[0m 8.747 ms - -[0m
+[0mGET /api/projects [36m304[0m 487.484 ms - -[0m
