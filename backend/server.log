@@ -307,3 +307,5 @@ Get version history error: CastError: Cast to ObjectId failed for value "new" (t
 [0mGET /api/tickets [36m304[0m 7.447 ms - -[0m
 [0mGET /api/projects [36m304[0m 11.391 ms - -[0m
 [0mGET /api/tickets [36m304[0m 2.408 ms - -[0m
+[0mGET /api/projects [36m304[0m 72.047 ms - -[0m
+[0mGET /api/tickets [36m304[0m 13.504 ms - -[0m
