@@ -11,7 +11,7 @@ import {
   ToolOutlined, ClockCircleOutlined, CustomerServiceOutlined,
   PhoneOutlined, WarningOutlined, CalendarOutlined, TrophyOutlined,
   FileTextOutlined, BellOutlined, FileSearchOutlined, SendOutlined,
-  SettingOutlined, DownloadOutlined, CloseOutlined
+  SettingOutlined, DownloadOutlined, CloseOutlined, UploadOutlined
 } from '@ant-design/icons'
 import { projectsAPI, ticketsAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
@@ -19,6 +19,379 @@ import GreetingWidget from '../components/dashboards/GreetingWidget'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
+
+// 💼 商务工程师 v2.0 优化版 Dashboard 组件
+const SalesEngineerDashboardV2 = ({ user, navigate }) => {
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalProjects: 0,
+    pendingQuotation: 0,
+    pendingDownPayment: 0,      // 待催30%预付款
+    pendingFinalPayment: 0,     // 待催70%尾款
+    pendingProductionOrder: 0,  // 待下生产订单
+    monthlyRevenue: 0
+  })
+  const [recentProjects, setRecentProjects] = useState([])
+
+  useEffect(() => {
+    fetchSalesData()
+  }, [])
+
+  const fetchSalesData = async () => {
+    try {
+      setLoading(true)
+      
+      // 获取商务工程师专属统计数据
+      const [statsRes, projectsRes] = await Promise.all([
+        projectsAPI.getSalesEngineerStats(),
+        projectsAPI.getProjects({ limit: 10 })
+      ])
+      
+      setStats(statsRes.data)
+      setRecentProjects(projectsRes.data || [])
+    } catch (error) {
+      console.error('获取商务工程师数据失败:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getStatusTag = (status) => {
+    const statusMap = {
+      '项目启动-新项目': { color: 'blue', text: '新项目' },
+      '需求调研-确认中': { color: 'cyan', text: '需求确认' },
+      '技术选型-进行中': { color: 'orange', text: '选型中' },
+      '技术选型-完成': { color: 'green', text: '选型完成' },
+      '已报价-询价中': { color: 'gold', text: '询价中' },
+      '合同已签订-赢单': { color: 'green', text: '已赢单' },
+      '项目失败-丢单': { color: 'red', text: '已丢单' }
+    }
+    const { color, text } = statusMap[status] || { color: 'default', text: status }
+    return <Tag color={color}>{text}</Tag>
+  }
+
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '100px 0' }}>
+        <Spin size="large" tip="加载中..." />
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* 🎯 顶部统计卡片区 - 6个核心指标 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="我的项目总数"
+              value={stats.totalProjects}
+              prefix={<ProjectOutlined style={{ color: '#1890ff' }} />}
+              suffix="个"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="待完成报价"
+              value={stats.pendingQuotation}
+              prefix={<FileTextOutlined style={{ color: '#fa8c16' }} />}
+              suffix="个"
+              valueStyle={{ color: stats.pendingQuotation > 0 ? '#fa8c16' : undefined }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="待催30%预付款"
+              value={stats.pendingDownPayment}
+              prefix={<DollarOutlined style={{ color: '#f5222d' }} />}
+              suffix="个"
+              valueStyle={{ color: stats.pendingDownPayment > 0 ? '#f5222d' : undefined }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="待催70%尾款"
+              value={stats.pendingFinalPayment}
+              prefix={<DollarOutlined style={{ color: '#eb2f96' }} />}
+              suffix="个"
+              valueStyle={{ color: stats.pendingFinalPayment > 0 ? '#eb2f96' : undefined }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="待下生产订单"
+              value={stats.pendingProductionOrder}
+              prefix={<ToolOutlined style={{ color: '#722ed1' }} />}
+              suffix="个"
+              valueStyle={{ color: stats.pendingProductionOrder > 0 ? '#722ed1' : undefined }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable>
+            <Statistic
+              title="本月成交金额"
+              value={stats.monthlyRevenue}
+              prefix={<TrophyOutlined style={{ color: '#52c41a' }} />}
+              suffix="元"
+              precision={0}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ⚡ 快捷操作区 */}
+      <Card 
+        title={<><ThunderboltOutlined /> 快捷操作</>}
+        style={{ marginBottom: 24 }}
+      >
+        <Space size="middle" wrap>
+          <Button 
+            type="primary" 
+            icon={<FileTextOutlined />}
+            onClick={() => navigate('/projects?status=待商务报价')}
+          >
+            待报价项目
+          </Button>
+          <Button 
+            icon={<FileSearchOutlined />}
+            onClick={() => navigate('/projects?status=待商务审核合同')}
+          >
+            待审核合同
+          </Button>
+          <Button 
+            type="primary"
+            danger
+            icon={<DollarOutlined />}
+            onClick={() => navigate('/projects?status=待预付款')}
+          >
+            催收预付款
+          </Button>
+          <Button 
+            icon={<ToolOutlined />}
+            onClick={() => navigate('/projects?status=生产准备中')}
+          >
+            下生产订单
+          </Button>
+          <Button 
+            icon={<ProjectOutlined />}
+            onClick={() => navigate('/projects')}
+          >
+            所有项目
+          </Button>
+        </Space>
+      </Card>
+
+      {/* 📋 任务提醒中心 */}
+      <Card 
+        title={<><BellOutlined /> 任务提醒中心</>}
+        extra={<Badge count={stats.pendingQuotation + stats.pendingDownPayment + stats.pendingFinalPayment + stats.pendingProductionOrder} />}
+        style={{ marginBottom: 24 }}
+      >
+        <List
+          dataSource={[
+            stats.pendingQuotation > 0 && {
+              icon: <FileTextOutlined style={{ color: '#fa8c16' }} />,
+              title: `待完成报价`,
+              description: `您有 ${stats.pendingQuotation} 个项目等待商务报价`,
+              action: () => navigate('/projects?status=待商务报价')
+            },
+            stats.pendingDownPayment > 0 && {
+              icon: <DollarOutlined style={{ color: '#f5222d' }} />,
+              title: `催收30%预付款`,
+              description: `您有 ${stats.pendingDownPayment} 个项目需要催促销售收取预付款`,
+              action: () => navigate('/projects?status=待预付款')
+            },
+            stats.pendingProductionOrder > 0 && {
+              icon: <ToolOutlined style={{ color: '#722ed1' }} />,
+              title: `待下生产订单`,
+              description: `您有 ${stats.pendingProductionOrder} 个项目预付款已到账，需要下生产订单`,
+              action: () => navigate('/projects?status=生产准备中')
+            },
+            stats.pendingFinalPayment > 0 && {
+              icon: <DollarOutlined style={{ color: '#eb2f96' }} />,
+              title: `催收70%尾款`,
+              description: `您有 ${stats.pendingFinalPayment} 个项目质检通过，需要催收尾款`,
+              action: () => navigate('/projects?status=待尾款')
+            }
+          ].filter(Boolean)}
+          renderItem={item => (
+            <List.Item
+              actions={[
+                <Button type="link" onClick={item.action}>
+                  立即处理 <RightOutlined />
+                </Button>
+              ]}
+            >
+              <List.Item.Meta
+                avatar={<Avatar icon={item.icon} size={40} />}
+                title={<Text strong>{item.title}</Text>}
+                description={item.description}
+              />
+            </List.Item>
+          )}
+        />
+        {(stats.pendingQuotation + stats.pendingDownPayment + stats.pendingFinalPayment + stats.pendingProductionOrder) === 0 && (
+          <Empty description="暂无待处理任务，太棒了！" />
+        )}
+      </Card>
+
+      {/* 📊 最近项目列表 */}
+      <Card 
+        title={<><ProjectOutlined /> 最近项目</>}
+        extra={
+          <Button type="link" onClick={() => navigate('/projects')}>
+            查看全部 <RightOutlined />
+          </Button>
+        }
+      >
+        <List
+          dataSource={recentProjects}
+          renderItem={project => (
+            <List.Item
+              actions={[
+                <Button 
+                  type="link" 
+                  onClick={() => navigate(`/projects/${project._id}`)}
+                >
+                  查看详情
+                </Button>
+              ]}
+            >
+              <List.Item.Meta
+                title={
+                  <Space>
+                    <Text strong>{project.project_id}</Text>
+                    <Text>{project.project_name}</Text>
+                    {getStatusTag(project.status)}
+                  </Space>
+                }
+                description={
+                  <Space split={<Divider type="vertical" />}>
+                    <Text type="secondary">客户: {project.client_name || '未填写'}</Text>
+                    <Text type="secondary">创建: {dayjs(project.createdAt).format('YYYY-MM-DD')}</Text>
+                  </Space>
+                }
+              />
+            </List.Item>
+          )}
+        />
+        {recentProjects.length === 0 && (
+          <Empty description="暂无项目" />
+        )}
+      </Card>
+
+      {/* 💼 业务流程指南 - 完整7步工作流程 */}
+      <Card 
+        title="💼 商务工程师完整工作流程" 
+        style={{ marginTop: 24 }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#e6f7ff', border: '1px solid #91d5ff' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#1890ff' }}>①</span> 接收项目并报价
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  技术选型完成后，接收项目进行商务报价。根据BOM清单设置价格策略，完成后销售可下载报价单给客户。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#fff7e6', border: '1px solid #ffd591' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#fa8c16' }}>②</span> 审核销售合同
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  客户接受报价后，销售上传合同。审核合同内容和金额，确认无误后下载，提交公司盖章。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#52c41a' }}>③</span> 回传盖章合同
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  公司盖章完成后，上传盖章合同给销售。由销售转交客户签字盖章，完成后项目正式赢单。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#fff1f0', border: '1px solid #ffccc7' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#f5222d' }}>④</span> 催收30%预付款
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  合同签订后，催促销售尽快跟进客户收取30%预付款。这是启动生产的前提条件。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#f9f0ff', border: '1px solid #d3adf7' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#722ed1' }}>⑤</span> 下发生产订单
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  确认预付款到账后，下发生产订单给生产部门。通知生产员开始BOM拆分和生产排期。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#fff0f6', border: '1px solid #ffadd2' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#eb2f96' }}>⑥</span> 质检通过，催收尾款
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  等待生产完成和质检通过。质检合格后，立即催促销售收取70%尾款。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+          
+          <Col xs={24} sm={12} lg={8}>
+            <Card size="small" style={{ background: '#e6fffb', border: '1px solid #87e8de' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  <span style={{ color: '#13c2c2' }}>⑦</span> 确认尾款，通知发货
+                </Title>
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  确认70%尾款到账后，通知质检部门和物流可以装车发货。至此项目完成。
+                </Text>
+              </Space>
+            </Card>
+          </Col>
+        </Row>
+      </Card>
+    </div>
+  )
+}
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -305,6 +678,11 @@ const Dashboard = () => {
         onClick: () => navigate('/data-management')
       }
     )
+  }
+
+  // 💼 商务工程师：直接返回专属Dashboard v2.0
+  if (user?.role === 'Sales Engineer') {
+    return <SalesEngineerDashboardV2 user={user} navigate={navigate} />
   }
 
   return (
@@ -968,50 +1346,6 @@ const Dashboard = () => {
                 </Row>
               </Card>
             </div>
-          ) : user?.role === 'Sales Engineer' ? (
-            // 💼 商务专员专属使用指南
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={6}>
-                <Space direction="vertical">
-                  <Title level={5}>
-                    <span style={{ color: '#1890ff' }}>1.</span> 商务报价
-                  </Title>
-                  <Text type="secondary">
-                    技术选型完成后，接收项目进行商务报价。根据BOM清单设置价格策略，完成报价后销售可下载报价单。
-                  </Text>
-                </Space>
-              </Col>
-              <Col xs={24} md={6}>
-                <Space direction="vertical">
-                  <Title level={5}>
-                    <span style={{ color: '#fa8c16' }}>2.</span> 审核合同
-                  </Title>
-                  <Text type="secondary">
-                    客户接受报价后，销售会上传销售合同。审核合同内容，确认无误后下载并盖章。
-                  </Text>
-                </Space>
-              </Col>
-              <Col xs={24} md={6}>
-                <Space direction="vertical">
-                  <Title level={5}>
-                    <span style={{ color: '#52c41a' }}>3.</span> 上传盖章合同
-                  </Title>
-                  <Text type="secondary">
-                    公司盖章后，上传盖章合同给销售，由销售转交客户盖章。客户盖章后项目正式赢单。
-                  </Text>
-                </Space>
-              </Col>
-              <Col xs={24} md={6}>
-                <Space direction="vertical">
-                  <Title level={5}>
-                    <span style={{ color: '#722ed1' }}>4.</span> 催收预付款
-                  </Title>
-                  <Text type="secondary">
-                    合同签订后，催促销售跟进客户预付款。预付款到账后，通知生产部门开始生产排期。
-                  </Text>
-                </Space>
-              </Col>
-            </Row>
           ) : user?.role === 'Production Planner' ? (
             // 🏭 生产员专属使用指南
             <Row gutter={[16, 16]}>

@@ -675,37 +675,33 @@ exports.getSalesEngineerStats = async (req, res) => {
     // 1. 总项目数
     const totalProjects = await Project.countDocuments(baseQuery);
     
-    // 2. 待报价项目
+    // 2. 待完成报价
     const pendingQuotation = await Project.countDocuments({
       ...baseQuery,
       status: '待商务报价'
     });
     
-    // 3. 报价中
-    const quotationInProgress = await Project.countDocuments({
-      ...baseQuery,
-      status: '待商务报价'
-    });
-    
-    // 4. 已报价待确认
-    const quotationCompleted = await Project.countDocuments({
-      ...baseQuery,
-      status: '已报价-询价中'
-    });
-    
-    // 5. 待审核合同
-    const pendingContracts = await Project.countDocuments({
-      ...baseQuery,
-      status: '待商务审核合同'
-    });
-    
-    // 6. 待催款项目
-    const pendingPayments = await Project.countDocuments({
+    // 3. 待催30%预付款（合同签订后等待预付款）
+    const pendingDownPayment = await Project.countDocuments({
       ...baseQuery,
       status: '待预付款'
     });
     
-    // 7. 计算本月成交金额
+    // 4. 待下生产订单（预付款已到账，需要下生产订单）
+    const pendingProductionOrder = await Project.countDocuments({
+      ...baseQuery,
+      status: '生产准备中'
+    });
+    
+    // 5. 待催70%尾款（质检通过待发货，需要催收尾款）
+    // 暂时使用"生产中"状态作为待催尾款的标识
+    // TODO: 后续可以添加新状态"质检通过待发货"或"待尾款"
+    const pendingFinalPayment = await Project.countDocuments({
+      ...baseQuery,
+      status: '生产中'
+    });
+    
+    // 6. 计算本月成交金额
     const currentMonth = new Date();
     currentMonth.setDate(1);
     currentMonth.setHours(0, 0, 0, 0);
@@ -736,37 +732,15 @@ exports.getSalesEngineerStats = async (req, res) => {
       }
     });
     
-    // 8. 待跟进客户数（已报价3天未更新的项目）
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    
-    const followUpProjects = await Project.find({
-      ...baseQuery,
-      status: '已报价-询价中',
-      updatedAt: { $lt: threeDaysAgo }
-    });
-    
-    // 提取唯一客户
-    const uniqueCustomers = new Set();
-    followUpProjects.forEach(project => {
-      if (project.client && project.client.name) {
-        uniqueCustomers.add(project.client.name);
-      }
-    });
-    
-    const followUpCustomers = uniqueCustomers.size;
-    
     res.json({
       success: true,
       data: {
         totalProjects,
         pendingQuotation,
-        quotationInProgress,
-        quotationCompleted,
-        monthlyRevenue,
-        pendingContracts,
-        pendingPayments,
-        followUpCustomers
+        pendingDownPayment,      // 待催30%预付款
+        pendingFinalPayment,     // 待催70%尾款
+        pendingProductionOrder,  // 待下生产订单
+        monthlyRevenue           // 本月成交金额
       }
     });
   } catch (error) {

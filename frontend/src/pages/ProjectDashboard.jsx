@@ -30,7 +30,9 @@ import {
   UploadOutlined,
   FolderOpenOutlined,
   DollarOutlined,
-  ProjectOutlined
+  ProjectOutlined,
+  FileTextOutlined,
+  ToolOutlined
 } from '@ant-design/icons';
 import { projectsAPI } from '../services/api';
 import { useAuthStore } from '../store/authStore';
@@ -55,7 +57,12 @@ const ProjectDashboard = () => {
     total: 0,
     pending: 0,
     inProgress: 0,
-    completed: 0
+    completed: 0,
+    // 商务工程师专属统计
+    pendingQuotation: 0,
+    pendingDownPayment: 0,
+    pendingProductionOrder: 0,
+    pendingFinalPayment: 0
   });
   const [pagination, setPagination] = useState({
     current: 1,
@@ -91,7 +98,12 @@ const ProjectDashboard = () => {
         total: response.data.pagination?.total || projectList.length,
         pending: projectList.filter(p => p.status === '待指派技术').length,
         inProgress: projectList.filter(p => ['选型中', '待商务报价', '已报价'].includes(p.status)).length,
-        completed: projectList.filter(p => ['赢单', '合同已签订'].includes(p.status)).length
+        completed: projectList.filter(p => ['赢单', '合同已签订'].includes(p.status)).length,
+        // 商务工程师专属统计
+        pendingQuotation: projectList.filter(p => p.status === '待商务报价').length,
+        pendingDownPayment: projectList.filter(p => p.status === '待预付款').length,
+        pendingProductionOrder: projectList.filter(p => p.status === '生产准备中').length,
+        pendingFinalPayment: projectList.filter(p => p.status === '生产中').length
       });
     } catch (error) {
       message.error('加载项目失败: ' + (error.response?.data?.message || error.message));
@@ -280,47 +292,100 @@ const ProjectDashboard = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* 统计卡片 */}
+      {/* 统计卡片 - 根据角色显示不同内容 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="总项目数"
-              value={statistics.total}
-              prefix={<ProjectOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="待指派技术"
-              value={statistics.pending}
-              valueStyle={{ color: '#faad14' }}
-              prefix={<FolderOpenOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="进行中"
-              value={statistics.inProgress}
-              valueStyle={{ color: '#1890ff' }}
-              prefix={<ProjectOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="已完成"
-              value={statistics.completed}
-              valueStyle={{ color: '#52c41a' }}
-              prefix={<ProjectOutlined />}
-            />
-          </Card>
-        </Col>
+        {user?.role === 'Sales Engineer' ? (
+          // 💼 商务工程师专属统计（4个卡片）
+          <>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待完成报价"
+                  value={statistics.pendingQuotation}
+                  prefix={<FileTextOutlined />}
+                  valueStyle={{ color: statistics.pendingQuotation > 0 ? '#fa8c16' : '#52c41a' }}
+                  suffix="个"
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待催30%预付款"
+                  value={statistics.pendingDownPayment}
+                  prefix={<DollarOutlined />}
+                  valueStyle={{ color: statistics.pendingDownPayment > 0 ? '#f5222d' : '#52c41a' }}
+                  suffix="个"
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待下生产订单"
+                  value={statistics.pendingProductionOrder}
+                  prefix={<ToolOutlined />}
+                  valueStyle={{ color: statistics.pendingProductionOrder > 0 ? '#722ed1' : '#52c41a' }}
+                  suffix="个"
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待催70%尾款"
+                  value={statistics.pendingFinalPayment}
+                  prefix={<DollarOutlined />}
+                  valueStyle={{ color: statistics.pendingFinalPayment > 0 ? '#eb2f96' : '#52c41a' }}
+                  suffix="个"
+                />
+              </Card>
+            </Col>
+          </>
+        ) : (
+          // 其他角色的统计（原有4个）
+          <>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="总项目数"
+                  value={statistics.total}
+                  prefix={<ProjectOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="待指派技术"
+                  value={statistics.pending}
+                  valueStyle={{ color: '#faad14' }}
+                  prefix={<FolderOpenOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="进行中"
+                  value={statistics.inProgress}
+                  valueStyle={{ color: '#1890ff' }}
+                  prefix={<ProjectOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <Statistic
+                  title="已完成"
+                  value={statistics.completed}
+                  valueStyle={{ color: '#52c41a' }}
+                  prefix={<ProjectOutlined />}
+                />
+              </Card>
+            </Col>
+          </>
+        )}
       </Row>
 
       {/* 主表格 */}
@@ -363,13 +428,16 @@ const ProjectDashboard = () => {
               <Option value="High">High</Option>
               <Option value="Urgent">Urgent</Option>
             </Select>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setCreateModalVisible(true)}
-            >
-              新建项目
-            </Button>
+            {/* 只有非商务工程师可以创建项目 */}
+            {user?.role !== 'Sales Engineer' && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setCreateModalVisible(true)}
+              >
+                新建项目
+              </Button>
+            )}
           </Space>
         }
       >
