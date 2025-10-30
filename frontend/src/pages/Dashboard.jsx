@@ -492,10 +492,10 @@ const Dashboard = () => {
               <Col xs={24} md={8}>
                 <Space direction="vertical">
                   <Title level={5}>
-                    <span style={{ color: '#722ed1' }}>3.</span> 提交报价
+                    <span style={{ color: '#722ed1' }}>3.</span> 提交选型结果
                   </Title>
                   <Text type="secondary">
-                    完成技术选型后，提交给商务团队进行报价，或处理商务团队反馈的修改建议。
+                    完成技术选型后，提交选型结果给商务团队进行报价，或处理商务团队反馈的修改建议。
                   </Text>
                 </Space>
               </Col>
