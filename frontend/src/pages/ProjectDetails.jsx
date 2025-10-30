@@ -116,8 +116,21 @@ const ProjectDetails = () => {
   const [isProjectLocked, setIsProjectLocked] = useState(false) // 项目是否已锁定
   const [lockedReason, setLockedReason] = useState('') // 锁定原因
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   useEffect(() => {
-    fetchProject()
+    if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的项目ID')
+        navigate('/projects')
+        return
+      }
+      fetchProject()
+    }
   }, [id])
   
   // 当项目数据加载后，初始化BOM数据和版本历史
@@ -1474,12 +1487,12 @@ const ProjectDetails = () => {
   
   // ========== 合同处理函数 ==========
   
-  // 上传草签合同（销售经理，Won状态）
+  // 🔄 上传销售合同（销售经理，待上传合同状态）
   const handleUploadDraftContract = async (fileData) => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传草签合同...')
+      console.log('📄 上传销售合同...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1489,23 +1502,26 @@ const ProjectDetails = () => {
       
       await contractsAPI.uploadDraft(id, contractData)
       
-      message.success('草签合同已上传，已提交商务团队审核！')
+      // ⭐ 自动更新状态：待上传合同 → 待商务审核合同
+      await projectsAPI.update(id, { status: '待商务审核合同' })
+      
+      message.success('销售合同已上传，已提交商务团队审核！')
       setContractFileList([])
       await fetchProject()
     } catch (error) {
-      console.error('上传草签合同失败:', error)
+      console.error('上传销售合同失败:', error)
       message.error('上传失败: ' + (error.response?.data?.message || error.message))
     } finally {
       setUploadingContract(false)
     }
   }
   
-  // 上传我方盖章合同（商务工程师，Pending Contract Review状态）
+  // 🔄 上传公司盖章合同（商务专员，待商务审核合同状态）
   const handleUploadCompanySealedContract = async (fileData) => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传我方盖章合同...')
+      console.log('📄 上传公司盖章合同...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1516,23 +1532,26 @@ const ProjectDetails = () => {
       
       await contractsAPI.reviewAndUploadSealed(id, contractData)
       
-      message.success('我方盖章合同已上传，等待客户签字！')
+      // ⭐ 自动更新状态：待商务审核合同 → 待客户盖章
+      await projectsAPI.update(id, { status: '待客户盖章' })
+      
+      message.success('公司盖章合同已上传，等待客户签字！')
       setContractFileList([])
       await fetchProject()
     } catch (error) {
-      console.error('上传我方盖章合同失败:', error)
+      console.error('上传公司盖章合同失败:', error)
       message.error('上传失败: ' + (error.response?.data?.message || error.message))
     } finally {
       setUploadingContract(false)
     }
   }
   
-  // 上传最终合同（销售经理，Pending Client Signature状态）
+  // 🔄 上传客户盖章合同（销售经理，待客户盖章状态）
   const handleUploadFinalContract = async (fileData) => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传最终合同...')
+      console.log('📄 上传客户盖章合同（最终合同）...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1542,7 +1561,10 @@ const ProjectDetails = () => {
       
       await contractsAPI.uploadFinal(id, contractData)
       
-      message.success('最终合同已上传，合同签订完成！')
+      // ⭐ 自动更新状态：待客户盖章 → 合同已签订-赢单 → 待预付款
+      await projectsAPI.update(id, { status: '待预付款' })
+      
+      message.success('🏆 客户盖章合同已上传，合同正式签订！项目已赢单，等待预付款到账。')
       setContractFileList([])
       await fetchProject()
     } catch (error) {
@@ -2647,94 +2669,239 @@ const ProjectDetails = () => {
     return <div>Project not found</div>
   }
 
-  // 渲染工作流按钮（基于角色和项目状态）
+  // 🔄 渲染工作流按钮（基于角色和项目状态 - 重构版 v2.0）
   const renderWorkflowButtons = () => {
     if (!project) return null
     
     const buttons = []
+    const status = project.status
     
-    // 技术工程师 - 选型阶段
-    if (user?.role === 'Technical Engineer') {
-      // 开始选型按钮（自动滚动到技术清单Tab）
-      buttons.push(
-        <Button
-          key="start-selection"
-          type="primary"
-          size="large"
-          icon={<FileSearchOutlined />}
-          onClick={() => {
-            // 滚动到技术清单Tab区域
-            const tabsElement = document.querySelector('.ant-tabs')
-            if (tabsElement) {
-              tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-          }}
-          style={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            border: 'none'
-          }}
-        >
-          📋 开始选型
-        </Button>
-      )
-      
-      // 导出技术清单按钮
-      if (project?.technical_item_list && project.technical_item_list.length > 0) {
+    // ========== 1. 待指派技术 ==========
+    if (status === '待指派技术') {
+      // 销售经理/商务专员：指派技术工程师（由AssignTechnicalSupport组件处理）
+      if (['Sales Manager', 'Sales Engineer'].includes(user?.role)) {
         buttons.push(
-          <Button
-            key="export-technical-list"
-            icon={<FilePdfOutlined />}
-            onClick={handleExportTechnicalItemListToPDF}
-          >
-            导出技术清单(PDF)
-          </Button>
-        )
-      }
-      
-      // 完成选型按钮（如果状态允许）
-      if (!technicalListLocked && ['选型进行中', '选型修正中', '草稿'].includes(project.status)) {
-        buttons.push(
-          <Button
-            key="complete-selection"
-            type="primary"
-            icon={<SendOutlined />}
-            onClick={() => {
-              Modal.confirm({
-                title: '完成选型，请求报价',
-                content: '确定完成技术选型并提交给商务团队进行报价吗？提交后技术清单将被锁定，商务工程师才能开始报价。',
-                okText: '确认提交',
-                cancelText: '取消',
-                onOk: handleSubmitTechnicalList
-              })
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-              border: 'none'
-            }}
-          >
-            完成选型，请求报价
-          </Button>
+          <Alert
+            key="assign-hint"
+            message="请指派技术工程师"
+            description='点击右上角的"指派技术工程师"按钮，将项目分配给技术工程师进行选型。'
+            type="info"
+            showIcon
+          />
         )
       }
     }
     
-    // 销售工程师 - 报价阶段
-    if (user?.role === 'Sales Engineer' && project.status === 'Pending Quote') {
-      buttons.push(
-        <RoleBasedAccess key="complete-quote" allowedRoles={['Sales Engineer']}>
+    // ========== 2. 选型中 ==========
+    if (status === '选型中') {
+      // 技术工程师：进行选型
+      if (user?.role === 'Technical Engineer') {
+        buttons.push(
           <Button
+            key="start-selection"
             type="primary"
+            size="large"
+            icon={<FileSearchOutlined />}
+            onClick={() => {
+              const tabsElement = document.querySelector('.ant-tabs')
+              if (tabsElement) {
+                tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none'
+            }}
+          >
+            📋 开始技术选型
+          </Button>
+        )
+        
+        // 导出技术清单
+        if (project?.technical_item_list && project.technical_item_list.length > 0) {
+          buttons.push(
+            <Button
+              key="export-technical"
+              icon={<FilePdfOutlined />}
+              onClick={handleExportTechnicalItemListToPDF}
+            >
+              导出技术清单
+            </Button>
+          )
+        }
+        
+        // 提交选型
+        if (project?.technical_item_list && project.technical_item_list.length > 0) {
+          buttons.push(
+            <Button
+              key="submit-selection"
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={() => {
+                Modal.confirm({
+                  title: '提交技术选型',
+                  content: '确定完成技术选型并提交给商务团队进行报价吗？提交后将无法修改选型结果。',
+                  okText: '确认提交',
+                  cancelText: '取消',
+                  onOk: async () => {
+                    try {
+                      await projectsAPI.update(id, { status: '待商务报价' })
+                      message.success('技术选型已提交，等待商务报价！')
+                      fetchProject()
+                    } catch (error) {
+                      message.error('提交失败')
+                    }
+                  }
+                })
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                border: 'none'
+              }}
+            >
+              ✅ 完成选型，提交商务
+            </Button>
+          )
+        }
+      }
+      
+      // 其他角色：等待提示
+      if (user?.role !== 'Technical Engineer') {
+        buttons.push(
+          <Alert
+            key="waiting-tech"
+            message="技术工程师选型中"
+            description="技术工程师正在进行技术选型，请耐心等待..."
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 3. 待商务报价 ==========
+    if (status === '待商务报价') {
+      // 商务专员：进行报价
+      if (user?.role === 'Sales Engineer') {
+        buttons.push(
+          <Button
+            key="goto-quotation"
+            type="primary"
+            size="large"
             icon={<DollarOutlined />}
             onClick={() => {
+              const tabsElement = document.querySelector('.ant-tabs')
+              if (tabsElement) {
+                tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              border: 'none'
+            }}
+          >
+            💰 开始商务报价
+          </Button>
+        )
+        
+        // 完成报价按钮
+        if (project?.quotation_bom && project.quotation_bom.length > 0) {
+          buttons.push(
+            <Button
+              key="complete-quotation"
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => {
+                Modal.confirm({
+                  title: '完成报价',
+                  content: '确定完成报价吗？完成后销售经理可下载报价单给客户。',
+                  okText: '确认完成',
+                  cancelText: '取消',
+                  onOk: async () => {
+                    try {
+                      await projectsAPI.update(id, { status: '已报价-询价中' })
+                      message.success('报价已完成！销售经理可下载报价单。')
+                      fetchProject()
+                    } catch (error) {
+                      message.error('操作失败')
+                    }
+                  }
+                })
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                border: 'none'
+              }}
+            >
+              ✅ 完成报价
+            </Button>
+          )
+        }
+      }
+      
+      // 其他角色：等待提示
+      if (user?.role !== 'Sales Engineer') {
+        buttons.push(
+          <Alert
+            key="waiting-quotation"
+            message="商务专员报价中"
+            description="商务专员正在进行商务报价，请耐心等待..."
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 4. 已报价-询价中（重点！） ==========
+    if (status === '已报价-询价中') {
+      // 销售经理：下载报价单，推进签约
+      if (user?.role === 'Sales Manager') {
+        buttons.push(
+          <Alert
+            key="inquiry-phase"
+            message="📄 询价阶段（未签约）"
+            description="报价已完成，您可以下载报价单给客户。客户接受报价后，请上传销售合同进入签约流程。"
+            type="success"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )
+        
+        buttons.push(
+          <Button
+            key="download-quotation"
+            type="primary"
+            size="large"
+            icon={<DownloadOutlined />}
+            onClick={() => {
+              // 下载报价单逻辑
+              message.info('下载报价单功能')
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #1890ff 0%, #36cfc9 100%)',
+              border: 'none'
+            }}
+          >
+            📥 下载报价单
+          </Button>
+        )
+        
+        buttons.push(
+          <Button
+            key="client-accept"
+            type="primary"
+            icon={<FileTextOutlined />}
+            onClick={() => {
               Modal.confirm({
-                title: '完成报价',
-                content: '确定完成报价并通知销售经理审批吗？',
-                okText: '确认完成',
+                title: '客户接受报价',
+                content: '客户已接受报价吗？点击确定后请上传销售合同。',
+                okText: '客户已接受，继续上传合同',
                 cancelText: '取消',
                 onOk: async () => {
                   try {
-                    await projectsAPI.update(id, { status: 'Pending Approval' })
-                    message.success('报价已完成，等待审批！')
+                    await projectsAPI.update(id, { status: '待上传合同' })
+                    message.success('状态已更新，请上传销售合同')
                     fetchProject()
                   } catch (error) {
                     message.error('操作失败')
@@ -2743,87 +2910,254 @@ const ProjectDetails = () => {
               })
             }}
             style={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
               border: 'none'
             }}
           >
-            完成报价
+            ✅ 客户接受报价 → 上传合同
           </Button>
-        </RoleBasedAccess>
+        )
+        
+        buttons.push(
+          <Button
+            key="mark-lost"
+            danger
+            icon={<CloseOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: '标记失单',
+                content: '客户拒绝了报价吗？确定标记为失单？',
+                okText: '确定失单',
+                cancelText: '取消',
+                onOk: async () => {
+                  try {
+                    await projectsAPI.update(id, { status: '失单' })
+                    message.info('项目已标记为失单')
+                    fetchProject()
+                  } catch (error) {
+                    message.error('操作失败')
+                  }
+                }
+              })
+            }}
+          >
+            ❌ 客户拒绝 → 标记失单
+          </Button>
+        )
+      }
+      
+      // 商务专员：可查看，可微调报价
+      if (user?.role === 'Sales Engineer') {
+        buttons.push(
+          <Alert
+            key="quotation-sent"
+            message="报价已发送给销售"
+            description="销售经理正在与客户沟通报价，请等待客户反馈..."
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 5. 待上传合同 ==========
+    if (status === '待上传合同') {
+      // 销售经理：上传销售合同
+      if (user?.role === 'Sales Manager') {
+        buttons.push(
+          <Alert
+            key="upload-contract-hint"
+            message="请上传销售合同"
+            description='客户已接受报价，请在下方"合同管理"Tab中上传与客户初步确认的销售合同。'
+            type="warning"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 6. 待商务审核合同 ==========
+    if (status === '待商务审核合同') {
+      // 商务专员：审核并上传盖章合同
+      if (user?.role === 'Sales Engineer') {
+        buttons.push(
+          <Alert
+            key="review-contract"
+            message="请审核销售合同"
+            description='销售经理已上传销售合同，请在下方"合同管理"Tab中审核合同，确认无误后下载、盖章并上传。'
+            type="warning"
+            showIcon
+          />
+        )
+      }
+      
+      // 销售经理：等待
+      if (user?.role === 'Sales Manager') {
+        buttons.push(
+          <Alert
+            key="waiting-review"
+            message="商务专员审核中"
+            description="商务专员正在审核合同并准备盖章，请耐心等待..."
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 7. 待客户盖章 ==========
+    if (status === '待客户盖章') {
+      // 销售经理：下载盖章合同，上传客户盖章合同
+      if (user?.role === 'Sales Manager') {
+        buttons.push(
+          <Alert
+            key="client-seal"
+            message="请转交客户盖章"
+            description='公司已盖章，请在下方"合同管理"Tab中下载盖章合同转交客户。客户盖章后请上传最终合同。'
+            type="warning"
+            showIcon
+          />
+        )
+      }
+      
+      // 商务专员：等待
+      if (user?.role === 'Sales Engineer') {
+        buttons.push(
+          <Alert
+            key="waiting-client"
+            message="等待客户盖章"
+            description="已将盖章合同转交销售，等待客户盖章..."
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 8. 合同已签订-赢单（重点！） ==========
+    if (status === '合同已签订-赢单' || status === '待预付款') {
+      // 显示赢单标识
+      buttons.push(
+        <Alert
+          key="won-project"
+          message="🏆 恭喜！项目已赢单！"
+          description="客户已盖章，合同正式签订。接下来等待预付款到账。"
+          type="success"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )
+      
+      // 商务专员：确认预付款
+      if (user?.role === 'Sales Engineer') {
+        buttons.push(
+          <Button
+            key="confirm-prepay"
+            type="primary"
+            size="large"
+            icon={<DollarOutlined />}
+            onClick={() => {
+              Modal.confirm({
+                title: '确认预付款到账',
+                content: '请确认客户预付款已到账。确认后将通知生产部门开始生产排期。',
+                okText: '确认到账',
+                cancelText: '取消',
+                onOk: async () => {
+                  try {
+                    await projectsAPI.update(id, { status: '生产准备中' })
+                    message.success('预付款已确认！已通知生产部门。')
+                    fetchProject()
+                  } catch (error) {
+                    message.error('操作失败')
+                  }
+                }
+              })
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+              border: 'none'
+            }}
+          >
+            💵 确认预付款到账
+          </Button>
+        )
+      }
+      
+      // 销售经理：催款提示
+      if (user?.role === 'Sales Manager') {
+        buttons.push(
+          <Alert
+            key="follow-prepay"
+            message="请跟进预付款"
+            description="合同已签订，请配合商务催收客户预付款。"
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 9. 生产准备中/采购中/生产中 ==========
+    if (['生产准备中', '采购中', '生产中'].includes(status)) {
+      // 生产员：管理生产
+      if (user?.role === 'Production Planner') {
+        buttons.push(
+          <Button
+            key="manage-production"
+            type="primary"
+            size="large"
+            icon={<SettingOutlined />}
+            onClick={() => {
+              navigate(`/production-schedule?project=${id}`)
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #fa8c16 0%, #faad14 100%)',
+              border: 'none'
+            }}
+          >
+            🏭 管理生产排期
+          </Button>
+        )
+      }
+      
+      // 其他角色：查看生产进度
+      if (user?.role !== 'Production Planner') {
+        buttons.push(
+          <Alert
+            key="in-production"
+            message="项目生产中"
+            description={`当前状态：${status}。生产部门正在处理订单...`}
+            type="info"
+            showIcon
+          />
+        )
+      }
+    }
+    
+    // ========== 10. 失单 ==========
+    if (status === '失单') {
+      buttons.push(
+        <Alert
+          key="lost-project"
+          message="项目已失单"
+          description="客户未接受报价，项目已结束。"
+          type="error"
+          showIcon
+        />
       )
     }
     
-    // 销售经理 - 审批和赢单
-    if (user?.role === 'Sales Manager' || user?.role === 'Administrator') {
-      if (project.status === 'Pending Approval') {
-        buttons.push(
-          <RoleBasedAccess key="approve" allowedRoles={['Sales Manager', 'Administrator']}>
-            <Button
-              type="primary"
-              icon={<FileProtectOutlined />}
-              onClick={() => {
-                Modal.confirm({
-                  title: '审批报价',
-                  content: '确定审批通过此报价方案吗？',
-                  okText: '审批通过',
-                  cancelText: '取消',
-                  onOk: async () => {
-                    try {
-                      await projectsAPI.update(id, { status: 'Approved' })
-                      message.success('报价已审批通过！')
-                      fetchProject()
-                    } catch (error) {
-                      message.error('审批失败')
-                    }
-                  }
-                })
-              }}
-              style={{
-                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                border: 'none'
-              }}
-            >
-              审批报价
-            </Button>
-          </RoleBasedAccess>
-        )
-      }
-      
-      if (['Approved', 'Quoted'].includes(project.status)) {
-        buttons.push(
-          <RoleBasedAccess key="mark-won" allowedRoles={['Sales Manager', 'Administrator']}>
-            <Button
-              type="primary"
-              icon={<CheckCircleOutlined />}
-              onClick={handleMarkAsWon}
-              style={{
-                background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-                border: 'none'
-              }}
-            >
-              标记为赢单
-            </Button>
-          </RoleBasedAccess>
-        )
-      }
-      
-      if (project.status === 'Won') {
-        buttons.push(
-          <RoleBasedAccess key="create-order" allowedRoles={['Sales Manager', 'Administrator']}>
-            <Button
-              type="primary"
-              icon={<ShoppingCartOutlined />}
-              onClick={handleOpenOrderModal}
-              style={{
-                background: 'linear-gradient(135deg, #1890ff 0%, #36cfc9 100%)',
-                border: 'none'
-              }}
-            >
-              生成合同订单
-            </Button>
-          </RoleBasedAccess>
-        )
-      }
+    // ========== 11. 已完成 ==========
+    if (status === '已完成') {
+      buttons.push(
+        <Alert
+          key="completed"
+          message="✅ 项目已完成"
+          description="项目已成功交付完成。"
+          type="success"
+          showIcon
+        />
+      )
     }
     
     return buttons

@@ -19,6 +19,7 @@ import {
   SearchOutlined,
   UploadOutlined,
   BarChartOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { colors } from '../../styles/theme'
@@ -70,6 +71,12 @@ const menuConfig = [
     roles: ['Technical Engineer', 'Sales Engineer', 'Sales Manager'],  // 移除 Administrator
   },
   {
+    key: '/selection-engine',
+    label: '智慧选型',
+    icon: <ThunderboltOutlined />,
+    roles: ['Technical Engineer', 'Sales Engineer'],  // 技术工程师和销售工程师可用
+  },
+  {
     key: '/orders',
     label: '订单管理',
     icon: <FileDoneOutlined />,
@@ -103,7 +110,7 @@ const menuConfig = [
     key: '/products',
     label: '产品数据库',
     icon: <DatabaseOutlined />,
-    roles: ['Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],  // 移除 Administrator
+    roles: ['Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],  // 技术工程师不能访问（避免看到价格）
   },
 ]
 

@@ -1,23 +1,28 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { 
   Row, Col, Card, Form, Input, InputNumber, Radio, Button, 
   List, Progress, Tag, Divider, Space, message, Spin, Empty,
-  Typography, Alert, Collapse, Modal, Select, Checkbox, Tabs, Badge
+  Typography, Alert, Collapse, Modal, Select, Checkbox, Tabs, Badge,
+  Table, Upload
 } from 'antd'
 import { 
   SearchOutlined, CheckCircleOutlined, ThunderboltOutlined,
   FileTextOutlined, DollarOutlined, SettingOutlined,
-  InfoCircleOutlined, AppstoreOutlined, ShoppingOutlined
+  InfoCircleOutlined, AppstoreOutlined, ShoppingOutlined,
+  UploadOutlined, PlusOutlined, DeleteOutlined, SendOutlined,
+  RightOutlined
 } from '@ant-design/icons'
 import { selectionAPI, manualOverridesAPI, projectsAPI, accessoriesAPI } from '../services/api'
 
 const { Title, Text, Paragraph } = Typography
 const { Panel } = Collapse
+const { TabPane } = Tabs
 
 const SelectionEngine = () => {
   const [form] = Form.useForm()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const projectId = searchParams.get('projectId')
   
   const [loading, setLoading] = useState(false)
@@ -35,6 +40,12 @@ const SelectionEngine = () => {
   const [selectedAccessories, setSelectedAccessories] = useState([])
   const [loadingAccessories, setLoadingAccessories] = useState(false)
   const [recommendedAccessoryIds, setRecommendedAccessoryIds] = useState(new Set())
+  
+  // 批量选型相关状态
+  const [activeTab, setActiveTab] = useState('single') // 'single' or 'batch'
+  const [batchData, setBatchData] = useState([]) // 批量选型数据
+  const [batchResults, setBatchResults] = useState([]) // 批量选型结果
+  const [batchLoading, setBatchLoading] = useState(false)
 
   useEffect(() => {
     if (projectId) {
@@ -66,8 +77,12 @@ const SelectionEngine = () => {
       // 调试日志
       console.log('选型请求参数:', {
         mechanism: requestPayload.mechanism,
+        action_type_preference: requestPayload.action_type_preference,
+        failSafePosition: requestPayload.failSafePosition,
         valve_type: requestPayload.valve_type,
         required_torque: requestPayload.required_torque,
+        requiredOpeningTorque: requestPayload.requiredOpeningTorque,
+        requiredClosingTorque: requestPayload.requiredClosingTorque,
         working_pressure: requestPayload.working_pressure,
       })
       
@@ -254,9 +269,135 @@ const SelectionEngine = () => {
     if (margin >= 20) return { text: '可选', color: 'warning' }
     return { text: '不推荐', color: 'error' }
   }
+  
+  // 批量选型处理函数
+  const handleAddBatchRow = () => {
+    setBatchData([...batchData, {
+      key: Date.now(),
+      tag_number: '',
+      required_torque: null,
+      working_pressure: 0.4,
+      valve_type: 'Ball Valve',
+      mechanism: 'Scotch Yoke'
+    }])
+  }
+  
+  const handleDeleteBatchRow = (key) => {
+    setBatchData(batchData.filter(item => item.key !== key))
+  }
+  
+  const handleBatchDataChange = (key, field, value) => {
+    setBatchData(batchData.map(item => 
+      item.key === key ? { ...item, [field]: value } : item
+    ))
+  }
+  
+  const handleBatchSelection = async () => {
+    if (batchData.length === 0) {
+      message.warning('请先添加选型数据')
+      return
+    }
+    
+    // 验证数据
+    const invalidRows = batchData.filter(item => !item.required_torque || !item.working_pressure)
+    if (invalidRows.length > 0) {
+      message.error('请填写所有行的必需参数（扭矩和压力）')
+      return
+    }
+    
+    try {
+      setBatchLoading(true)
+      const response = await selectionAPI.batch({ selections: batchData })
+      
+      if (response.data.success) {
+        setBatchResults(response.data.results || [])
+        message.success(response.data.message || '批量选型完成')
+      } else {
+        message.error(response.data.message || '批量选型失败')
+      }
+    } catch (error) {
+      console.error('Batch selection error:', error)
+      message.error('批量选型失败')
+    } finally {
+      setBatchLoading(false)
+    }
+  }
+  
+  const handleSaveBatchToProject = async (andSubmit = false) => {
+    if (!currentProject) {
+      message.warning('请先选择一个项目')
+      return
+    }
+    
+    if (batchResults.length === 0) {
+      message.warning('暂无选型结果可保存')
+      return
+    }
+    
+    try {
+      const successCount = batchResults.filter(r => r.selected_actuator).length
+      
+      // 保存所有成功的选型结果到项目
+      for (const result of batchResults) {
+        if (result.selected_actuator) {
+          const selectionData = {
+            tag_number: result.tag_number || `TAG-${Date.now()}`,
+            input_params: result.input_params,
+            selected_actuator: result.selected_actuator
+          }
+          await projectsAPI.autoSelect(currentProject._id, selectionData)
+        }
+      }
+      
+      // 如果需要提交报价
+      if (andSubmit) {
+        // 更新项目状态为"技术方案完成"
+        await projectsAPI.update(currentProject._id, {
+          status: '技术方案完成'
+        })
+        
+        message.success(
+          <span>
+            ✅ 成功保存 {successCount} 个选型结果并提交商务报价！<br/>
+            商务工程师将收到通知并开始报价工作。
+          </span>,
+          5
+        )
+        
+        // 清空数据
+        setBatchData([])
+        setBatchResults([])
+        
+        // 延迟跳转到项目详情页
+        setTimeout(() => {
+          navigate(`/projects/${currentProject._id}`)
+        }, 2000)
+      } else {
+        message.success({
+          content: (
+            <div>
+              <div>✅ 成功保存 {successCount} 个选型结果到项目</div>
+              <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                💡 提示：您可以继续添加更多选型，或者点击"保存并提交报价"完成选型工作
+              </div>
+            </div>
+          ),
+          duration: 4
+        })
+        
+        // 清空数据
+        setBatchData([])
+        setBatchResults([])
+      }
+    } catch (error) {
+      console.error('保存批量选型结果失败:', error)
+      message.error('保存失败')
+    }
+  }
 
-  return (
-    <div>
+  // 渲染单个选型Tab内容
+  const renderSingleSelection = () => (
+      <>
       <Row gutter={[16, 16]}>
         {/* 左栏：当前项目信息 */}
         {currentProject && (
@@ -302,11 +443,11 @@ const SelectionEngine = () => {
               layout="vertical"
               initialValues={{
                 mechanism: 'Scotch Yoke',
+                action_type_preference: 'DA',
                 yoke_type: 'symmetric',
                 needs_manual_override: false,
                 max_rotation_angle: 90,
                 temperature_type: 'normal',
-                needs_handwheel: false,
                 temperature_code: 'No code'
               }}
             >
@@ -324,7 +465,39 @@ const SelectionEngine = () => {
                     </Radio.Group>
                   </Form.Item>
 
-                  {/* 阀门类型 - 仅在选择 Scotch Yoke 时显示 */}
+                  {/* 作用类型 */}
+                  <Form.Item
+                    label="作用类型"
+                    name="action_type_preference"
+                    rules={[{ required: true, message: '请选择作用类型' }]}
+                    tooltip="单作用（SR）：弹簧复位，断气后自动回到初始位置；双作用（DA）：需要气源驱动两个方向"
+                  >
+                    <Radio.Group buttonStyle="solid">
+                      <Radio.Button value="SR">单作用 (SR)</Radio.Button>
+                      <Radio.Button value="DA">双作用 (DA)</Radio.Button>
+                    </Radio.Group>
+                  </Form.Item>
+
+                  {/* 故障安全位置 - 仅在选择单作用时显示 */}
+                  <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.action_type_preference !== currentValues.action_type_preference}>
+                    {({ getFieldValue }) =>
+                      getFieldValue('action_type_preference') === 'SR' ? (
+                        <Form.Item
+                          label="故障安全位置"
+                          name="failSafePosition"
+                          rules={[{ required: true, message: '请选择故障安全位置' }]}
+                          tooltip="FC（故障关）：断气后阀门自动关闭；FO（故障开）：断气后阀门自动开启"
+                        >
+                          <Radio.Group buttonStyle="solid">
+                            <Radio.Button value="Fail Close">FC 故障关闭</Radio.Button>
+                            <Radio.Button value="Fail Open">FO 故障开启</Radio.Button>
+                          </Radio.Group>
+                        </Form.Item>
+                      ) : null
+                    }
+                  </Form.Item>
+
+                  {/* 阀门类型 - 根据执行机构类型显示不同选项 */}
                   <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.mechanism !== currentValues.mechanism}>
                     {({ getFieldValue }) =>
                       getFieldValue('mechanism') === 'Scotch Yoke' ? (
@@ -332,10 +505,24 @@ const SelectionEngine = () => {
                           label="阀门类型"
                           name="valve_type"
                           rules={[{ required: true, message: '请选择阀门类型' }]}
+                          tooltip="球阀使用对称拨叉，蝶阀使用偏心拨叉（型号带C）"
                         >
                           <Select placeholder="选择阀门类型">
-                            <Select.Option value="Ball Valve">球阀 (Ball Valve)</Select.Option>
-                            <Select.Option value="Butterfly Valve">蝶阀 (Butterfly Valve)</Select.Option>
+                            <Select.Option value="Ball Valve">球阀 (对称拨叉)</Select.Option>
+                            <Select.Option value="Butterfly Valve">蝶阀 (偏心拨叉-C)</Select.Option>
+                          </Select>
+                        </Form.Item>
+                      ) : getFieldValue('mechanism') === 'Rack & Pinion' ? (
+                        <Form.Item
+                          label="阀门类型"
+                          name="valve_type"
+                          rules={[{ required: true, message: '请选择阀门类型' }]}
+                          tooltip="齿轮齿条式执行器适用于直行程阀门"
+                        >
+                          <Select placeholder="选择阀门类型">
+                            <Select.Option value="Gate Valve">闸阀 (Gate Valve)</Select.Option>
+                            <Select.Option value="Globe Valve">截止阀 (Globe Valve)</Select.Option>
+                            <Select.Option value="Control Valve">直行程调节阀 (Linear Control Valve)</Select.Option>
                           </Select>
                         </Form.Item>
                       ) : null
@@ -358,15 +545,6 @@ const SelectionEngine = () => {
                               <Radio.Button value="low">低温 (Low Temp)</Radio.Button>
                               <Radio.Button value="high">高温 (High Temp)</Radio.Button>
                             </Radio.Group>
-                          </Form.Item>
-
-                          {/* 是否需要手轮 */}
-                          <Form.Item
-                            label="是否需要手轮"
-                            name="needs_handwheel"
-                            valuePropName="checked"
-                          >
-                            <Checkbox>需要手轮</Checkbox>
                           </Form.Item>
                         </>
                       ) : null
@@ -398,20 +576,68 @@ const SelectionEngine = () => {
                     <Input placeholder="如: FV-101" />
                   </Form.Item>
 
-                  <Form.Item
-                    label="需求扭矩 (Nm)"
-                    name="required_torque"
-                    rules={[
-                      { required: true, message: '请输入需求扭矩' },
-                      { type: 'number', min: 1, message: '扭矩必须大于0' }
-                    ]}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      placeholder="输入阀门所需扭矩"
-                      min={1}
-                      step={10}
-                    />
+                  {/* 扭矩输入 - 根据作用类型显示不同字段 */}
+                  <Form.Item noStyle shouldUpdate={(prevValues, currentValues) => prevValues.action_type_preference !== currentValues.action_type_preference}>
+                    {({ getFieldValue }) =>
+                      getFieldValue('action_type_preference') === 'SR' ? (
+                        <>
+                          {/* 单作用：需要分别输入开启和关闭扭矩 */}
+                          <Form.Item
+                            label="开启扭矩 (Nm)"
+                            name="requiredOpeningTorque"
+                            rules={[
+                              { required: true, message: '请输入开启扭矩' },
+                              { type: 'number', min: 1, message: '扭矩必须大于0' }
+                            ]}
+                            tooltip="阀门从关闭到开启所需的扭矩"
+                          >
+                            <InputNumber
+                              style={{ width: '100%' }}
+                              placeholder="输入阀门开启扭矩"
+                              min={1}
+                              step={10}
+                              addonAfter="Nm"
+                            />
+                          </Form.Item>
+                          <Form.Item
+                            label="关闭扭矩 (Nm)"
+                            name="requiredClosingTorque"
+                            rules={[
+                              { required: true, message: '请输入关闭扭矩' },
+                              { type: 'number', min: 1, message: '扭矩必须大于0' }
+                            ]}
+                            tooltip="阀门从开启到关闭所需的扭矩"
+                          >
+                            <InputNumber
+                              style={{ width: '100%' }}
+                              placeholder="输入阀门关闭扭矩"
+                              min={1}
+                              step={10}
+                              addonAfter="Nm"
+                            />
+                          </Form.Item>
+                        </>
+                      ) : (
+                        /* 双作用：只需要输入一个需求扭矩 */
+                        <Form.Item
+                          label="需求扭矩 (Nm)"
+                          name="required_torque"
+                          rules={[
+                            { required: true, message: '请输入需求扭矩' },
+                            { type: 'number', min: 1, message: '扭矩必须大于0' }
+                          ]}
+                          tooltip="阀门操作所需的扭矩"
+                        >
+                          <InputNumber
+                            style={{ width: '100%' }}
+                            placeholder="输入阀门所需扭矩"
+                            min={1}
+                            step={10}
+                            addonAfter="Nm"
+                          />
+                        </Form.Item>
+                      )
+                    }
                   </Form.Item>
 
                   <Form.Item
@@ -445,10 +671,11 @@ const SelectionEngine = () => {
                   <Form.Item
                     label="旋转角度 (度)"
                     name="max_rotation_angle"
+                    tooltip="阀门旋转的角度，通常为90°"
                   >
                     <Select>
                       <Select.Option value={90}>90°</Select.Option>
-                      <Select.Option value={0}>0° (双作用)</Select.Option>
+                      <Select.Option value={0}>0° (双方向)</Select.Option>
                     </Select>
                   </Form.Item>
                 </Panel>
@@ -571,6 +798,43 @@ const SelectionEngine = () => {
                               交期: {item.lead_time || '-'}
                             </Text>
                           </div>
+
+                          {/* 备件维修包价格 */}
+                          {item.spare_parts && (item.spare_parts.seal_kit_price || (item.spare_parts.other_parts && item.spare_parts.other_parts.length > 0)) && (
+                            <div style={{ 
+                              backgroundColor: '#f0f5ff', 
+                              padding: '8px', 
+                              borderRadius: '4px',
+                              marginTop: '8px'
+                            }}>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                💼 备件维修包：
+                              </Text>
+                              {item.spare_parts.seal_kit_price && (
+                                <div style={{ marginTop: 4 }}>
+                                  <Text style={{ fontSize: 12 }}>
+                                    密封套件：<Text strong style={{ color: '#52c41a' }}>¥{item.spare_parts.seal_kit_price.toLocaleString()}</Text>
+                                  </Text>
+                                </div>
+                              )}
+                              {item.spare_parts.other_parts && item.spare_parts.other_parts.length > 0 && (
+                                <div style={{ marginTop: 4 }}>
+                                  {item.spare_parts.other_parts.slice(0, 2).map((part, idx) => (
+                                    <div key={idx}>
+                                      <Text style={{ fontSize: 12 }}>
+                                        {part.part_name}：<Text strong style={{ color: '#52c41a' }}>¥{part.price?.toLocaleString() || '-'}</Text>
+                                      </Text>
+                                    </div>
+                                  ))}
+                                  {item.spare_parts.other_parts.length > 2 && (
+                                    <Text type="secondary" style={{ fontSize: 11 }}>
+                                      ...及其他 {item.spare_parts.other_parts.length - 2} 个备件
+                                    </Text>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           <Button
                             type="primary"
@@ -841,6 +1105,34 @@ const SelectionEngine = () => {
                   <Text strong>{selectedActuator.actual_torque} Nm</Text>
                 </div>
                 
+                {/* 备件维修包信息 */}
+                {selectedActuator.spare_parts && (selectedActuator.spare_parts.seal_kit_price || (selectedActuator.spare_parts.other_parts && selectedActuator.spare_parts.other_parts.length > 0)) && (
+                  <>
+                    <Divider style={{ margin: '8px 0' }} />
+                    <div>
+                      <Text type="secondary">💼 备件维修包：</Text>
+                    </div>
+                    {selectedActuator.spare_parts.seal_kit_price && (
+                      <div>
+                        <Text style={{ fontSize: 13 }}>
+                          • 密封套件：<Text strong style={{ color: '#52c41a' }}>¥{selectedActuator.spare_parts.seal_kit_price.toLocaleString()}</Text>
+                        </Text>
+                      </div>
+                    )}
+                    {selectedActuator.spare_parts.other_parts && selectedActuator.spare_parts.other_parts.length > 0 && (
+                      <>
+                        {selectedActuator.spare_parts.other_parts.map((part, idx) => (
+                          <div key={idx}>
+                            <Text style={{ fontSize: 13 }}>
+                              • {part.part_name}：<Text strong style={{ color: '#52c41a' }}>¥{part.price?.toLocaleString() || '-'}</Text>
+                            </Text>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </>
+                )}
+                
                 {selectedOverride && (
                   <>
                     <Divider style={{ margin: '8px 0' }} />
@@ -904,6 +1196,282 @@ const SelectionEngine = () => {
           </Space>
         )}
       </Modal>
+      </>
+    )
+  
+  // 渲染批量选型Tab内容
+  const renderBatchSelection = () => {
+    const batchColumns = [
+      {
+        title: '位号',
+        dataIndex: 'tag_number',
+        key: 'tag_number',
+        render: (text, record) => (
+          <Input 
+            value={text} 
+            onChange={(e) => handleBatchDataChange(record.key, 'tag_number', e.target.value)}
+            placeholder="如: FV-101"
+          />
+        )
+      },
+      {
+        title: '需求扭矩 (Nm)',
+        dataIndex: 'required_torque',
+        key: 'required_torque',
+        render: (text, record) => (
+          <InputNumber 
+            value={text} 
+            onChange={(value) => handleBatchDataChange(record.key, 'required_torque', value)}
+            placeholder="输入扭矩"
+            min={1}
+            style={{ width: '100%' }}
+          />
+        )
+      },
+      {
+        title: '工作压力 (MPa)',
+        dataIndex: 'working_pressure',
+        key: 'working_pressure',
+        render: (text, record) => (
+          <Select 
+            value={text} 
+            onChange={(value) => handleBatchDataChange(record.key, 'working_pressure', value)}
+            style={{ width: '100%' }}
+          >
+            <Select.Option value={0.3}>0.3 MPa</Select.Option>
+            <Select.Option value={0.4}>0.4 MPa</Select.Option>
+            <Select.Option value={0.5}>0.5 MPa</Select.Option>
+            <Select.Option value={0.6}>0.6 MPa</Select.Option>
+          </Select>
+        )
+      },
+      {
+        title: '阀门类型',
+        dataIndex: 'valve_type',
+        key: 'valve_type',
+        render: (text, record) => (
+          <Select 
+            value={text} 
+            onChange={(value) => handleBatchDataChange(record.key, 'valve_type', value)}
+            style={{ width: '100%' }}
+          >
+            <Select.Option value="Ball Valve">球阀</Select.Option>
+            <Select.Option value="Butterfly Valve">蝶阀</Select.Option>
+          </Select>
+        )
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 80,
+        render: (text, record) => (
+          <Button 
+            type="text" 
+            danger 
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteBatchRow(record.key)}
+          />
+        )
+      }
+    ]
+    
+    const resultColumns = [
+      {
+        title: '位号',
+        dataIndex: 'tag_number',
+        key: 'tag_number'
+      },
+      {
+        title: '推荐型号',
+        dataIndex: 'selected_actuator',
+        key: 'model',
+        render: (actuator) => actuator?.model_base || '-'
+      },
+      {
+        title: '实际扭矩 (Nm)',
+        dataIndex: 'selected_actuator',
+        key: 'torque',
+        render: (actuator) => actuator?.actual_torque || '-'
+      },
+      {
+        title: '扭矩裕度',
+        dataIndex: 'selected_actuator',
+        key: 'margin',
+        render: (actuator) => actuator?.torque_margin ? `${actuator.torque_margin.toFixed(1)}%` : '-'
+      },
+      {
+        title: '状态',
+        dataIndex: 'selected_actuator',
+        key: 'status',
+        render: (actuator) => actuator ? 
+          <Tag color="success">成功</Tag> : 
+          <Tag color="error">失败</Tag>
+      }
+    ]
+    
+    return (
+      <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Alert
+          message="批量选型说明"
+          description="您可以添加多个选型需求，系统将自动为每个需求推荐最佳执行器型号。完成后可一键保存到项目。"
+          type="info"
+          showIcon
+          closable
+        />
+        
+        {currentProject && (
+          <Card size="small">
+            <Space>
+              <Text type="secondary">当前项目：</Text>
+              <Text strong>{currentProject.project_name}</Text>
+              <Text type="secondary">|</Text>
+              <Text type="secondary">客户：</Text>
+              <Text>{currentProject.client_name || '-'}</Text>
+            </Space>
+          </Card>
+        )}
+        
+        <Card 
+          title="选型数据"
+          extra={
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleAddBatchRow}
+            >
+              添加行
+            </Button>
+          }
+        >
+          <Table 
+            columns={batchColumns}
+            dataSource={batchData}
+            pagination={false}
+            locale={{ emptyText: '暂无数据，请点击"添加行"按钮添加选型需求' }}
+          />
+          
+          {batchData.length > 0 && (
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Space>
+                <Button onClick={() => setBatchData([])}>
+                  清空
+                </Button>
+                <Button 
+                  type="primary" 
+                  icon={<ThunderboltOutlined />}
+                  onClick={handleBatchSelection}
+                  loading={batchLoading}
+                >
+                  开始批量选型
+                </Button>
+              </Space>
+            </div>
+          )}
+        </Card>
+        
+        {batchResults.length > 0 && (
+          <Card 
+            title={
+              <Space>
+                <CheckCircleOutlined style={{ color: '#52c41a' }} />
+                <span>选型结果</span>
+                <Tag color="blue">{batchResults.length} 条</Tag>
+              </Space>
+            }
+            extra={
+              currentProject && (
+                <Space>
+                  <Button 
+                    onClick={() => handleSaveBatchToProject(false)}
+                  >
+                    仅保存到项目
+                  </Button>
+                  <Button 
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={() => handleSaveBatchToProject(true)}
+                  >
+                    保存并提交报价
+                  </Button>
+                </Space>
+              )
+            }
+          >
+            {currentProject && (
+              <Alert
+                message="💡 一键完成选型工作"
+                description={
+                  <div>
+                    <div>• <strong>仅保存到项目</strong>：保存当前选型结果，可继续添加更多选型</div>
+                    <div>• <strong>保存并提交报价</strong>：保存选型结果并立即提交给商务工程师报价（推荐）</div>
+                  </div>
+                }
+                type="info"
+                showIcon
+                closable
+                style={{ marginBottom: 16 }}
+              />
+            )}
+            <Table 
+              columns={resultColumns}
+              dataSource={batchResults}
+              pagination={false}
+              summary={() => {
+                const successCount = batchResults.filter(r => r.selected_actuator).length
+                return (
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell colSpan={5}>
+                      <Text strong>
+                        成功: {successCount} / 总计: {batchResults.length}
+                      </Text>
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                )
+              }}
+            />
+          </Card>
+        )}
+      </Space>
+    )
+  }
+
+  // 主渲染
+  return (
+    <div>
+      <Card 
+        title={
+          <Space>
+            <ThunderboltOutlined />
+            <span>智慧选型工具</span>
+          </Space>
+        }
+        style={{ marginBottom: 16 }}
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <TabPane 
+            tab={
+              <span>
+                <SearchOutlined />
+                单个选型
+              </span>
+            } 
+            key="single"
+          >
+            {renderSingleSelection()}
+          </TabPane>
+          <TabPane 
+            tab={
+              <span>
+                <AppstoreOutlined />
+                批量选型
+              </span>
+            } 
+            key="batch"
+          >
+            {renderBatchSelection()}
+          </TabPane>
+        </Tabs>
+      </Card>
     </div>
   )
 }

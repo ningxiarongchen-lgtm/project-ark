@@ -37,7 +37,6 @@ exports.calculateSelection = async (req, res) => {
       
       // AT/GY 系列特有参数
       temperature_type = 'normal', // 使用温度：'normal', 'low', 'high'
-      needs_handwheel = false, // 是否需要手轮
       
       // 温度代码（用于所有系列）
       temperature_code = 'No code' // 温度代码：'No code', 'T1', 'T2', 'T3', 'M'
@@ -63,20 +62,29 @@ exports.calculateSelection = async (req, res) => {
     // 获取实际的阀门类型（优先使用新版参数）
     const actualValveType = valveType || valve_type;
 
-    // 如果选择 Scotch Yoke，必须提供阀门类型
-    if (mechanism === 'Scotch Yoke' && !actualValveType) {
-      return res.status(400).json({
-        success: false,
-        message: '请提供阀门类型（valveType）: "Ball Valve" 或 "Butterfly Valve"'
-      });
-    }
-
-    // 验证阀门类型的有效性
-    if (actualValveType && !['Ball Valve', 'Butterfly Valve'].includes(actualValveType)) {
-      return res.status(400).json({
-        success: false,
-        message: '阀门类型无效，必须是 "Ball Valve" 或 "Butterfly Valve"'
-      });
+    // 根据执行机构类型验证阀门类型
+    if (mechanism === 'Scotch Yoke') {
+      // SF系列（拨叉式）：球阀、蝶阀
+      if (!actualValveType) {
+        return res.status(400).json({
+          success: false,
+          message: '请提供阀门类型（valveType）: "Ball Valve"（球阀-对称拨叉）或 "Butterfly Valve"（蝶阀-偏心拨叉）'
+        });
+      }
+      if (!['Ball Valve', 'Butterfly Valve'].includes(actualValveType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'SF系列执行器的阀门类型必须是 "Ball Valve"（球阀-对称拨叉）或 "Butterfly Valve"（蝶阀-偏心拨叉）'
+        });
+      }
+    } else if (mechanism === 'Rack & Pinion') {
+      // AT/GY系列（齿轮齿条式）：闸阀、截止阀、直行程调节阀
+      if (actualValveType && !['Gate Valve', 'Globe Valve', 'Control Valve'].includes(actualValveType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'AT/GY系列执行器的阀门类型必须是 "Gate Valve"（闸阀）、"Globe Valve"（截止阀）或 "Control Valve"（直行程调节阀）'
+        });
+      }
     }
 
     // 验证故障安全位置参数（单作用执行器必需）
@@ -392,7 +400,7 @@ exports.calculateSelection = async (req, res) => {
               model: recommendedOverride.model,
               price: recommendedOverride.price
             } : null,
-            total_price: totalPrice, // ⭐ 总价（含温度调整和手轮）
+            total_price: totalPrice, // ⭐ 总价（含温度调整和手动操作装置）
             compatible_overrides_count: compatibleOverrides.length
           });
         }
@@ -542,16 +550,16 @@ exports.calculateSelection = async (req, res) => {
           
           // 2. 计算总价
           let totalPrice = basePrice;
-          let handwheelInfo = null;
+          let manualOverrideInfo = null;
           
-          // 如果需要手轮，加上手轮价格
-          if (needs_handwheel && actuator.pricing && actuator.pricing.manual_override_price) {
+          // 如果需要手动操作装置，加上价格（AT/GY系列通常是手轮）
+          if (needs_manual_override && actuator.pricing && actuator.pricing.manual_override_price) {
             totalPrice += actuator.pricing.manual_override_price;
-            handwheelInfo = {
-              model: actuator.pricing.manual_override_model || '手轮',
+            manualOverrideInfo = {
+              model: actuator.pricing.manual_override_model || '手动操作装置',
               price: actuator.pricing.manual_override_price
             };
-            console.log(`  🔧 加上手轮: ${handwheelInfo.model} = ¥${handwheelInfo.price}`);
+            console.log(`  🔧 加上手动操作装置: ${manualOverrideInfo.model} = ¥${manualOverrideInfo.price}`);
             console.log(`  💵 总价: ¥${totalPrice}`);
           }
           
@@ -612,9 +620,9 @@ exports.calculateSelection = async (req, res) => {
             temperature_code: temperature_code, // ⭐ 温度代码
             pricing: actuator.pricing, // 完整的价格结构
             
-            // 手轮信息
-            handwheel: handwheelInfo,
-            needs_handwheel: needs_handwheel,
+            // 手动操作装置信息（AT/GY系列通常是手轮）
+            manual_override_info: manualOverrideInfo,
+            needs_manual_override: needs_manual_override,
             
             // 扭矩信息
             actual_torque: actualTorque,
@@ -691,7 +699,6 @@ exports.calculateSelection = async (req, res) => {
         fail_safe_position: failSafePosition || 'Not Applicable', // ⭐ 故障安全位置
         temperature_code: temperature_code || 'No code', // ⭐ 温度代码（所有系列）
         temperature_type: mechanism === 'Rack & Pinion' ? temperature_type : 'N/A', // 使用温度（AT/GY系列）
-        needs_handwheel: mechanism === 'Rack & Pinion' ? needs_handwheel : 'N/A', // 是否需要手轮（AT/GY系列）
         action_type_preference: action_type_preference || '不限',
         needs_manual_override,
         max_budget: max_budget || '不限'

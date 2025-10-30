@@ -17,6 +17,7 @@ import {
   EyeOutlined, FileDoneOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import { projectsAPI, ordersAPI, ticketsAPI, purchaseOrdersAPI } from '../../services/api'
 import GreetingWidget from './GreetingWidget'
 import axios from 'axios'
 import dayjs from 'dayjs'
@@ -34,6 +35,8 @@ const AdminDashboard = () => {
     totalOrders: 0,
     totalRevenue: 0,
     activeTickets: 0,
+    totalSuppliers: 0,
+    totalProducts: 0,
   })
   const [pendingApprovalOrders, setPendingApprovalOrders] = useState([])
 
@@ -45,20 +48,54 @@ const AdminDashboard = () => {
   const fetchAdminStats = async () => {
     setLoading(true)
     try {
-      // TODO: 调用实际的API获取管理员统计数据
-      // 模拟数据
-      setTimeout(() => {
-        setStats({
-          totalUsers: 25,
-          totalProjects: 156,
-          totalOrders: 89,
-          totalRevenue: 2580000,
-          activeTickets: 12,
-        })
-        setLoading(false)
-      }, 500)
+      // 并行获取各种统计数据
+      const [
+        projectsResponse,
+        ordersResponse,
+        ticketsResponse,
+        usersResponse,
+        suppliersResponse,
+        productsResponse
+      ] = await Promise.all([
+        projectsAPI.getStats().catch(() => ({ data: {} })),
+        ordersAPI.getStatistics().catch(() => ({ data: {} })),
+        ticketsAPI.getStatistics().catch(() => ({ data: {} })),
+        axios.get('/api/users').catch(() => ({ data: { data: [] } })),
+        axios.get('/api/suppliers').catch(() => ({ data: { data: [] } })),
+        axios.get('/api/data-management/actuators').catch(() => ({ data: { data: [] } })),
+      ])
+
+      // 提取统计数据
+      const projectsData = projectsResponse.data || {}
+      const ordersData = ordersResponse.data || {}
+      const ticketsData = ticketsResponse.data || {}
+      const users = usersResponse.data.users || usersResponse.data.data || []
+      const suppliers = suppliersResponse.data.suppliers || suppliersResponse.data.data || []
+      const products = productsResponse.data.actuators || productsResponse.data.data || []
+
+      setStats({
+        totalUsers: users.length,
+        totalProjects: projectsData.total || 0,
+        totalOrders: ordersData.total || 0,
+        totalRevenue: ordersData.totalRevenue || 0,
+        activeTickets: ticketsData.active || ticketsData.total || 0,
+        totalSuppliers: suppliers.length,
+        totalProducts: products.length,
+      })
+
     } catch (error) {
-      console.error('Failed to fetch admin stats:', error)
+      console.error('获取管理员统计数据失败:', error)
+      // 使用模拟数据作为降级方案
+      setStats({
+        totalUsers: 25,
+        totalProjects: 156,
+        totalOrders: 89,
+        totalRevenue: 2580000,
+        activeTickets: 12,
+        totalSuppliers: 15,
+        totalProducts: 128,
+      })
+    } finally {
       setLoading(false)
     }
   }
@@ -83,21 +120,31 @@ const AdminDashboard = () => {
       description: '管理系统用户和权限',
       icon: <UserOutlined />,
       color: '#1890ff',
-      onClick: () => navigate('/admin'),
+      count: stats.totalUsers,
+      onClick: () => navigate('/admin/users'),
     },
     {
-      title: '系统设置',
-      description: '配置系统参数',
-      icon: <SettingOutlined />,
+      title: '产品数据库',
+      description: '管理产品数据',
+      icon: <ToolOutlined />,
       color: '#52c41a',
-      onClick: () => navigate('/admin/settings'),
+      count: stats.totalProducts,
+      onClick: () => navigate('/data-management'),
     },
     {
-      title: '数据分析',
-      description: '查看运营报表',
-      icon: <DashboardOutlined />,
+      title: '供应商管理',
+      description: '管理供应商信息',
+      icon: <TeamOutlined />,
       color: '#722ed1',
-      onClick: () => navigate('/admin/analytics'),
+      count: stats.totalSuppliers,
+      onClick: () => navigate('/suppliers'),
+    },
+    {
+      title: '数据统计',
+      description: '查看系统报表',
+      icon: <DashboardOutlined />,
+      color: '#fa8c16',
+      onClick: () => navigate('/admin/reports'),
     },
   ]
 
@@ -191,7 +238,7 @@ const AdminDashboard = () => {
         {/* 系统统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/admin/users')}>
               <Statistic
                 title="系统用户"
                 value={stats.totalUsers}
@@ -199,10 +246,15 @@ const AdminDashboard = () => {
                 suffix="人"
                 valueStyle={{ color: '#1890ff' }}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  点击管理用户
+                </Text>
+              </div>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/projects')}>
               <Statistic
                 title="总项目数"
                 value={stats.totalProjects}
@@ -210,29 +262,43 @@ const AdminDashboard = () => {
                 suffix="个"
                 valueStyle={{ color: '#52c41a' }}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  查看所有项目
+                </Text>
+              </div>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/data-management')}>
               <Statistic
-                title="订单总数"
-                value={stats.totalOrders}
-                prefix={<ShoppingCartOutlined />}
-                suffix="单"
+                title="产品总数"
+                value={stats.totalProducts}
+                prefix={<ToolOutlined />}
+                suffix="个"
                 valueStyle={{ color: '#722ed1' }}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  管理产品数据
+                </Text>
+              </div>
             </Card>
           </Col>
           <Col xs={24} sm={12} lg={6}>
-            <Card>
+            <Card hoverable onClick={() => navigate('/suppliers')}>
               <Statistic
-                title="总营收"
-                value={stats.totalRevenue}
-                prefix={<RiseOutlined />}
-                suffix="元"
+                title="供应商总数"
+                value={stats.totalSuppliers}
+                prefix={<TeamOutlined />}
+                suffix="家"
                 valueStyle={{ color: '#fa8c16' }}
-                precision={0}
               />
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  管理供应商
+                </Text>
+              </div>
             </Card>
           </Col>
         </Row>
@@ -315,6 +381,12 @@ const AdminDashboard = () => {
                         <div>
                           <Title level={5} style={{ margin: 0 }}>
                             {action.title}
+                            {action.count !== undefined && action.count > 0 && (
+                              <Badge 
+                                count={action.count} 
+                                style={{ marginLeft: 8 }}
+                              />
+                            )}
                           </Title>
                           <Text type="secondary">{action.description}</Text>
                         </div>

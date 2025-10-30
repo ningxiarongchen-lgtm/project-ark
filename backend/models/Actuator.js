@@ -23,11 +23,22 @@ const actuatorSchema = new mongoose.Schema({
     trim: true
   },
   
-  // 阀门类型（SF系列专用：球阀/蝶阀）
+  // 阀门类型（扩展支持所有系列）
   valve_type: {
     type: String,
     trim: true,
-    enum: ['球阀', '蝶阀', null],
+    enum: [
+      // SF系列（拨叉式）- 旋转阀门
+      'Ball Valve',        // 球阀（对称拨叉，不带C）
+      'Butterfly Valve',   // 蝶阀（偏心拨叉，带C）
+      '球阀', 
+      '蝶阀',
+      // AT/GY系列（齿轮齿条式）- 直行程阀门
+      'Gate Valve',        // 闸阀
+      'Globe Valve',       // 截止阀
+      'Control Valve',     // 直行程调节阀
+      null
+    ],
     default: null
   },
   

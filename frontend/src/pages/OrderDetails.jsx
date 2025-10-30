@@ -51,10 +51,23 @@ const OrderDetails = () => {
   const [productionForm] = Form.useForm()
   const [creatingProduction, setCreatingProduction] = useState(false)
 
+  // 验证 MongoDB ObjectId 格式
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id)
+  }
+
   useEffect(() => {
-    fetchOrder()
-    fetchServiceTickets()
-    fetchEngineers()
+    if (id) {
+      // 检查 ID 是否有效
+      if (!isValidObjectId(id)) {
+        message.error('无效的订单ID')
+        navigate('/orders')
+        return
+      }
+      fetchOrder()
+      fetchServiceTickets()
+      fetchEngineers()
+    }
   }, [id])
 
   // 获取技术工程师列表

@@ -2,6 +2,10 @@
  * DashboardPage - 智能仪表盘路由组件
  * 
  * 根据用户角色自动显示对应的专属仪表盘
+ * 
+ * 注意：
+ * - Technical Engineer 和 After-sales Engineer 使用同一个Dashboard
+ * - 技术工程师Dashboard包含技术选型和售后工单处理两个功能
  */
 
 import { useAuth } from '../hooks/useAuth'
@@ -12,11 +16,10 @@ import { useNavigate } from 'react-router-dom'
 // 引入各角色的专属仪表盘组件
 import AdminDashboard from '../components/dashboards/AdminDashboard'
 import TechnicalEngineerDashboard from '../components/dashboards/TechnicalEngineerDashboard'
-import SalesEngineerDashboard from '../components/dashboards/SalesEngineerDashboard'
+import EnhancedSalesEngineerDashboard from '../components/dashboards/EnhancedSalesEngineerDashboard'
 import SalesManagerDashboard from '../components/dashboards/SalesManagerDashboard'
 import ProcurementSpecialistDashboard from '../components/dashboards/ProcurementSpecialistDashboard'
 import ProductionPlannerDashboard from '../components/dashboards/ProductionPlannerDashboard'
-import AfterSalesEngineerDashboard from '../components/dashboards/AfterSalesEngineerDashboard'
 
 const DashboardPage = () => {
   const { user, isAuthenticated } = useAuth()
@@ -55,10 +58,11 @@ const DashboardPage = () => {
       return <AdminDashboard />
 
     case 'Technical Engineer':
+    case 'After-sales Engineer':  // 售后工程师使用技术工程师Dashboard（兼容旧数据）
       return <TechnicalEngineerDashboard />
 
     case 'Sales Engineer':
-      return <SalesEngineerDashboard />
+      return <EnhancedSalesEngineerDashboard />
 
     case 'Sales Manager':
       return <SalesManagerDashboard />
@@ -68,9 +72,6 @@ const DashboardPage = () => {
 
     case 'Production Planner':
       return <ProductionPlannerDashboard />
-
-    case 'After-sales Engineer':
-      return <AfterSalesEngineerDashboard />
 
     default:
       return (
