@@ -20,6 +20,9 @@ import {
   UploadOutlined,
   BarChartOutlined,
   ThunderboltOutlined,
+  DollarOutlined,
+  FileTextOutlined,
+  ToolOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { colors } from '../../styles/theme'
@@ -74,7 +77,90 @@ const menuConfig = [
     key: '/selection-engine',
     label: '智慧选型',
     icon: <ThunderboltOutlined />,
-    roles: ['Technical Engineer', 'Sales Engineer'],  // 技术工程师和销售工程师可用
+    roles: ['Technical Engineer'],  // 只有技术工程师可用，移除 Sales Engineer
+  },
+  // 💰 商务工程师专属菜单
+  {
+    key: '/finance',
+    label: '款项管理',
+    icon: <DollarOutlined />,
+    roles: ['Sales Engineer'],
+    children: [
+      {
+        key: '/finance/down-payment',
+        label: '待催预付款',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/finance/final-payment',
+        label: '待催尾款',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/finance/records',
+        label: '款项跟进记录',
+        roles: ['Sales Engineer'],
+      },
+    ]
+  },
+  {
+    key: '/contracts',
+    label: '合同管理',
+    icon: <FileTextOutlined />,
+    roles: ['Sales Engineer'],
+    children: [
+      {
+        key: '/contracts/pending-review',
+        label: '待审核合同',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/contracts/pending-seal',
+        label: '待盖章合同',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/contracts/signed',
+        label: '已签订合同',
+        roles: ['Sales Engineer'],
+      },
+    ]
+  },
+  {
+    key: '/production-orders',
+    label: '生产订单',
+    icon: <ToolOutlined />,
+    roles: ['Sales Engineer'],
+    children: [
+      {
+        key: '/production-orders/pending',
+        label: '待下发订单',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/production-orders/issued',
+        label: '已下发订单',
+        roles: ['Sales Engineer'],
+      },
+    ]
+  },
+  {
+    key: '/quotations',
+    label: '报价管理',
+    icon: <FileTextOutlined />,
+    roles: ['Sales Engineer'],
+    children: [
+      {
+        key: '/quotations/pending',
+        label: '待报价项目',
+        roles: ['Sales Engineer'],
+      },
+      {
+        key: '/quotations/completed',
+        label: '已报价项目',
+        roles: ['Sales Engineer'],
+      },
+    ]
   },
   {
     key: '/orders',
@@ -110,7 +196,7 @@ const menuConfig = [
     key: '/products',
     label: '产品数据库',
     icon: <DatabaseOutlined />,
-    roles: ['Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],  // 技术工程师不能访问（避免看到价格）
+    roles: ['Procurement Specialist', 'Production Planner', 'After-sales Engineer'],  // 移除 Sales Engineer
   },
 ]
 
@@ -150,11 +236,25 @@ const AttioLayout = () => {
     // 筛选出当前角色有权访问的菜单项
     return menuConfig
       .filter(item => item.roles.includes(user.role))
-      .map(item => ({
-        key: item.key,
-        icon: item.icon,
-        label: item.label,
-      }))
+      .map(item => {
+        const menuItem = {
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+        }
+        
+        // 处理子菜单
+        if (item.children) {
+          menuItem.children = item.children
+            .filter(child => child.roles.includes(user.role))
+            .map(child => ({
+              key: child.key,
+              label: child.label,
+            }))
+        }
+        
+        return menuItem
+      })
   }, [user])
 
   const userMenuItems = [

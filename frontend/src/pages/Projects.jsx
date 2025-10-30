@@ -9,9 +9,10 @@ import {
   PlusOutlined, SearchOutlined, EditOutlined, 
   DeleteOutlined, FolderOpenOutlined, ReloadOutlined,
   InboxOutlined, ProjectOutlined, DollarOutlined,
-  CustomerServiceOutlined
+  CustomerServiceOutlined, FileTextOutlined, ToolOutlined
 } from '@ant-design/icons'
 import { projectsAPI } from '../services/api'
+import { useAuthStore } from '../store/authStore'
 import CloudUpload from '../components/CloudUpload'
 import dayjs from 'dayjs'
 
@@ -19,6 +20,7 @@ const { Title } = Typography
 const { Search } = Input
 
 const Projects = () => {
+  const { user } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [projects, setProjects] = useState([])
   const [filteredProjects, setFilteredProjects] = useState([])
@@ -33,6 +35,10 @@ const Projects = () => {
   // 统计数据
   const [stats, setStats] = useState({
     totalProjects: 0,
+    pendingQuotation: 0,
+    pendingDownPayment: 0,
+    pendingProductionOrder: 0,
+    pendingFinalPayment: 0,
     totalQuotes: 0,
     totalTickets: 0
   })
@@ -65,19 +71,38 @@ const Projects = () => {
       // 计算统计数据
       const totalProjects = projectsData.length
       
-      // 统计已报价的项目数（状态为"已报价"或"待商务报价"）
+      // 商务工程师专属统计
+      const pendingQuotation = projectsData.filter(p => 
+        p.status === '待商务报价'
+      ).length
+      
+      const pendingDownPayment = projectsData.filter(p => 
+        p.status === '待预付款'
+      ).length
+      
+      const pendingProductionOrder = projectsData.filter(p => 
+        p.status === '生产准备中'
+      ).length
+      
+      const pendingFinalPayment = projectsData.filter(p => 
+        p.status === '生产中'
+      ).length
+      
+      // 其他角色统计
       const totalQuotes = projectsData.filter(p => 
         p.status === '已报价' || p.status === '待商务报价'
       ).length
       
-      // 统计有售后工单的项目数（假设项目有service_tickets字段）
-      // 如果没有这个字段，我们可以从项目的其他标识来判断
       const totalTickets = projectsData.filter(p => 
         p.service_tickets && p.service_tickets.length > 0
       ).length
       
       setStats({
         totalProjects,
+        pendingQuotation,
+        pendingDownPayment,
+        pendingProductionOrder,
+        pendingFinalPayment,
         totalQuotes,
         totalTickets
       })
@@ -248,41 +273,109 @@ const Projects = () => {
 
   return (
     <div>
-      {/* 统计卡片 */}
+      {/* 🚨 测试标识：确认新代码已加载 */}
+      {user?.role === 'Sales Engineer' && (
+        <div style={{
+          background: '#52c41a',
+          color: 'white',
+          padding: '12px 20px',
+          borderRadius: '4px',
+          marginBottom: '16px',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}>
+          ✅ 商务工程师专属页面 v2.0 - 角色：{user?.role}
+        </div>
+      )}
+      
+      {/* 统计卡片 - 根据角色显示不同内容 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="总项目数"
-              value={stats.totalProjects}
-              prefix={<ProjectOutlined />}
-              suffix="个"
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="总报价数"
-              value={stats.totalQuotes}
-              prefix={<DollarOutlined />}
-              suffix="个"
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card>
-            <Statistic
-              title="总售后问题数"
-              value={stats.totalTickets}
-              prefix={<CustomerServiceOutlined />}
-              suffix="个"
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
-        </Col>
+        {user?.role === 'Sales Engineer' ? (
+          // 💼 商务工程师专属统计
+          <>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待完成报价"
+                  value={stats.pendingQuotation}
+                  prefix={<FileTextOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: stats.pendingQuotation > 0 ? '#fa8c16' : '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待催30%预付款"
+                  value={stats.pendingDownPayment}
+                  prefix={<DollarOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: stats.pendingDownPayment > 0 ? '#f5222d' : '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待下生产订单"
+                  value={stats.pendingProductionOrder}
+                  prefix={<ToolOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: stats.pendingProductionOrder > 0 ? '#722ed1' : '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card>
+                <Statistic
+                  title="待催70%尾款"
+                  value={stats.pendingFinalPayment}
+                  prefix={<DollarOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: stats.pendingFinalPayment > 0 ? '#eb2f96' : '#52c41a' }}
+                />
+              </Card>
+            </Col>
+          </>
+        ) : (
+          // 其他角色统计
+          <>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic
+                  title="总项目数"
+                  value={stats.totalProjects}
+                  prefix={<ProjectOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: '#1890ff' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic
+                  title="总报价数"
+                  value={stats.totalQuotes}
+                  prefix={<DollarOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Statistic
+                  title="总售后问题数"
+                  value={stats.totalTickets}
+                  prefix={<CustomerServiceOutlined />}
+                  suffix="个"
+                  valueStyle={{ color: '#fa8c16' }}
+                />
+              </Card>
+            </Col>
+          </>
+        )}
       </Row>
 
       {/* 项目列表卡片 */}
@@ -307,13 +400,16 @@ const Projects = () => {
             >
               刷新
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleCreate}
-            >
-              新建项目
-            </Button>
+            {/* 只有非商务工程师可以创建项目 */}
+            {user?.role !== 'Sales Engineer' && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+              >
+                新建项目
+              </Button>
+            )}
           </Space>
         }
       >
