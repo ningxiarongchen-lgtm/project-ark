@@ -11,7 +11,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo "╔═══════════════════════════════════════════════════════╗"
-echo "║     C-MAX 新功能测试 - 选型引擎 & Excel功能         ║"
+echo "║     Project Ark 新功能测试 - 选型引擎 & Excel功能  ║"
 echo "╚═══════════════════════════════════════════════════════╝"
 echo ""
 
@@ -20,7 +20,7 @@ echo -e "${YELLOW}📝 步骤 1: 登录获取认证令牌...${NC}"
 LOGIN_RESPONSE=$(curl -s -X POST ${BASE_URL}/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@cmax.com",
+    "email": "admin@projectark.com",
     "password": "admin123"
   }')
 

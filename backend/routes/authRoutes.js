@@ -25,12 +25,13 @@ const {
 const { body } = require('express-validator');
 
 // Rate limiter for login attempts
+// 在开发和测试环境中放宽限制
 const loginLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5分钟窗口期
-  max: 5, // 限制5次尝试
+  windowMs: 15 * 60 * 1000, // 15分钟窗口期
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // 开发/测试环境放宽到1000次
   message: {
     success: false,
-    message: '尝试次数过多，请5分钟后再试'
+    message: '尝试次数过多，请15分钟后再试'
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers

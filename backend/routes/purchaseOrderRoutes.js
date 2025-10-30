@@ -22,6 +22,14 @@ router.get(
   purchaseOrderController.getPurchaseOrderStats
 );
 
+// 获取待管理员审批的订单列表（放在前面，避免被/:id匹配）
+router.get(
+  '/pending-admin-approval',
+  protect,
+  authorize('Administrator'),
+  purchaseOrderController.getPendingAdminApprovalOrders
+);
+
 // 获取指定供应商的采购订单
 router.get(
   '/supplier/:supplier_id',
@@ -41,7 +49,7 @@ router.get(
 router.get(
   '/:id', 
   protect, 
-  authorize('Administrator', 'Procurement Specialist'), 
+  authorize('Administrator', 'Procurement Specialist', 'Commercial Engineer'), 
   purchaseOrderController.getPurchaseOrderById
 );
 
@@ -58,8 +66,7 @@ router.post(
 router.put(
   '/:id', 
   protect, 
-  authorize('Administrator', 'Procurement Specialist'),
-  checkPurchaseOrderOwnership,
+  authorize('Administrator', 'Procurement Specialist', 'Commercial Engineer'),
   purchaseOrderValidation,
   validate, 
   purchaseOrderController.updatePurchaseOrder
@@ -86,17 +93,77 @@ router.patch(
 router.post(
   '/:id/add-file',
   protect,
-  authorize('Administrator', 'Procurement Specialist'),
-  checkPurchaseOrderOwnership,
+  authorize('Administrator', 'Procurement Specialist', 'Commercial Engineer'),
   addPurchaseOrderFile
 );
 
 router.delete(
   '/:id/files/:fileId',
   protect,
-  authorize('Administrator', 'Procurement Specialist'),
-  checkPurchaseOrderOwnership,
+  authorize('Administrator', 'Procurement Specialist', 'Commercial Engineer'),
   deletePurchaseOrderFile
+);
+
+// 付款管理
+router.post(
+  '/:id/payments',
+  protect,
+  authorize('Administrator', 'Procurement Specialist', 'Commercial Engineer'),
+  purchaseOrderController.addPaymentRecord
+);
+
+// 物流管理
+router.post(
+  '/:id/shipments',
+  protect,
+  authorize('Administrator', 'Procurement Specialist'),
+  purchaseOrderController.addShipment
+);
+
+router.patch(
+  '/:id/shipments/:shipmentId',
+  protect,
+  authorize('Administrator', 'Procurement Specialist'),
+  purchaseOrderController.updateShipmentStatus
+);
+
+// 收货确认
+router.post(
+  '/:id/receive',
+  protect,
+  authorize('Administrator', 'Procurement Specialist', 'Warehouse Staff'),
+  purchaseOrderController.confirmReceiving
+);
+
+// 质检管理
+router.patch(
+  '/:id/quality-check',
+  protect,
+  authorize('Administrator', 'Quality Inspector', 'Procurement Specialist'),
+  purchaseOrderController.updateQualityCheck
+);
+
+// 跟进记录管理
+router.post(
+  '/:id/follow-ups',
+  protect,
+  authorize('Administrator', 'Procurement Specialist'),
+  purchaseOrderController.addFollowUp
+);
+
+// 管理员审批流程
+router.post(
+  '/:id/admin-approve',
+  protect,
+  authorize('Administrator'),
+  purchaseOrderController.adminApprovePurchaseOrder
+);
+
+router.post(
+  '/:id/admin-reject',
+  protect,
+  authorize('Administrator'),
+  purchaseOrderController.adminRejectPurchaseOrder
 );
 
 module.exports = router;

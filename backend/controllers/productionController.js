@@ -1,5 +1,7 @@
 const ProductionOrder = require('../models/ProductionOrder');
 const SalesOrder = require('../models/SalesOrder');
+const Project = require('../models/Project');
+const User = require('../models/User'); // 🔒 用于通知功能
 
 /**
  * 从销售订单创建生产订单
@@ -573,6 +575,63 @@ exports.getProductionStatistics = async (req, res) => {
 };
 
 /**
+ * 生产完成，更新为待质检状态
+ */
+exports.markAsAwaitingQC = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const productionOrder = await ProductionOrder.findById(id)
+      .populate('salesOrder');
+
+    if (!productionOrder) {
+      return res.status(404).json({ message: 'Production order not found' });
+    }
+
+    // 检查当前状态
+    if (productionOrder.status !== 'Completed') {
+      return res.status(400).json({ 
+        message: 'Only completed production orders can be marked as awaiting QC',
+        currentStatus: productionOrder.status
+      });
+    }
+
+    // 更新生产订单状态
+    productionOrder.status = 'Awaiting QC';
+    productionOrder.addLog(
+      'Status Changed to Awaiting QC',
+      notes || 'Production completed, awaiting quality check',
+      req.user.id
+    );
+
+    await productionOrder.save();
+
+    // 同时更新销售订单状态
+    if (productionOrder.salesOrder) {
+      const salesOrder = await SalesOrder.findById(productionOrder.salesOrder);
+      if (salesOrder) {
+        salesOrder.status = 'Awaiting QC';
+        await salesOrder.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Production order marked as awaiting QC',
+      data: productionOrder
+    });
+
+  } catch (error) {
+    console.error('Error marking production order as awaiting QC:', error);
+    res.status(500).json({ 
+      message: 'Failed to update production order status',
+      error: error.message 
+    });
+  }
+};
+
+/**
  * APS智能排程 - 为生产订单执行智能排程
  */
 exports.scheduleProduction = async (req, res) => {
@@ -772,5 +831,311 @@ function getProgressColor(status) {
   };
   return colorMap[status] || '#bfbfbf';
 }
+
+/**
+ * 从项目创建销售订单和生产订单（确认收款后）
+ * @route POST /api/production/from-project/:projectId
+ * @access Private (Sales Engineer only)
+ */
+exports.createProductionOrderFromProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const {
+      payment_confirmed,
+      payment_amount,
+      payment_method,
+      payment_reference,
+      payment_notes,
+      plannedStartDate,
+      plannedEndDate,
+      priority,
+      productionNotes,
+      technicalRequirements
+    } = req.body;
+
+    // 1. 验证付款确认
+    if (!payment_confirmed) {
+      return res.status(400).json({ 
+        message: 'Payment confirmation is required to create production order' 
+      });
+    }
+    
+    // 获取操作人IP地址
+    const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+
+    // 2. 查找项目
+    const project = await Project.findById(projectId)
+      .populate('createdBy', 'name email phone full_name')
+      .populate('contract_files.final_contract.uploadedBy', 'name email');
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // 3. 验证项目状态
+    if (project.status !== 'Contract Signed') {
+      return res.status(400).json({ 
+        message: 'Can only create production order for projects with signed contract',
+        currentStatus: project.status
+      });
+    }
+
+    // 4. 检查是否已有销售订单
+    let salesOrder = await SalesOrder.findOne({ project: projectId });
+    
+    if (salesOrder) {
+      // 检查是否已有生产订单
+      const existingProductionOrder = await ProductionOrder.findOne({ salesOrder: salesOrder._id });
+      if (existingProductionOrder) {
+        return res.status(400).json({ 
+          message: 'Production order already exists for this project',
+          salesOrderNumber: salesOrder.orderNumber,
+          productionOrderNumber: existingProductionOrder.productionOrderNumber
+        });
+      }
+    } else {
+      // 5. 创建销售订单（基于quotation_bom）
+      if (!project.quotation_bom || project.quotation_bom.length === 0) {
+        return res.status(400).json({ 
+          message: 'Project has no quotation BOM. Please create quotation BOM first.' 
+        });
+      }
+
+      // 创建订单明细
+      const orderItems = project.quotation_bom.map(item => ({
+        item_type: item.item_type,
+        model_name: item.model_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price,
+        description: item.description,
+        specifications: item.specifications,
+        notes: item.notes,
+        covered_tags: item.covered_tags || [],
+        production_status: 'Pending'
+      }));
+
+      // 计算财务信息
+      const subtotal = orderItems.reduce((sum, item) => sum + item.total_price, 0);
+      const tax_rate = 13; // 默认13%增值税
+      const tax_amount = subtotal * (tax_rate / 100);
+      const total_amount = subtotal + tax_amount;
+
+      // 创建销售订单
+      salesOrder = new SalesOrder({
+        project: projectId,
+        projectSnapshot: {
+          projectNumber: project.projectNumber,
+          projectName: project.projectName,
+          client: project.client
+        },
+        status: 'Confirmed',
+        orderDate: new Date(),
+        requestedDeliveryDate: plannedEndDate || new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 默认60天后
+        orderItems,
+        financial: {
+          subtotal,
+          tax_rate,
+          tax_amount,
+          shipping_cost: 0,
+          discount: 0,
+          total_amount
+        },
+        delivery: {
+          shipping_method: 'Standard',
+          shipping_address: project.client?.address || '',
+          delivery_terms: 'FOB Factory'
+        },
+        payment: {
+          payment_terms: '30% prepayment, 70% before delivery',
+          payment_status: 'Partial',
+          paid_amount: payment_amount || (total_amount * 0.3), // 默认30%预付款
+          payment_records: [{
+            date: new Date(),
+            amount: payment_amount || (total_amount * 0.3),
+            method: payment_method || 'Bank Transfer',
+            reference: payment_reference || '',
+            notes: payment_notes || 'Prepayment (30%)'
+          }]
+        },
+        warranty: '12 months from delivery',
+        special_requirements: technicalRequirements || '',
+        notes: `Created from project ${project.projectNumber}`,
+        internal_notes: `Payment confirmed by ${req.user.name}`,
+        created_by: req.user._id,
+        assigned_to: project.createdBy,
+        approval: {
+          status: 'Approved',
+          approved_by: req.user._id,
+          approved_at: new Date(),
+          approval_notes: 'Auto-approved with payment confirmation'
+        }
+      });
+
+      await salesOrder.save();
+
+      // 🔒 锁定项目，防止修改报价数据
+      project.is_locked = true;
+      project.locked_at = new Date();
+      project.locked_reason = '已转化为合同订单（生产订单）';
+      
+      // 更新项目状态
+      project.status = 'In Production';
+      await project.save();
+    }
+
+    // 6. 创建生产订单
+    const orderSnapshot = {
+      orderNumber: salesOrder.orderNumber,
+      projectNumber: project.projectNumber,
+      projectName: project.projectName,
+      clientName: project.client?.name
+    };
+
+    // 创建生产明细
+    const productionItems = salesOrder.orderItems.map(item => ({
+      item_type: item.item_type,
+      model_name: item.model_name,
+      ordered_quantity: item.quantity,
+      produced_quantity: 0,
+      qualified_quantity: 0,
+      defective_quantity: 0,
+      production_status: 'Pending',
+      notes: item.notes
+    }));
+
+    // 创建生产订单
+    const productionOrder = new ProductionOrder({
+      salesOrder: salesOrder._id,
+      orderSnapshot,
+      status: 'Pending', // 待排产
+      priority: priority || 'Normal',
+      schedule: {
+        plannedStartDate: plannedStartDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 默认7天后开始
+        plannedEndDate: plannedEndDate || new Date(Date.now() + 60 * 24 * 60 * 60 * 1000) // 默认60天后完成
+      },
+      productionItems,
+      resources: {
+        production_lines: [],
+        supervisor: null,
+        operators: [],
+        equipment: []
+      },
+      production_notes: productionNotes || `Created from project ${project.projectNumber}`,
+      technical_requirements: technicalRequirements || project.description || '',
+      special_instructions: `Payment confirmed: ${payment_amount || salesOrder.financial.total_amount * 0.3} (30% prepayment)`,
+      created_by: req.user._id
+    });
+
+    // 计算初始进度
+    productionOrder.calculateProgress();
+    productionOrder.calculateQualityRate();
+
+    // 添加创建日志
+    productionOrder.addLog(
+      'Created',
+      `Production order created from project ${project.projectNumber} with payment confirmation`,
+      req.user._id
+    );
+
+    await productionOrder.save();
+
+    // 更新销售订单状态
+    salesOrder.status = 'In Production';
+    await salesOrder.save();
+    
+    // 🔒 记录关键操作：确认收到预付款
+    const confirmationText = `我确认，款项 ¥${(payment_amount || salesOrder.financial.total_amount * 0.3).toFixed(2)} 已于 ${new Date().toLocaleDateString('zh-CN')} 到账。此操作将启动生产流程且不可逆。`;
+    
+    project.operation_history = project.operation_history || [];
+    project.operation_history.push({
+      operation_type: 'payment_confirmed',
+      operator: req.user._id,
+      operator_name: req.user.full_name || req.user.name || req.user.phone,
+      operator_role: `${req.user.role}（兼财务负责人）`,  // 明确标注财务职责
+      operation_time: new Date(),
+      description: `💰 财务确认：收到预付款 ¥${(payment_amount || salesOrder.financial.total_amount * 0.3).toFixed(2)}`,
+      details: {
+        payment_amount: payment_amount || salesOrder.financial.total_amount * 0.3,
+        total_amount: salesOrder.financial.total_amount,
+        payment_method: payment_method || 'Bank Transfer',
+        payment_reference: payment_reference || '',
+        sales_order_number: salesOrder.orderNumber,
+        production_order_number: productionOrder.productionOrderNumber,
+        financial_responsibility: true,  // 财务责任标记
+        confirmation_role: '财务负责人'
+      },
+      ip_address: ipAddress,
+      confirmation_text: confirmationText,
+      notes: payment_notes ? `${payment_notes}（财务负责人操作）` : '此操作由商务工程师以财务负责人身份执行，承担相应财务确认责任'
+    });
+    
+    // 🔒 记录关键操作：创建生产订单
+    project.operation_history.push({
+      operation_type: 'production_order_created',
+      operator: req.user._id,
+      operator_name: req.user.full_name || req.user.name || req.user.phone,
+      operator_role: req.user.role,
+      operation_time: new Date(),
+      description: `创建生产订单 ${productionOrder.productionOrderNumber}`,
+      details: {
+        production_order_number: productionOrder.productionOrderNumber,
+        sales_order_number: salesOrder.orderNumber,
+        planned_start_date: productionOrder.schedule.plannedStartDate,
+        planned_end_date: productionOrder.schedule.plannedEndDate,
+        total_items: productionOrder.productionItems.length,
+        priority: productionOrder.priority
+      },
+      ip_address: ipAddress,
+      notes: `基于销售订单 ${salesOrder.orderNumber} 创建`
+    });
+    
+    // 更新项目状态为"生产中"
+    project.status = 'In Production';
+    await project.save();
+
+    console.log('✅ Production order created:', productionOrder.productionOrderNumber);
+    console.log('✅ Operation history recorded: payment_confirmed, production_order_created');
+
+    // 返回结果
+    res.status(201).json({
+      success: true,
+      message: 'Production order created successfully',
+      data: {
+        salesOrder: {
+          _id: salesOrder._id,
+          orderNumber: salesOrder.orderNumber,
+          status: salesOrder.status,
+          total_amount: salesOrder.financial.total_amount,
+          paid_amount: salesOrder.payment.paid_amount,
+          payment_status: salesOrder.payment.payment_status
+        },
+        productionOrder: {
+          _id: productionOrder._id,
+          productionOrderNumber: productionOrder.productionOrderNumber,
+          status: productionOrder.status,
+          priority: productionOrder.priority,
+          plannedStartDate: productionOrder.schedule.plannedStartDate,
+          plannedEndDate: productionOrder.schedule.plannedEndDate,
+          totalItems: productionOrder.productionItems.length,
+          totalQuantity: productionOrder.progress.total_quantity
+        },
+        project: {
+          _id: project._id,
+          projectNumber: project.projectNumber,
+          status: project.status
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Create production order from project error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error', 
+      error: error.message 
+    });
+  }
+};
 
 

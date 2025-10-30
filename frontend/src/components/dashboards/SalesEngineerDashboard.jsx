@@ -15,6 +15,7 @@ import {
   DollarOutlined, PhoneOutlined, CheckCircleOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
 
@@ -95,17 +96,8 @@ const SalesEngineerDashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: 'white' }}>
-              <CustomerServiceOutlined /> 销售工程师工作台
-            </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>
-              Welcome to Project Ark，{user?.name}！今天也要全力以赴！
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 销售统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

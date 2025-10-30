@@ -34,7 +34,7 @@ echo "2. 登录获取token..."
 LOGIN_RESPONSE=$(curl -s -X POST "${API_URL}/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@cmax.com",
+    "email": "admin@projectark.com",
     "password": "admin123"
   }')
 

@@ -157,9 +157,9 @@ const ProductionGantt = ({ ganttData, loading, onRefresh }) => {
     <div style={{ background: '#fff' }}>
       {/* 工具栏 */}
       <Card 
-        bordered={false}
+        variant="borderless"
         style={{ marginBottom: 16 }}
-        bodyStyle={{ padding: '12px 16px' }}
+        styles={{ body: { padding: '12px 16px' } }}
       >
         <Space wrap>
           <span style={{ fontWeight: 500 }}>
@@ -384,7 +384,7 @@ const ProductionGantt = ({ ganttData, loading, onRefresh }) => {
                 size="small" 
                 title="排程约束"
                 style={{ marginTop: 16 }}
-                bodyStyle={{ padding: '12px' }}
+                styles={{ body: { padding: '12px' } }}
               >
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <div>

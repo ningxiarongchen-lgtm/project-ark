@@ -7,7 +7,7 @@ const Supplier = require('../models/Supplier');
  */
 exports.getSuppliers = async (req, res) => {
   try {
-    const { status, rating, search, sort = '-createdAt' } = req.query;
+    const { status, rating, search, sort = '-createdAt', page = 1, limit = 10 } = req.query;
     
     // 构建查询条件
     let query = {};
@@ -31,13 +31,27 @@ exports.getSuppliers = async (req, res) => {
       ];
     }
     
+    // 分页
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
     // 执行查询
-    const suppliers = await Supplier.find(query).sort(sort);
+    const suppliers = await Supplier.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // 获取总数
+    const total = await Supplier.countDocuments(query);
     
     res.json({
       success: true,
-      count: suppliers.length,
-      data: suppliers
+      data: suppliers,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     console.error('获取供应商列表失败:', error);

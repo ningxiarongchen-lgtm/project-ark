@@ -1,0 +1,80 @@
+/**
+ * NotificationPanel CSS
+ * 
+ * Attio-style notification panel
+ */
+
+.notification-panel {
+  width: 420px;
+  max-height: 600px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notification-panel-empty {
+  width: 420px;
+  padding: 60px 40px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #FBFBFA;
+}
+
+.notification-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 16px 20px !important;
+  cursor: pointer;
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid #F1F1F0 !important;
+}
+
+.notification-item:hover {
+  background-color: #FBFBFA;
+}
+
+.notification-item.unread {
+  background-color: #F5F4FE;
+}
+
+.notification-item.unread:hover {
+  background-color: #ECEAFB;
+}
+
+.notification-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6E62E4;
+}
+
+/* Scrollbar styling */
+.notification-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background: #D4D4D2;
+  border-radius: 3px;
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background: #8A8A87;
+}
+

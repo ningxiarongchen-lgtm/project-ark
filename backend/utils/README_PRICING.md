@@ -617,8 +617,8 @@ console.log(`价格范围: ${priceRange}`);
 
 ## 技术支持
 
-- 📧 tech@cmax.com
-- 💬 dev@cmax.com
+- 📧 tech@projectark.com
+- 💬 dev@projectark.com
 
 ---
 

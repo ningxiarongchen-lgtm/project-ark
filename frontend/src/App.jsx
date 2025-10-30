@@ -1,32 +1,53 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Spin } from 'antd'
 import { useAuthStore } from './store/authStore'
-import MainLayout from './components/Layout/MainLayout'
-import Login from './pages/Login'
-import ChangePassword from './pages/ChangePassword'
-import Dashboard from './pages/Dashboard'
-import Products from './pages/Products'
-import ProductDetails from './pages/ProductDetails'
-import ECODetails from './pages/ECODetails'
-import Projects from './pages/Projects'
-import ProjectDetails from './pages/ProjectDetails'
-import Quotes from './pages/Quotes'
-import QuoteDetails from './pages/QuoteDetails'
-import SelectionEngine from './pages/SelectionEngine'
-import AdminPanel from './pages/AdminPanel'
-import SupplierManagement from './pages/SupplierManagement'
-import PurchaseOrderManagement from './pages/PurchaseOrderManagement'
-import CreatePurchaseOrder from './pages/CreatePurchaseOrder'
-import OrderManagement from './pages/OrderManagement'
-import OrderDetails from './pages/OrderDetails'
-import ProductionSchedule from './pages/ProductionSchedule'
-import ShopFloorTerminal from './pages/ShopFloorTerminal'
-import QualityManagement from './pages/QualityManagement'
-import ERPDashboard from './pages/ERPDashboard'
-import ServiceCenter from './pages/ServiceCenter'
-import TicketDetails from './pages/TicketDetails'
-import Profile from './pages/Profile'
-import NotFound from './pages/NotFound'
-import DataManagement from './pages/DataManagement'
+import AttioLayout from './components/Layout/AttioLayout'
+
+// 全局加载指示器组件
+const PageLoader = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    background: '#FFFFFF'
+  }}>
+    <Spin size="large" />
+  </div>
+)
+
+// 代码分割 - 懒加载所有页面组件
+const Login = lazy(() => import('./pages/Login'))
+const ChangePassword = lazy(() => import('./pages/ChangePassword'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Products = lazy(() => import('./pages/Products'))
+const ProductDetails = lazy(() => import('./pages/ProductDetails'))
+const ECODetails = lazy(() => import('./pages/ECODetails'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectDetails = lazy(() => import('./pages/ProjectDetails'))
+const ProjectDashboard = lazy(() => import('./pages/ProjectDashboard'))
+const Quotes = lazy(() => import('./pages/Quotes'))
+const QuoteDetails = lazy(() => import('./pages/QuoteDetails'))
+const SelectionEngine = lazy(() => import('./pages/SelectionEngine'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const SupplierManagement = lazy(() => import('./pages/SupplierManagement'))
+const PurchaseOrderManagement = lazy(() => import('./pages/PurchaseOrderManagement'))
+const PurchaseOrderDetails = lazy(() => import('./pages/PurchaseOrderDetails'))
+const CreatePurchaseOrder = lazy(() => import('./pages/CreatePurchaseOrder'))
+const OrderManagement = lazy(() => import('./pages/OrderManagement'))
+const OrderDetails = lazy(() => import('./pages/OrderDetails'))
+const ProductionSchedule = lazy(() => import('./pages/ProductionSchedule'))
+const ShopFloorTerminal = lazy(() => import('./pages/ShopFloorTerminal'))
+const QualityManagement = lazy(() => import('./pages/QualityManagement'))
+const ERPDashboard = lazy(() => import('./pages/ERPDashboard'))
+const ServiceCenter = lazy(() => import('./pages/ServiceCenter'))
+const TicketDetails = lazy(() => import('./pages/TicketDetails'))
+const Profile = lazy(() => import('./pages/Profile'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const DataManagement = lazy(() => import('./pages/DataManagement'))
+const ProductCatalog = lazy(() => import('./pages/ProductCatalog'))
+const ProductImport = lazy(() => import('./pages/ProductImport'))
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordCheck }) => {
@@ -56,78 +77,106 @@ const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordChe
 
 function App() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<Login />} />
-      
-      {/* Change Password Route - Protected but skips password check */}
-      <Route path="/change-password" element={
-        <ProtectedRoute skipPasswordCheck={true}>
-          <ChangePassword />
-        </ProtectedRoute>
-      } />
-
-      {/* Protected Routes */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          <MainLayout />
-        </ProtectedRoute>
-      }>
-        <Route index element={<Dashboard />} />
-        <Route path="products" element={<Products />} />
-        <Route path="products/:id" element={<ProductDetails />} />
-        <Route path="ecos/:id" element={<ECODetails />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="projects/:id" element={<ProjectDetails />} />
-        <Route path="quotes" element={<Quotes />} />
-        <Route path="quotes/:id" element={<QuoteDetails />} />
-        <Route path="selection-engine" element={<SelectionEngine />} />
-        <Route path="orders" element={<OrderManagement />} />
-        <Route path="orders/:id" element={<OrderDetails />} />
-        <Route path="production-schedule" element={<ProductionSchedule />} />
-        <Route path="shop-floor" element={<ShopFloorTerminal />} />
-        <Route path="quality" element={<QualityManagement />} />
-        <Route path="erp-dashboard" element={<ERPDashboard />} />
-        <Route path="service-center" element={<ServiceCenter />} />
-        <Route path="service-center/:id" element={<TicketDetails />} />
-        <Route path="profile" element={<Profile />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<Login />} />
         
-        {/* Admin Only Routes */}
-        <Route path="admin" element={
-          <ProtectedRoute requiredRole="Administrator">
-            <AdminPanel />
+        {/* Change Password Route - Protected but skips password check */}
+        <Route path="/change-password" element={
+          <ProtectedRoute skipPasswordCheck={true}>
+            <ChangePassword />
           </ProtectedRoute>
         } />
-        <Route path="data-management" element={
-          <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Procurement Specialist']}>
-            <DataManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="suppliers" element={
-          <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
-            <SupplierManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="purchase-orders" element={
-          <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
-            <PurchaseOrderManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="purchase-orders/create" element={
-          <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
-            <CreatePurchaseOrder />
-          </ProtectedRoute>
-        } />
-        <Route path="purchase-orders/edit/:id" element={
-          <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
-            <CreatePurchaseOrder />
-          </ProtectedRoute>
-        } />
-      </Route>
 
-      {/* 404 Page */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* Protected Routes */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <AttioLayout />
+          </ProtectedRoute>
+        }>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="products" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']}>
+              <Products />
+            </ProtectedRoute>
+          } />
+          <Route path="products/:id" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']}>
+              <ProductDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="ecos/:id" element={<ECODetails />} />
+          <Route path="projects" element={<ProjectDashboard />} />
+          <Route path="projects/:id" element={<ProjectDetails />} />
+          <Route path="quotes" element={<Quotes />} />
+          <Route path="quotes/:id" element={<QuoteDetails />} />
+          <Route path="selection-engine" element={<SelectionEngine />} />
+          <Route path="orders" element={<OrderManagement />} />
+          <Route path="orders/:id" element={<OrderDetails />} />
+          <Route path="production-schedule" element={<ProductionSchedule />} />
+          <Route path="shop-floor" element={<ShopFloorTerminal />} />
+          <Route path="quality" element={<QualityManagement />} />
+          <Route path="erp-dashboard" element={<ERPDashboard />} />
+          <Route path="service-center" element={<ServiceCenter />} />
+          <Route path="service-center/:id" element={<TicketDetails />} />
+          <Route path="profile" element={<Profile />} />
+          
+          {/* Product Catalog - Sales Manager Only */}
+          <Route path="product-catalog" element={
+            <ProtectedRoute requiredRoles={['Sales Manager', 'Administrator']}>
+              <ProductCatalog />
+            </ProtectedRoute>
+          } />
+          
+          {/* Admin Only Routes */}
+          <Route path="admin" element={
+            <ProtectedRoute requiredRole="Administrator">
+              <AdminPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="data-management" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Procurement Specialist']}>
+              <DataManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="product-import" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer']}>
+              <ProductImport />
+            </ProtectedRoute>
+          } />
+          <Route path="suppliers" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
+              <SupplierManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="purchase-orders" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Commercial Engineer']}>
+              <PurchaseOrderManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="purchase-orders/:id" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Commercial Engineer']}>
+              <PurchaseOrderDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="purchase-orders/create" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
+              <CreatePurchaseOrder />
+            </ProtectedRoute>
+          } />
+          <Route path="purchase-orders/edit/:id" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
+              <CreatePurchaseOrder />
+            </ProtectedRoute>
+          } />
+        </Route>
+
+        {/* 404 Page */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   )
 }
 

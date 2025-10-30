@@ -15,6 +15,7 @@ import {
   ClockCircleOutlined, WarningOutlined, RocketOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
 
@@ -100,17 +101,8 @@ const ProductionPlannerDashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: '#333' }}>
-              <RocketOutlined /> 生产计划员工作台
-            </Title>
-            <Text style={{ color: '#666' }}>
-              Welcome to Project Ark，{user?.name}！今日已完成 {stats.completedToday} 单
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 生产统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

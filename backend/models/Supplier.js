@@ -44,16 +44,18 @@ const supplierSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'blacklisted'],
-    default: 'active'
+    enum: ['合格 (Qualified)', '考察中 (Onboarding)', '不合格 (Disqualified)'],
+    default: '考察中 (Onboarding)'
   }
 }, {
   timestamps: true
 });
 
-// 索引
+// 性能优化：为经常查询的字段添加索引
 supplierSchema.index({ name: 1 });
-supplierSchema.index({ status: 1 });
+supplierSchema.index({ status: 1 }); // 按状态筛选
+supplierSchema.index({ rating: -1 }); // 按评级排序
+supplierSchema.index({ createdAt: -1 }); // 按创建时间排序
 
 module.exports = mongoose.model('Supplier', supplierSchema);
 

@@ -9,7 +9,7 @@ const { calculatePrice } = require('../utils/pricing');
 // @access  Private
 exports.getProjects = async (req, res) => {
   try {
-    const { status, priority, client_name } = req.query;
+    const { status, priority, client_name, page = 1, limit = 10 } = req.query;
     
     let query = {};
     
@@ -25,17 +25,30 @@ exports.getProjects = async (req, res) => {
     if (priority) query.priority = priority;
     if (client_name) query.client_name = { $regex: client_name, $options: 'i' };
     
+    // 分页
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
     const projects = await NewProject.find(query)
-      .populate('created_by', 'username role')
-      .populate('assigned_to', 'username role')
+      .populate('created_by', 'full_name phone role')
+      .populate('assigned_to', 'full_name phone role')
       .populate('selections.selected_actuator.actuator_id')
       .populate('selections.selected_override.override_id')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // 获取总数
+    const total = await NewProject.countDocuments(query);
     
     res.json({
       success: true,
-      count: projects.length,
-      data: projects
+      data: projects,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -52,8 +65,8 @@ exports.getProjects = async (req, res) => {
 exports.getProjectById = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id)
-      .populate('created_by', 'username role')
-      .populate('assigned_to', 'username role')
+      .populate('created_by', 'full_name phone role')
+      .populate('assigned_to', 'full_name phone role')
       .populate('selections.selected_actuator.actuator_id')
       .populate('selections.selected_override.override_id')
       .populate('quotes');
@@ -101,8 +114,8 @@ exports.createProject = async (req, res) => {
     const project = await NewProject.create(projectData);
     
     const populatedProject = await NewProject.findById(project._id)
-      .populate('created_by', 'username role')
-      .populate('assigned_to', 'username role');
+      .populate('created_by', 'full_name phone role')
+      .populate('assigned_to', 'full_name phone role');
     
     res.status(201).json({
       success: true,
@@ -512,6 +525,528 @@ exports.getProjectStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: '获取统计信息失败',
+      error: error.message
+    });
+  }
+};
+
+// 🔒 ========== 技术清单版本管理 API ==========
+
+// @desc    技术工程师提交技术清单（锁定版本）
+// @route   POST /api/new-projects/:id/submit-technical-list
+// @access  Private (Technical Engineer only)
+exports.submitTechnicalList = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查：只有技术工程师可以提交
+    if (req.user.role !== 'Technical Engineer' && req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有技术工程师可以提交技术清单'
+      });
+    }
+    
+    // 检查是否有选型数据
+    if (!project.selections || project.selections.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '项目中没有选型数据，无法提交技术清单'
+      });
+    }
+    
+    const { notes } = req.body;
+    
+    await project.submitTechnicalList(req.user._id, notes);
+    
+    const updatedProject = await NewProject.findById(project._id)
+      .populate('created_by', 'full_name phone role')
+      .populate('assigned_to', 'full_name phone role')
+      .populate('technical_list_versions.created_by', 'full_name phone role');
+    
+    res.json({
+      success: true,
+      message: `技术清单 ${updatedProject.current_technical_version} 已提交审核并锁定`,
+      data: updatedProject
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '提交技术清单失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    商务工程师驳回技术清单并提出修改建议
+// @route   POST /api/new-projects/:id/reject-technical-list
+// @access  Private (Sales Engineer only)
+exports.rejectTechnicalList = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查：只有商务工程师可以驳回
+    if (req.user.role !== 'Sales Engineer' && req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师可以驳回技术清单'
+      });
+    }
+    
+    // 检查技术清单是否已锁定
+    if (!project.technical_list_locked) {
+      return res.status(400).json({
+        success: false,
+        message: '技术清单尚未提交或已解锁，无法驳回'
+      });
+    }
+    
+    const { suggestions, target_version } = req.body;
+    
+    if (!suggestions || suggestions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供修改建议'
+      });
+    }
+    
+    await project.rejectWithSuggestions(req.user._id, suggestions, target_version);
+    
+    const updatedProject = await NewProject.findById(project._id)
+      .populate('created_by', 'full_name phone role')
+      .populate('assigned_to', 'full_name phone role')
+      .populate('modification_requests.requested_by', 'full_name phone role');
+    
+    res.json({
+      success: true,
+      message: '技术清单已驳回，修改建议已发送给技术工程师',
+      data: updatedProject
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '驳回技术清单失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    技术工程师回复修改建议
+// @route   POST /api/new-projects/:id/respond-modification
+// @access  Private (Technical Engineer only)
+exports.respondToModification = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查
+    if (req.user.role !== 'Technical Engineer' && req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有技术工程师可以回复修改建议'
+      });
+    }
+    
+    const { request_id, response, accept } = req.body;
+    
+    if (!request_id) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供修改请求ID'
+      });
+    }
+    
+    await project.respondToModificationRequest(request_id, response, accept);
+    
+    const updatedProject = await NewProject.findById(project._id)
+      .populate('modification_requests.requested_by', 'full_name phone role');
+    
+    res.json({
+      success: true,
+      message: accept ? '已接受修改建议' : '已拒绝修改建议',
+      data: updatedProject
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '回复修改建议失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    商务工程师确认技术清单版本
+// @route   POST /api/new-projects/:id/confirm-technical-version
+// @access  Private (Sales Engineer only)
+exports.confirmTechnicalVersion = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查
+    if (req.user.role !== 'Sales Engineer' && req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师可以确认技术清单版本'
+      });
+    }
+    
+    const { version } = req.body;
+    
+    if (!version) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供要确认的版本号'
+      });
+    }
+    
+    await project.confirmTechnicalVersion(version);
+    
+    const updatedProject = await NewProject.findById(project._id)
+      .populate('technical_list_versions.created_by', 'full_name phone role');
+    
+    res.json({
+      success: true,
+      message: `技术清单版本 ${version} 已确认`,
+      data: updatedProject
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '确认技术清单版本失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    获取项目的所有技术清单版本
+// @route   GET /api/new-projects/:id/technical-versions
+// @access  Private
+exports.getTechnicalVersions = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id)
+      .populate('technical_list_versions.created_by', 'full_name phone role');
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        current_version: project.current_technical_version,
+        locked: project.technical_list_locked,
+        versions: project.technical_list_versions
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '获取技术清单版本失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    获取项目的修改建议列表
+// @route   GET /api/new-projects/:id/modification-requests
+// @access  Private
+exports.getModificationRequests = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id)
+      .populate('modification_requests.requested_by', 'full_name phone role');
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: project.modification_requests
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '获取修改建议列表失败',
+      error: error.message
+    });
+  }
+};
+
+// 🔒 ========== 报价BOM版本管理 API ==========
+
+// @desc    商务工程师从技术清单生成报价BOM
+// @route   POST /api/new-projects/:id/generate-quotation-bom
+// @access  Private (Sales Engineer, Sales Manager, Administrator)
+exports.generateQuotationBom = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查：只有商务工程师、销售经理和管理员可以生成报价BOM
+    if (req.user.role !== 'Sales Engineer' && 
+        req.user.role !== 'Sales Manager' && 
+        req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师和销售经理可以生成报价BOM'
+      });
+    }
+    
+    // 检查技术清单是否已锁定
+    if (!project.technical_list_locked) {
+      return res.status(400).json({
+        success: false,
+        message: '技术清单尚未提交或锁定，无法生成报价BOM'
+      });
+    }
+    
+    const { version } = req.body; // 可选：指定基于哪个版本生成
+    
+    try {
+      await project.generateQuotationBomFromTechnicalList(version);
+      
+      const updatedProject = await NewProject.findById(project._id)
+        .populate('created_by', 'full_name phone role')
+        .populate('assigned_to', 'full_name phone role');
+      
+      res.json({
+        success: true,
+        message: `报价BOM已基于技术清单版本 ${project.quotation_based_on_version} 生成`,
+        data: {
+          project: updatedProject,
+          quotation_bom: updatedProject.quotation_bom,
+          based_on_version: updatedProject.quotation_based_on_version
+        }
+      });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '生成报价BOM失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    获取报价BOM及其版本信息
+// @route   GET /api/new-projects/:id/quotation-bom
+// @access  Private
+exports.getQuotationBom = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        quotation_bom: project.quotation_bom,
+        based_on_version: project.quotation_based_on_version,
+        total_amount: project.quotation_bom.reduce((sum, item) => sum + (item.total_price || 0), 0)
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '获取报价BOM失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    更新报价BOM中的某个项目
+// @route   PUT /api/new-projects/:id/quotation-bom/:itemId
+// @access  Private (Sales Engineer, Sales Manager, Administrator)
+exports.updateQuotationBomItem = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查
+    if (req.user.role !== 'Sales Engineer' && 
+        req.user.role !== 'Sales Manager' && 
+        req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师和销售经理可以修改报价BOM'
+      });
+    }
+    
+    const bomItem = project.quotation_bom.id(req.params.itemId);
+    
+    if (!bomItem) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的报价BOM项目'
+      });
+    }
+    
+    // 更新字段
+    Object.assign(bomItem, req.body);
+    
+    // 重新计算总价
+    if (bomItem.quantity && bomItem.unit_price) {
+      bomItem.total_price = bomItem.quantity * bomItem.unit_price;
+    }
+    
+    await project.save();
+    
+    res.json({
+      success: true,
+      message: '报价BOM项目已更新',
+      data: project.quotation_bom
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: '更新报价BOM项目失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    向报价BOM添加新项目
+// @route   POST /api/new-projects/:id/quotation-bom
+// @access  Private (Sales Engineer, Sales Manager, Administrator)
+exports.addQuotationBomItem = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查
+    if (req.user.role !== 'Sales Engineer' && 
+        req.user.role !== 'Sales Manager' && 
+        req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师和销售经理可以添加报价BOM项目'
+      });
+    }
+    
+    const newItem = req.body;
+    
+    // 计算总价
+    if (newItem.quantity && newItem.unit_price) {
+      newItem.total_price = newItem.quantity * newItem.unit_price;
+    }
+    
+    // 设置为手动添加项
+    newItem.is_manual = true;
+    
+    project.quotation_bom.push(newItem);
+    await project.save();
+    
+    res.status(201).json({
+      success: true,
+      message: '报价BOM项目已添加',
+      data: project.quotation_bom
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: '添加报价BOM项目失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    删除报价BOM中的某个项目
+// @route   DELETE /api/new-projects/:id/quotation-bom/:itemId
+// @access  Private (Sales Engineer, Sales Manager, Administrator)
+exports.deleteQuotationBomItem = async (req, res) => {
+  try {
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查
+    if (req.user.role !== 'Sales Engineer' && 
+        req.user.role !== 'Sales Manager' && 
+        req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师和销售经理可以删除报价BOM项目'
+      });
+    }
+    
+    project.quotation_bom.pull(req.params.itemId);
+    await project.save();
+    
+    res.json({
+      success: true,
+      message: '报价BOM项目已删除',
+      data: project.quotation_bom
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: '删除报价BOM项目失败',
       error: error.message
     });
   }

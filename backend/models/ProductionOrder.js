@@ -28,9 +28,34 @@ const productionOrderSchema = new mongoose.Schema({
   // 生产订单状态
   status: {
     type: String,
-    enum: ['Pending', 'Scheduled', 'In Production', 'Paused', 'Completed', 'Cancelled', 'Delayed'],
+    enum: ['Pending', 'Scheduled', 'In Production', 'Paused', 'Completed', 'Awaiting QC', 'QC Passed', 'Ready to Ship', 'Shipped', 'Cancelled', 'Delayed'],
     default: 'Pending'
   },
+  
+  // 🔒 物料准备状态（齐套状态）
+  material_readiness_status: {
+    type: String,
+    enum: ['待分析', '部分可用', '全部可用(齐套)', '采购延迟'],
+    default: '待分析'
+  },
+  
+  // 🔒 物料状态最后更新时间
+  material_status_updated_at: {
+    type: Date
+  },
+  
+  // 🔒 物料缺料详情（用于记录哪些物料未齐套）
+  material_shortage_details: [{
+    item_name: String,           // 物料名称
+    required_quantity: Number,   // 需求数量
+    available_quantity: Number,  // 可用数量
+    shortage_quantity: Number,   // 缺料数量
+    purchase_order_id: {         // 关联的采购订单
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PurchaseOrder'
+    },
+    expected_arrival_date: Date  // 预计到货日期
+  }],
   
   // 优先级
   priority: {
@@ -253,7 +278,35 @@ const productionOrderSchema = new mongoose.Schema({
     material_name: String,
     required_quantity: Number,
     allocated_quantity: Number,
-    unit: String
+    unit: String,
+    
+    // 采购状态
+    procurement_status: {
+      type: String,
+      enum: ['未采购', '采购中', '部分到货', '已到货'],
+      default: '未采购'
+    },
+    
+    // 【关键】关联的采购订单ID - 实现采购与生产的数据关联
+    purchase_order_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PurchaseOrder'
+    },
+    
+    // 预计到货日期（从采购订单同步）
+    estimated_delivery_date: {
+      type: Date
+    },
+    
+    // 实际到货日期
+    actual_delivery_date: {
+      type: Date
+    },
+    
+    // 采购备注
+    procurement_notes: {
+      type: String
+    }
   }],
   
   // 生产备注
@@ -382,6 +435,100 @@ productionOrderSchema.methods.addLog = function(action, description, userId) {
   });
 };
 
+// 🔒 计算物料齐套状态
+productionOrderSchema.methods.calculateMaterialReadiness = async function() {
+  try {
+    const PurchaseOrder = mongoose.model('PurchaseOrder');
+    
+    // 获取生产所需的所有物料
+    const requiredMaterials = this.productionItems.map(item => ({
+      item_name: item.model_name,
+      required_quantity: item.ordered_quantity
+    }));
+    
+    if (requiredMaterials.length === 0) {
+      this.material_readiness_status = '待分析';
+      this.material_status_updated_at = new Date();
+      return;
+    }
+    
+    // 查询所有相关的采购订单（基于物料型号）
+    const materialNames = requiredMaterials.map(m => m.item_name);
+    const purchaseOrders = await PurchaseOrder.find({
+      'items.item_name': { $in: materialNames },
+      status: { $in: ['Draft', 'Submitted', 'Approved', 'Ordered', 'Partially Received', 'Received'] }
+    });
+    
+    // 计算每个物料的可用数量
+    const materialAvailability = [];
+    let totalShortage = 0;
+    let hasDelay = false;
+    
+    for (const material of requiredMaterials) {
+      let availableQty = 0;
+      let expectedArrivalDate = null;
+      let relatedPO = null;
+      
+      // 遍历采购订单，累计可用数量
+      for (const po of purchaseOrders) {
+        const poItem = po.items.find(item => item.item_name === material.item_name);
+        if (poItem) {
+          // 已收货的数量
+          availableQty += (poItem.received_quantity || 0);
+          
+          // 如果还有未收货的，记录预计到货日期
+          if ((poItem.ordered_quantity - poItem.received_quantity) > 0) {
+            relatedPO = po._id;
+            expectedArrivalDate = po.expected_delivery_date;
+            
+            // 检查是否延迟（预计到货日期已过）
+            if (expectedArrivalDate && new Date(expectedArrivalDate) < new Date()) {
+              hasDelay = true;
+            }
+          }
+        }
+      }
+      
+      const shortage = Math.max(0, material.required_quantity - availableQty);
+      
+      if (shortage > 0) {
+        totalShortage += shortage;
+        materialAvailability.push({
+          item_name: material.item_name,
+          required_quantity: material.required_quantity,
+          available_quantity: availableQty,
+          shortage_quantity: shortage,
+          purchase_order_id: relatedPO,
+          expected_arrival_date: expectedArrivalDate
+        });
+      }
+    }
+    
+    // 更新缺料详情
+    this.material_shortage_details = materialAvailability;
+    
+    // 根据计算结果设置状态
+    if (hasDelay) {
+      this.material_readiness_status = '采购延迟';
+    } else if (totalShortage === 0) {
+      this.material_readiness_status = '全部可用(齐套)';
+    } else if (totalShortage < requiredMaterials.reduce((sum, m) => sum + m.required_quantity, 0)) {
+      this.material_readiness_status = '部分可用';
+    } else {
+      this.material_readiness_status = '待分析';
+    }
+    
+    this.material_status_updated_at = new Date();
+    
+    console.log(`✅ 生产订单 ${this.productionOrderNumber} 物料状态已更新: ${this.material_readiness_status}`);
+    
+  } catch (error) {
+    console.error(`❌ 计算物料齐套状态失败 (${this.productionOrderNumber}):`, error);
+    this.material_readiness_status = '待分析';
+    this.material_status_updated_at = new Date();
+  }
+};
+
 // 索引
 productionOrderSchema.index({ productionOrderNumber: 1 });
 productionOrderSchema.index({ salesOrder: 1 });
@@ -389,6 +536,7 @@ productionOrderSchema.index({ status: 1 });
 productionOrderSchema.index({ 'schedule.plannedStartDate': 1 });
 productionOrderSchema.index({ 'schedule.plannedEndDate': 1 });
 productionOrderSchema.index({ priority: 1 });
+productionOrderSchema.index({ material_readiness_status: 1 }); // 🔒 新增索引
 
 module.exports = mongoose.model('ProductionOrder', productionOrderSchema);
 

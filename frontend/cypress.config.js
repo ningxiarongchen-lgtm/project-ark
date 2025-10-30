@@ -2,7 +2,7 @@ import { defineConfig } from 'cypress'
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:5173',
+    baseUrl: 'http://localhost:5176',
     viewportWidth: 1920,
     viewportHeight: 1080,
     video: true,
@@ -17,43 +17,58 @@ export default defineConfig({
     
     // 环境变量
     env: {
-      apiUrl: 'http://localhost:5001/api',
-      // 测试用户凭证
+      apiUrl: 'http://localhost:5001',
+      // 测试用户凭证 - 使用手机号登录（对应 seed_test_users.js 中的测试账户）
       testUsers: {
         admin: {
-          username: 'admin',
-          password: 'admin123',
+          phone: '13800000001',
+          password: 'test123456',
           role: 'Administrator'
         },
-        technicalEngineer: {
-          username: 'tech_engineer',
-          password: 'tech123',
-          role: 'Technical Engineer'
-        },
-        salesEngineer: {
-          username: 'sales_engineer',
-          password: 'sales123',
-          role: 'Sales Engineer'
-        },
         salesManager: {
-          username: 'sales_manager',
-          password: 'manager123',
+          phone: '13800000002',
+          password: 'test123456',
           role: 'Sales Manager'
         },
-        productionPlanner: {
-          username: 'production_planner',
-          password: 'prod123',
-          role: 'Production Planner'
+        salesEngineer: {
+          phone: '13800000003',
+          password: 'test123456',
+          role: 'Sales Engineer'
+        },
+        technicalEngineer: {
+          phone: '13800000004',
+          password: 'test123456',
+          role: 'Technical Engineer'
         },
         procurementSpecialist: {
-          username: 'procurement',
-          password: 'proc123',
+          phone: '13800000005',
+          password: 'test123456',
           role: 'Procurement Specialist'
         },
+        productionPlanner: {
+          phone: '13800000006',
+          password: 'test123456',
+          role: 'Production Planner'
+        },
         aftersalesEngineer: {
-          username: 'aftersales',
-          password: 'after123',
+          phone: '13800000007',
+          password: 'test123456',
           role: 'After-sales Engineer'
+        },
+        qaInspector: {
+          phone: '13800000008',
+          password: 'test123456',
+          role: 'QA Inspector'
+        },
+        logisticsSpecialist: {
+          phone: '13800000009',
+          password: 'test123456',
+          role: 'Logistics Specialist'
+        },
+        shopFloorWorker: {
+          phone: '13800000010',
+          password: 'test123456',
+          role: 'Shop Floor Worker'
         }
       }
     }

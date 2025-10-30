@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   Table, Button, Input, Space, Card, Modal, Form, 
-  message, Popconfirm, Tag, Typography 
+  message, Popconfirm, Tag, Typography, InputNumber 
 } from 'antd'
 import { 
   PlusOutlined, SearchOutlined, EditOutlined, 
-  DeleteOutlined, FolderOpenOutlined, ReloadOutlined 
+  DeleteOutlined, FolderOpenOutlined, ReloadOutlined,
+  InboxOutlined
 } from '@ant-design/icons'
 import { projectsAPI } from '../services/api'
+import CloudUpload from '../components/CloudUpload'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
@@ -22,6 +24,8 @@ const Projects = () => {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
   const [form] = Form.useForm()
+  const [fileList, setFileList] = useState([])
+  const [uploadedFiles, setUploadedFiles] = useState([])
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -57,6 +61,8 @@ const Projects = () => {
   const handleCreate = () => {
     setEditingProject(null)
     form.resetFields()
+    setFileList([])
+    setUploadedFiles([])
     setIsModalVisible(true)
   }
 
@@ -80,6 +86,15 @@ const Projects = () => {
     try {
       const values = await form.validateFields()
       
+      // Add uploaded files to project data
+      if (uploadedFiles.length > 0) {
+        values.project_files = uploadedFiles.map(file => ({
+          file_name: file.name,
+          file_url: file.url,
+          objectId: file.objectId
+        }))
+      }
+      
       if (editingProject) {
         // 更新项目
         await projectsAPI.update(editingProject._id, values)
@@ -92,6 +107,8 @@ const Projects = () => {
       
       setIsModalVisible(false)
       form.resetFields()
+      setFileList([])
+      setUploadedFiles([])
       fetchProjects()
     } catch (error) {
       if (error.errorFields) {
@@ -106,6 +123,16 @@ const Projects = () => {
     setIsModalVisible(false)
     form.resetFields()
     setEditingProject(null)
+    setFileList([])
+    setUploadedFiles([])
+  }
+
+  const handleFileUploadSuccess = (fileData) => {
+    setUploadedFiles(prev => [...prev, fileData])
+  }
+
+  const handleFileRemove = (file) => {
+    setUploadedFiles(prev => prev.filter(f => f.objectId !== file.response?.objectId))
   }
 
   const handleViewProject = (record) => {
@@ -264,6 +291,51 @@ const Projects = () => {
             name="client_name"
           >
             <Input placeholder="输入客户名称（可选）" />
+          </Form.Item>
+
+          <Form.Item
+            label="项目预算（可选）"
+            name="budget"
+            tooltip="输入项目预算金额（元）"
+          >
+            <InputNumber
+              placeholder="输入项目预算"
+              style={{ width: '100%' }}
+              min={0}
+              precision={2}
+              formatter={value => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={value => value.replace(/¥\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="技术说明书/附件（可选）"
+            tooltip="上传项目相关的技术文档或附件"
+          >
+            <CloudUpload
+              fileList={fileList}
+              onChange={({ fileList: newFileList }) => setFileList(newFileList)}
+              onSuccess={handleFileUploadSuccess}
+              onRemove={handleFileRemove}
+              folder="project_files"
+              multiple
+            >
+              <div style={{ 
+                padding: '20px', 
+                border: '1px dashed #d9d9d9', 
+                borderRadius: '4px',
+                cursor: 'pointer',
+                textAlign: 'center'
+              }}>
+                <p className="ant-upload-drag-icon">
+                  <InboxOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                </p>
+                <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
+                <p className="ant-upload-hint" style={{ color: '#999' }}>
+                  支持单个或批量上传技术说明书、需求文档等附件
+                </p>
+              </div>
+            </CloudUpload>
           </Form.Item>
         </Form>
       </Modal>

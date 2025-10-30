@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { 
   Card, Table, Button, Tag, Space, message, Modal, Form, 
   Input, Select, DatePicker, Statistic, Row, Col, Tooltip,
-  Dropdown, Badge, Descriptions, Divider
+  Dropdown, Badge, Descriptions, Divider, Skeleton
 } from 'antd'
 import { 
   ShoppingCartOutlined, EyeOutlined, EditOutlined, DeleteOutlined,
@@ -11,6 +11,8 @@ import {
   DollarOutlined, TruckOutlined, MoreOutlined, FileTextOutlined
 } from '@ant-design/icons'
 import { ordersAPI } from '../services/api'
+import { TableSkeleton } from '../components/LoadingSkeletons'
+import { useAuth } from '../hooks/useAuth'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
@@ -18,9 +20,14 @@ const { Option } = Select
 
 const OrderManagement = () => {
   const navigate = useNavigate()
+  const { user } = useAuth() // 获取当前用户信息
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(false)
   const [statistics, setStatistics] = useState(null)
+  
+  // 🔒 销售经理权限：只读视图
+  const isSalesManager = user?.role === 'Sales Manager'
+  const canEditOrders = user && ['Administrator', 'Production Planner'].includes(user.role)
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -264,6 +271,21 @@ const OrderManagement = () => {
       fixed: 'right',
       width: 180,
       render: (_, record) => {
+        // 🔒 销售经理只能查看订单，不能编辑
+        if (isSalesManager) {
+          return (
+            <Button
+              type="primary"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewOrder(record._id)}
+            >
+              查看详情
+            </Button>
+          );
+        }
+        
+        // 管理员和生产计划员可以编辑
         const menuItems = [
           {
             key: 'view',
@@ -323,6 +345,11 @@ const OrderManagement = () => {
       }
     }
   ]
+
+  // Render loading skeleton
+  if (loading && orders.length === 0) {
+    return <TableSkeleton rows={10} columns={7} />
+  }
 
   return (
     <div>

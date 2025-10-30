@@ -36,8 +36,8 @@ exports.getQualityChecks = async (req, res) => {
       .populate('work_order', 'work_order_number status')
       .populate('production_order', 'productionOrderNumber')
       .populate('product.product_id', 'model_base version')
-      .populate('inspector', 'username email')
-      .populate('created_by', 'username email')
+      .populate('inspector', 'full_name phone')
+      .populate('created_by', 'full_name phone')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -69,10 +69,10 @@ exports.getQualityCheckById = async (req, res) => {
       .populate('work_order', 'work_order_number status operation actual')
       .populate('production_order', 'productionOrderNumber orderSnapshot')
       .populate('product.product_id', 'model_base version series')
-      .populate('inspector', 'username email role')
-      .populate('review.reviewer', 'username email role')
-      .populate('corrective_actions.responsible', 'username email')
-      .populate('created_by', 'username email');
+      .populate('inspector', 'full_name phone role')
+      .populate('review.reviewer', 'full_name phone role')
+      .populate('corrective_actions.responsible', 'full_name phone')
+      .populate('created_by', 'full_name phone');
     
     if (!qualityCheck) {
       return res.status(404).json({
@@ -156,7 +156,7 @@ exports.createQualityCheck = async (req, res) => {
     const populatedQC = await QualityCheck.findById(qualityCheck._id)
       .populate('work_order', 'work_order_number')
       .populate('product.product_id', 'model_base version')
-      .populate('created_by', 'username email');
+      .populate('created_by', 'full_name phone');
     
     res.status(201).json({
       success: true,
@@ -207,7 +207,8 @@ exports.startInspection = async (req, res) => {
 exports.completeInspection = async (req, res) => {
   try {
     const qualityCheck = await QualityCheck.findById(req.params.id)
-      .populate('work_order');
+      .populate('work_order')
+      .populate('production_order');
     
     if (!qualityCheck) {
       return res.status(404).json({
@@ -271,7 +272,7 @@ exports.completeInspection = async (req, res) => {
     
     const populatedQC = await QualityCheck.findById(qualityCheck._id)
       .populate('work_order', 'work_order_number status')
-      .populate('inspector', 'username email');
+      .populate('inspector', 'full_name phone');
     
     res.status(200).json({
       success: true,
@@ -282,6 +283,71 @@ exports.completeInspection = async (req, res) => {
     res.status(400).json({
       success: false,
       message: error.message || '完成检验失败'
+    });
+  }
+};
+
+// @desc    质检通过，更新生产订单为质检通过状态
+// @route   POST /api/quality/production-order/:id/pass
+// @access  Private
+exports.markProductionOrderQCPassed = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notes } = req.body;
+
+    const ProductionOrder = require('../models/ProductionOrder');
+    const SalesOrder = require('../models/SalesOrder');
+    
+    const productionOrder = await ProductionOrder.findById(id)
+      .populate('salesOrder');
+
+    if (!productionOrder) {
+      return res.status(404).json({
+        success: false,
+        message: '生产订单不存在'
+      });
+    }
+
+    // 检查当前状态
+    if (productionOrder.status !== 'Awaiting QC') {
+      return res.status(400).json({
+        success: false,
+        message: '只有待质检状态的订单才能标记为质检通过',
+        currentStatus: productionOrder.status
+      });
+    }
+
+    // 更新生产订单状态
+    productionOrder.status = 'QC Passed';
+    productionOrder.addLog(
+      'QC Passed',
+      notes || '质检通过',
+      req.user._id
+    );
+
+    await productionOrder.save();
+
+    // 同时更新销售订单状态
+    if (productionOrder.salesOrder) {
+      const salesOrder = await SalesOrder.findById(productionOrder.salesOrder);
+      if (salesOrder) {
+        salesOrder.status = 'QC Passed';
+        await salesOrder.save();
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: '生产订单已标记为质检通过',
+      data: productionOrder
+    });
+
+  } catch (error) {
+    console.error('Error marking production order as QC passed:', error);
+    res.status(500).json({
+      success: false,
+      message: '更新状态失败',
+      error: error.message
     });
   }
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Form, Input, Button, Card, message, Typography } from 'antd'
-import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons'
+import { PhoneOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons'
 import { authAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 
@@ -38,7 +38,7 @@ const Login = () => {
       navigate(from, { replace: true })
     } catch (error) {
       console.error('Login error:', error)
-      message.error(error.response?.data?.message || '登录失败，请检查用户名和密码')
+      message.error(error.response?.data?.message || '登录失败，请检查手机号和密码')
     } finally {
       setLoading(false)
     }
@@ -60,31 +60,32 @@ const Login = () => {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <Title level={2} style={{ marginBottom: 8 }}>C-MAX 选型系统</Title>
-          <Title level={3} style={{ marginBottom: 12, color: '#1890ff' }}>Project Ark</Title>
-          <Text type="secondary">SF系列气动执行器智能选型平台</Text>
+          <Title level={2} style={{ marginBottom: 8 }}>智能制造综合管理系统</Title>
+          <Text type="secondary">Intelligent Manufacturing System</Text>
         </div>
 
         <Form
           name="login"
           initialValues={{ 
-            username: 'admin',
-            password: 'admin123'
+            phone: '13000000002',
+            password: 'password'
           }}
           onFinish={onFinish}
           autoComplete="off"
           size="large"
         >
           <Form.Item
-            name="username"
+            name="phone"
             rules={[
-              { required: true, message: '请输入用户名' }
+              { required: true, message: '请输入手机号' },
+              { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的11位中国大陆手机号' }
             ]}
           >
             <Input
-              prefix={<UserOutlined />}
-              placeholder="用户名"
-              autoComplete="username"
+              prefix={<PhoneOutlined />}
+              placeholder="手机号"
+              autoComplete="tel"
+              maxLength={11}
             />
           </Form.Item>
 
@@ -120,7 +121,9 @@ const Login = () => {
         <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
           <Text strong>测试账号：</Text>
           <div style={{ marginTop: 8, fontSize: '12px' }}>
-            <div><strong>管理员：</strong> admin / admin123</div>
+            <div><strong>管理员：</strong> 13000000001 / password</div>
+            <div><strong>销售经理：</strong> 13000000002 / password</div>
+            <div style={{ marginTop: 4, color: '#999' }}>其他角色：13000000003 ~ 13000000010</div>
           </div>
         </div>
       </Card>

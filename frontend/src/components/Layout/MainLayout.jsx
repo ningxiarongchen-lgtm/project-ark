@@ -64,10 +64,22 @@ const menuConfig = [
     roles: ['Administrator', 'After-sales Engineer', 'Sales Manager'],
   },
   {
+    key: '/product-catalog',
+    label: '产品目录',
+    icon: <DatabaseOutlined />,
+    roles: ['Sales Manager'],
+  },
+  {
     key: '/products',
     label: '产品数据库',
     icon: <DatabaseOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
+    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
+  },
+  {
+    key: '/data-management',
+    label: '数据管理',
+    icon: <DatabaseOutlined />,
+    roles: ['Administrator', 'Technical Engineer', 'Procurement Specialist'],
   },
   {
     key: '/admin',
@@ -157,7 +169,7 @@ const MainLayout = () => {
           fontWeight: 'bold',
           transition: 'all 0.2s',
         }}>
-          {collapsed ? 'Ark' : 'Project Ark'}
+          {collapsed ? '智造' : '智能制造系统'}
         </div>
         <Menu
           theme="dark"
@@ -191,17 +203,17 @@ const MainLayout = () => {
               />
             )}
             <h2 style={{ marginLeft: 24, marginBottom: 0 }}>
-              Project Ark - 智能选型系统
+              智能制造综合管理系统
             </h2>
           </div>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
               <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
-              <span style={{ marginLeft: 8 }}>
-                {user?.username || user?.name}
-                <span style={{ fontSize: '12px', color: '#999', marginLeft: 8 }}>
-                  ({roleTranslations[user?.role] || user?.role})
-                </span>
+              <span style={{ marginLeft: 8, fontWeight: 500 }}>
+                {user?.full_name || user?.phone}
+              </span>
+              <span style={{ fontSize: '12px', color: '#999', marginLeft: 8 }}>
+                {roleTranslations[user?.role] || user?.role}
               </span>
             </div>
           </Dropdown>

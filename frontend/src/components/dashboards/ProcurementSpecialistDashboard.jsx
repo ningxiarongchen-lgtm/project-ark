@@ -15,6 +15,7 @@ import {
   DollarOutlined, CheckCircleOutlined, ClockCircleOutlined
 } from '@ant-design/icons'
 import { useAuth } from '../../hooks/useAuth'
+import GreetingWidget from './GreetingWidget'
 
 const { Title, Text } = Typography
 
@@ -95,17 +96,8 @@ const ProcurementSpecialistDashboard = () => {
   return (
     <Spin spinning={loading}>
       <div>
-        {/* 欢迎信息 */}
-        <Card style={{ marginBottom: 24, background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }}>
-          <Space direction="vertical" size="small">
-            <Title level={3} style={{ margin: 0, color: '#333' }}>
-              <ShoppingCartOutlined /> 采购专员工作台
-            </Title>
-            <Text style={{ color: '#666' }}>
-              Welcome to Project Ark，{user?.name}！准时交付率 {stats.onTimeRate}%
-            </Text>
-          </Space>
-        </Card>
+        {/* 动态问候语 */}
+        <GreetingWidget />
 
         {/* 采购统计 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

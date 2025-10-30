@@ -9,5 +9,9 @@
 
 export { default as RoleBasedAccess } from './RoleBasedAccess'
 export { default as MainLayout } from './Layout/MainLayout'
+export { default as AttioLayout } from './Layout/AttioLayout'
 export { default as ProductionGantt } from './ProductionGantt'
+
+// Attio Design System Components
+export * from './Attio'
 

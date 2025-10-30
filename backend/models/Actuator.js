@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { calculatePrice, getAllPriceTiers } = require('../utils/pricing');
 
 const actuatorSchema = new mongoose.Schema({
   // 基础型号信息
@@ -22,6 +21,14 @@ const actuatorSchema = new mongoose.Schema({
   mechanism: {
     type: String,
     trim: true
+  },
+  
+  // 阀门类型（SF系列专用：球阀/蝶阀）
+  valve_type: {
+    type: String,
+    trim: true,
+    enum: ['球阀', '蝶阀', null],
+    default: null
   },
   
   // 供应商ID（关联Supplier模型）
@@ -54,77 +61,86 @@ const actuatorSchema = new mongoose.Schema({
     uppercase: true
   },
   
-  // ========== 定价模式控制 ==========
-  // 定价模式开关：决定使用固定价格还是阶梯价格
-  pricing_model: {
-    type: String,
-    enum: {
-      values: ['fixed', 'tiered'],
-      message: '定价模式必须是 fixed（固定价格）或 tiered（阶梯价格）'
-    },
-    default: 'fixed',
-    required: [true, '请提供定价模式']
-  },
-  
-  // 固定单价（当 pricing_model = 'fixed' 时使用）
-  base_price: {
+  // ========== 标准价格字段（目录价） ==========
+  // 常温标准价
+  base_price_normal: {
     type: Number,
-    min: [0, '基础价格不能为负数']
+    min: [0, '价格不能为负数']
   },
   
-  // 阶梯定价 (Price Tiers) - 根据采购数量的不同价格（当 pricing_model = 'tiered' 时使用）
-  // 注意：此字段现在为可选字段
-  price_tiers: [{
-    // 最小数量（起订量）
-    min_quantity: {
-      type: Number,
-      required: [true, '请提供最小数量'],
-      min: [1, '最小数量必须大于0']
-    },
-    
-    // 该数量档位的单价
-    unit_price: {
-      type: Number,
-      required: [true, '请提供单价'],
-      min: [0, '单价不能为负数']
-    },
-    
-    // 可选：价格类型标识（用于温度等变体）
-    price_type: {
+  // 低温标准价
+  base_price_low: {
+    type: Number,
+    min: [0, '价格不能为负数']
+  },
+  
+  // 高温标准价
+  base_price_high: {
+    type: Number,
+    min: [0, '价格不能为负数']
+  },
+  
+  // ========== 生产BOM结构 ==========
+  // 定义该执行器由哪些零部件组成
+  bom_structure: [{
+    // 零件编号
+    part_number: {
       type: String,
-      enum: ['normal', 'low_temp', 'high_temp', 'standard'],
-      default: 'normal',
+      trim: true,
+      uppercase: true
+    },
+    // 零件名称
+    part_name: {
+      type: String,
       trim: true
     },
-    
-    // 可选：备注说明
-    notes: {
+    // 数量
+    quantity: {
+      type: Number,
+      min: [1, '数量必须大于0'],
+      default: 1
+    }
+  }],
+  
+  // 手动操作装置选项（多个可选型号）
+  manual_override_options: [{
+    // 手动操作装置型号
+    override_model: {
+      type: String,
+      required: true,
+      trim: true,
+      uppercase: true
+    },
+    // 附加价格
+    additional_price: {
+      type: Number,
+      required: true,
+      min: [0, '价格不能为负数'],
+      default: 0
+    },
+    // 描述
+    description: {
       type: String,
       trim: true
     }
   }],
   
-  // 手动操作装置信息（从 pricing 中提取出来）
-  manual_override: {
-    // 手动操作装置型号
-    model: {
-      type: String,
-      trim: true
-    },
-    // 手动操作装置价格（也可以使用阶梯定价）
-    price: {
-      type: Number,
-      min: [0, '价格不能为负数']
-    }
-  },
-  
-  // 配件价格信息
-  accessories_pricing: {
+  // 备件信息
+  spare_parts: {
     // 密封套件价格
     seal_kit_price: {
       type: Number,
       min: [0, '价格不能为负数']
-    }
+    },
+    // 其他备件
+    other_parts: [{
+      part_name: String,
+      part_number: String,
+      price: {
+        type: Number,
+        min: [0, '价格不能为负数']
+      }
+    }]
   },
   
   // 温度选项（支持的温度等级及代码）
@@ -175,11 +191,47 @@ const actuatorSchema = new mongoose.Schema({
     default: {}
   },
   
-  // 尺寸数据（新增字段，用于 AT/GY 系列）
-  // 存储为对象，例如 { "A": 147, "B": 65, "H": 92 }
+  // 尺寸数据（扩展字段，用于所有系列）
+  // 存储完整的尺寸信息，包括轮廓、法兰、顶部安装和气动连接
   dimensions: {
-    type: mongoose.Schema.Types.Mixed,
-    default: {}
+    // 轮廓尺寸
+    outline: {
+      L1: { type: Number }, // 单作用总长
+      L2: { type: Number }, // 双作用/单作用气缸长度
+      m1: { type: Number },
+      m2: { type: Number },
+      A: { type: Number },
+      H1: { type: Number },
+      H2: { type: Number },
+      D: { type: Number }
+    },
+    
+    // 法兰尺寸
+    flange: {
+      standard: { type: String }, // 例如: 'ISO 5211 F10'
+      D: { type: Number },
+      A: { type: Number }, // 方口尺寸
+      C: { type: Number },
+      F: { type: Number },
+      threadSpec: { type: String }, // 例如: '4-M10'
+      threadDepth: { type: Number },
+      B: { type: Number },
+      T: { type: Number }
+    },
+    
+    // 顶部安装尺寸
+    topMounting: {
+      standard: { type: String }, // 例如: 'NAMUR VDI/VDE 3845'
+      L: { type: Number },
+      h1: { type: Number },
+      H: { type: Number }
+    },
+    
+    // 气动连接尺寸
+    pneumaticConnection: {
+      size: { type: String }, // 例如: 'NPT1/4"'
+      h2: { type: Number }
+    }
   },
   
   // 额外的技术字段
@@ -232,6 +284,11 @@ const actuatorSchema = new mongoose.Schema({
   
   // 库存信息
   stock_info: {
+    quantity: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     available: {
       type: Boolean,
       default: true
@@ -351,57 +408,19 @@ actuatorSchema.methods.getTorque = function(pressure, angle, yokeType = 'symmetr
   return torqueMap.get(key) || null;
 };
 
-// 实例方法：根据数量获取对应的单价（支持固定价格和阶梯定价）
-// 注：此方法现在会根据 pricing_model 来决定返回固定价格还是阶梯价格
-actuatorSchema.methods.getPriceByQuantity = function(quantity, priceType = 'normal') {
-  // 如果定价模式为固定价格，直接返回 base_price
-  if (this.pricing_model === 'fixed') {
-    return this.base_price || null;
+// 实例方法：根据温度类型获取标准价格
+actuatorSchema.methods.getBasePrice = function(temperatureType = 'normal') {
+  switch (temperatureType) {
+    case 'low':
+    case 'low_temp':
+      return this.base_price_low || null;
+    case 'high':
+    case 'high_temp':
+      return this.base_price_high || null;
+    case 'normal':
+    default:
+      return this.base_price_normal || null;
   }
-  
-  // 如果定价模式为阶梯价格，使用 price_tiers
-  if (this.pricing_model === 'tiered') {
-    // 如果没有配置阶梯定价，返回 null
-    if (!this.price_tiers || this.price_tiers.length === 0) {
-      return null;
-    }
-    
-    // 使用统一的 calculatePrice 函数
-    return calculatePrice(this.price_tiers, quantity, priceType);
-  }
-  
-  // 默认情况：如果 pricing_model 未定义或无效，优先返回 base_price
-  return this.base_price || null;
-};
-
-// 实例方法：获取所有价格档位（用于展示）
-// 注：此方法现在会根据 pricing_model 来返回相应的价格信息
-actuatorSchema.methods.getAllPriceTiers = function(priceType = null) {
-  // 如果定价模式为固定价格，返回单一价格信息
-  if (this.pricing_model === 'fixed') {
-    if (!this.base_price) {
-      return [];
-    }
-    return [{
-      min_quantity: 1,
-      unit_price: this.base_price,
-      price_type: 'normal',
-      notes: '固定单价'
-    }];
-  }
-  
-  // 如果定价模式为阶梯价格，返回阶梯价格列表
-  if (this.pricing_model === 'tiered') {
-    if (!this.price_tiers || this.price_tiers.length === 0) {
-      return [];
-    }
-    
-    // 使用统一的 getAllPriceTiers 函数
-    return getAllPriceTiers(this.price_tiers, priceType);
-  }
-  
-  // 默认情况
-  return [];
 };
 
 // 静态方法：根据扭矩要求查找合适的执行器
@@ -432,32 +451,18 @@ actuatorSchema.pre('save', function(next) {
     this.model_base = `${this.body_size}-${this.action_type}`;
   }
   
-  // ========== 定价模式数据验证 ==========
-  // 验证定价模式和相应的价格数据
-  if (this.pricing_model === 'fixed') {
-    // 固定价格模式：必须提供 base_price
-    if (!this.base_price || this.base_price <= 0) {
-      return next(new Error('固定价格模式下必须提供有效的 base_price（基础价格）'));
-    }
-  } else if (this.pricing_model === 'tiered') {
-    // 阶梯价格模式：必须提供 price_tiers 且至少有一个价格档位
-    if (!this.price_tiers || this.price_tiers.length === 0) {
-      return next(new Error('阶梯价格模式下必须提供至少一个 price_tiers（价格档位）'));
-    }
-    
-    // 验证阶梯价格数据的完整性
-    for (let tier of this.price_tiers) {
-      if (!tier.min_quantity || tier.min_quantity < 1) {
-        return next(new Error('price_tiers 中的 min_quantity 必须大于 0'));
-      }
-      if (!tier.unit_price || tier.unit_price < 0) {
-        return next(new Error('price_tiers 中的 unit_price 不能为负数'));
-      }
-    }
-  }
-  
   next();
 });
+
+// 性能优化：为经常查询的字段添加索引
+actuatorSchema.index({ series: 1 }); // 按系列查询
+actuatorSchema.index({ body_size: 1 }); // 按本体尺寸查询
+actuatorSchema.index({ action_type: 1 }); // 按作用类型查询
+actuatorSchema.index({ supplier_id: 1 }); // 按供应商查询
+actuatorSchema.index({ mechanism: 1 }); // 按机构类型查询
+actuatorSchema.index({ series: 1, body_size: 1 }); // 组合索引：系列+尺寸
+actuatorSchema.index({ torque_90: 1 }); // 按扭矩查询（选型常用）
+actuatorSchema.index({ createdAt: -1 }); // 按创建时间排序
 
 module.exports = mongoose.model('Actuator', actuatorSchema);
 

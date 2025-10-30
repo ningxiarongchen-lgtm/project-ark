@@ -34,8 +34,8 @@ router.get('/role/:role', userController.getByRole);
 // 切换用户状态
 router.patch('/:id/toggle-status', userController.toggleUserStatus);
 
-// 重置密码
-router.post('/:id/reset-password', userController.resetPassword);
+// 重置密码 - 使用PUT方法（RESTful最佳实践）
+router.put('/:id/reset-password', userController.resetPassword);
 
 // 标准CRUD路由
 router.route('/')

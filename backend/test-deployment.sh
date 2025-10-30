@@ -144,7 +144,7 @@ echo "-------------------------------------------"
 echo -n "测试登录接口..."
 LOGIN_RESPONSE=$(curl -s -X POST "$BACKEND_URL/api/auth/login" \
     -H "Content-Type: application/json" \
-    -d '{"email":"admin@cmax.com","password":"admin123"}' \
+    -d '{"email":"admin@projectark.com","password":"admin123"}' \
     -c cookies.tmp \
     -w "\n%{http_code}" \
     -o login_response.tmp)

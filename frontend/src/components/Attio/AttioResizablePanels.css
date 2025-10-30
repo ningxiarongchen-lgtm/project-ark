@@ -1,0 +1,126 @@
+/**
+ * AttioResizablePanels CSS - Attio-style panel system
+ * 
+ * Features:
+ * - 1px light gray divider (#F1F1F0)
+ * - Hover: purple (#6E62E4)
+ * - Smooth transitions
+ */
+
+/* Resize Handle Container */
+.attio-resize-handle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: col-resize;
+  flex-shrink: 0;
+}
+
+/* Vertical divider line */
+.attio-resize-handle-inner {
+  width: 1px;
+  height: 100%;
+  background-color: #F1F1F0;  /* Light gray */
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover state - turn purple */
+.attio-resize-handle:hover .attio-resize-handle-inner {
+  background-color: #6E62E4;  /* Attio purple */
+}
+
+/* Active/Dragging state */
+.attio-resize-handle[data-resize-handle-active] .attio-resize-handle-inner {
+  background-color: #6E62E4;  /* Attio purple */
+}
+
+/* Horizontal resize handle (for vertical splits) */
+.attio-resize-handle[data-resize-handle-state="horizontal"] {
+  cursor: row-resize;
+}
+
+.attio-resize-handle[data-resize-handle-state="horizontal"] .attio-resize-handle-inner {
+  width: 100%;
+  height: 1px;
+}
+
+/* Panel smooth transitions */
+[data-panel] {
+  transition: flex 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Panel content wrapper */
+.attio-panel-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  background: #FFFFFF;
+}
+
+/* Left panel styling */
+.attio-panel-left {
+  background: #FBFBFA;
+  border-right: 1px solid #F1F1F0;
+}
+
+/* Middle panel styling */
+.attio-panel-middle {
+  background: #FFFFFF;
+}
+
+/* Right panel styling */
+.attio-panel-right {
+  background: #FBFBFA;
+  border-left: 1px solid #F1F1F0;
+}
+
+/* Panel header */
+.attio-panel-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #F1F1F0;
+  background: #FFFFFF;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.attio-panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+/* Panel body */
+.attio-panel-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Scrollbar styling for panels */
+.attio-panel-content::-webkit-scrollbar,
+.attio-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.attio-panel-content::-webkit-scrollbar-track,
+.attio-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.attio-panel-content::-webkit-scrollbar-thumb,
+.attio-panel-body::-webkit-scrollbar-thumb {
+  background: #D4D4D2;
+  border-radius: 3px;
+}
+
+.attio-panel-content::-webkit-scrollbar-thumb:hover,
+.attio-panel-body::-webkit-scrollbar-thumb:hover {
+  background: #8A8A87;
+}
+

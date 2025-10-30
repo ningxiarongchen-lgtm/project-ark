@@ -7,11 +7,13 @@ import { Tag, Row, Col, Statistic, Button, Space, Popconfirm, message, Modal, In
 import { LockOutlined, RedoOutlined } from '@ant-design/icons';
 import DataManagementTable from './DataManagementTable';
 import UserForm from './forms/UserForm';
+import RoleBasedAccess from '../RoleBasedAccess';
 import { dataManagementAPI } from '../../services/api';
 
 const UserManagement = () => {
   const [resetPasswordModalVisible, setResetPasswordModalVisible] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [resetPasswordForm] = Form.useForm();
 
   // 生成随机密码
@@ -34,8 +36,9 @@ const UserManagement = () => {
   };
 
   // 打开重置密码弹窗
-  const openResetPasswordModal = (userId) => {
-    setCurrentUserId(userId);
+  const openResetPasswordModal = (user) => {
+    setCurrentUserId(user._id);
+    setCurrentUser(user);
     setResetPasswordModalVisible(true);
     resetPasswordForm.resetFields();
   };
@@ -45,9 +48,11 @@ const UserManagement = () => {
     try {
       const values = await resetPasswordForm.validateFields();
       await dataManagementAPI.users.resetPassword(currentUserId, values.newPassword);
-      message.success('密码重置成功！用户下次登录时需要修改密码。');
+      message.success(`用户 ${currentUser?.full_name || currentUser?.phone} 的密码已成功重置！`);
       setResetPasswordModalVisible(false);
       resetPasswordForm.resetFields();
+      setCurrentUser(null);
+      setCurrentUserId(null);
     } catch (error) {
       if (error.errorFields) {
         // 表单验证失败
@@ -70,16 +75,16 @@ const UserManagement = () => {
   
   const columns = [
     {
-      title: '用户名',
-      dataIndex: 'username',
-      key: 'username',
+      title: '手机号',
+      dataIndex: 'phone',
+      key: 'phone',
       fixed: 'left',
-      width: 120
+      width: 130
     },
     {
       title: '姓名',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'full_name',
+      key: 'full_name',
       width: 120
     },
     {
@@ -94,12 +99,6 @@ const UserManagement = () => {
       dataIndex: 'department',
       key: 'department',
       width: 120
-    },
-    {
-      title: '电话',
-      dataIndex: 'phone',
-      key: 'phone',
-      width: 130
     },
     {
       title: '状态',
@@ -125,24 +124,28 @@ const UserManagement = () => {
       width: 200,
       render: (_, record) => (
         <Space>
-          <Popconfirm
-            title="确定要切换用户状态吗？"
-            onConfirm={() => handleToggleStatus(record._id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button size="small" type="link">
-              {record.isActive ? '停用' : '激活'}
+          <RoleBasedAccess allowedRoles={['Administrator']}>
+            <Popconfirm
+              title="确定要切换用户状态吗？"
+              onConfirm={() => handleToggleStatus(record._id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button size="small" type="link">
+                {record.isActive ? '停用' : '激活'}
+              </Button>
+            </Popconfirm>
+          </RoleBasedAccess>
+          <RoleBasedAccess allowedRoles={['Administrator']}>
+            <Button 
+              size="small" 
+              type="link" 
+              icon={<LockOutlined />}
+              onClick={() => openResetPasswordModal(record)}
+            >
+              重置密码
             </Button>
-          </Popconfirm>
-          <Button 
-            size="small" 
-            type="link" 
-            icon={<LockOutlined />}
-            onClick={() => openResetPasswordModal(record._id)}
-          >
-            重置密码
-          </Button>
+          </RoleBasedAccess>
         </Space>
       )
     }
@@ -177,10 +180,14 @@ const UserManagement = () => {
       
       {/* 重置密码Modal */}
       <Modal
-        title="重置用户密码"
+        title={`正在为用户 ${currentUser?.full_name || currentUser?.phone || ''} 重置密码`}
         open={resetPasswordModalVisible}
         onOk={handleResetPassword}
-        onCancel={() => setResetPasswordModalVisible(false)}
+        onCancel={() => {
+          setResetPasswordModalVisible(false);
+          setCurrentUser(null);
+          setCurrentUserId(null);
+        }}
         width={500}
         okText="确认重置"
         cancelText="取消"

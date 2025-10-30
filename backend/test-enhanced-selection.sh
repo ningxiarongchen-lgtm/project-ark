@@ -20,7 +20,7 @@ echo -e "${YELLOW}📝 步骤 1: 登录获取token...${NC}"
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@cmax.com",
+    "email": "admin@projectark.com",
     "password": "admin123"
   }')
 

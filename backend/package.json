@@ -1,19 +1,16 @@
 {
   "name": "project-ark-backend",
   "version": "1.0.0",
-  "description": "Backend services for the C-MAX Project Ark platform.",
+  "description": "Backend services for the Project Ark platform.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "seed": "node seed.js",
-    "seed:atgy": "node seed_at_gy.js",
-    "seed:atgy:final": "node seed_at_gy_final.js",
-    "seed-old": "node utils/seedData.js",
-    "seed-new": "node utils/seedNewData.js",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "start:test": "NODE_ENV=test nodemon server.js",
+    "seed:final": "node seed_final_acceptance.js",
+    "test": "NODE_ENV=test jest",
+    "test:watch": "NODE_ENV=test jest --watch",
+    "test:coverage": "NODE_ENV=test jest --coverage",
     "test:ai": "./test-ai-api.sh"
   },
   "keywords": [
@@ -21,7 +18,7 @@
     "pneumatic",
     "selection"
   ],
-  "author": "C-MAX",
+  "author": "Project Ark Team",
   "license": "UNLICENSED",
   "dependencies": {
     "axios": "^1.6.0",
@@ -36,13 +33,22 @@
     "express-validator": "^7.3.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "leancloud-storage": "^4.15.2",
     "mongoose": "^7.6.3",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "socket.io": "^4.8.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
   }
 }

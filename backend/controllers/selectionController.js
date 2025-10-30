@@ -12,6 +12,8 @@ exports.calculateSelection = async (req, res) => {
       valveTorque, // 阀门扭矩
       safetyFactor = 1.3, // 安全系数，默认1.3
       valveType, // 阀门类型：'Ball Valve' 或 'Butterfly Valve'（仅用于Scotch Yoke）
+      requiredOpeningTorque, // 阀门开启所需扭矩
+      requiredClosingTorque, // 阀门关闭所需扭矩
       
       // 兼容旧版参数（snake_case风格）
       valve_torque, // 阀门扭矩（旧版）
@@ -29,6 +31,9 @@ exports.calculateSelection = async (req, res) => {
       manual_override_type,
       max_budget, // 最大预算
       special_requirements,
+      
+      // 故障安全位置（仅用于单作用执行器）
+      failSafePosition, // 'Fail Close', 'Fail Open', 或 'Not Applicable'
       
       // AT/GY 系列特有参数
       temperature_type = 'normal', // 使用温度：'normal', 'low', 'high'
@@ -71,6 +76,30 @@ exports.calculateSelection = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: '阀门类型无效，必须是 "Ball Valve" 或 "Butterfly Valve"'
+      });
+    }
+
+    // 验证故障安全位置参数（单作用执行器必需）
+    if (action_type_preference === 'SR' && !failSafePosition) {
+      return res.status(400).json({
+        success: false,
+        message: '单作用执行器必须提供故障安全位置（failSafePosition）: "Fail Close" 或 "Fail Open"'
+      });
+    }
+
+    // 验证故障安全位置的有效性
+    if (failSafePosition && !['Fail Close', 'Fail Open', 'Not Applicable'].includes(failSafePosition)) {
+      return res.status(400).json({
+        success: false,
+        message: '故障安全位置无效，必须是 "Fail Close", "Fail Open" 或 "Not Applicable"'
+      });
+    }
+
+    // 如果选择单作用执行器，必须提供开启和关闭扭矩
+    if (action_type_preference === 'SR' && (!requiredOpeningTorque || !requiredClosingTorque)) {
+      return res.status(400).json({
+        success: false,
+        message: '单作用执行器必须提供阀门开启扭矩（requiredOpeningTorque）和关闭扭矩（requiredClosingTorque）'
       });
     }
 
@@ -163,35 +192,114 @@ exports.calculateSelection = async (req, res) => {
         let yokeType = null; // 'Symmetric' 或 'Canted'
         let recommendedModel = actuator.model_base; // 推荐的型号（可能带/C）
 
-        // 根据阀门类型，选择相应的扭矩数据
-        if (actualValveType === 'Ball Valve') {
-          // 球阀：只检查对称轭架扭矩
-          const symmetricTorque = actuator.torque_symmetric.get(torqueKey);
-          
-          if (symmetricTorque && symmetricTorque >= requiredTorque) {
-            shouldInclude = true;
-            actualTorque = symmetricTorque;
-            yokeType = 'Symmetric';
-            recommendedModel = actuator.model_base; // 不带 /C
+        // 检查执行器类型（DA 或 SR）
+        if (actuator.action_type === 'DA') {
+          // ========== 双作用执行器 (DA) ==========
+          // 根据阀门类型，选择相应的扭矩数据
+          if (actualValveType === 'Ball Valve') {
+            // 球阀：只检查对称轭架扭矩
+            const symmetricTorque = actuator.torque_symmetric.get(torqueKey);
             
-            console.log(`  ✓ ${actuator.model_base}: 球阀适用，对称扭矩 ${symmetricTorque} N·m >= ${requiredTorque} N·m`);
-          } else {
-            console.log(`  ✗ ${actuator.model_base}: 球阀不适用，对称扭矩 ${symmetricTorque || 'N/A'} N·m < ${requiredTorque} N·m`);
+            if (symmetricTorque && symmetricTorque >= requiredTorque) {
+              shouldInclude = true;
+              actualTorque = symmetricTorque;
+              yokeType = 'Symmetric';
+              recommendedModel = actuator.model_base; // 不带 /C
+              
+              console.log(`  ✓ ${actuator.model_base}: 球阀适用，对称扭矩 ${symmetricTorque} N·m >= ${requiredTorque} N·m`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}: 球阀不适用，对称扭矩 ${symmetricTorque || 'N/A'} N·m < ${requiredTorque} N·m`);
+            }
+            
+          } else if (actualValveType === 'Butterfly Valve') {
+            // 蝶阀：只检查倾斜轭架扭矩
+            const cantedTorque = actuator.torque_canted.get(torqueKey);
+            
+            if (cantedTorque && cantedTorque >= requiredTorque) {
+              shouldInclude = true;
+              actualTorque = cantedTorque;
+              yokeType = 'Canted';
+              recommendedModel = `${actuator.model_base}/C`; // 带 /C 标识
+              
+              console.log(`  ✓ ${actuator.model_base}/C: 蝶阀适用，倾斜扭矩 ${cantedTorque} N·m >= ${requiredTorque} N·m`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}/C: 蝶阀不适用，倾斜扭矩 ${cantedTorque || 'N/A'} N·m < ${requiredTorque} N·m`);
+            }
           }
           
-        } else if (actualValveType === 'Butterfly Valve') {
-          // 蝶阀：只检查倾斜轭架扭矩
-          const cantedTorque = actuator.torque_canted.get(torqueKey);
+        } else if (actuator.action_type === 'SR') {
+          // ========== 单作用执行器 (SR) ==========
+          // SF系列单作用执行器根据故障安全位置判断扭矩匹配逻辑
+          const torqueData = actuator.torqueData || actuator.torque_data || {};
           
-          if (cantedTorque && cantedTorque >= requiredTorque) {
-            shouldInclude = true;
-            actualTorque = cantedTorque;
-            yokeType = 'Canted';
-            recommendedModel = `${actuator.model_base}/C`; // 带 /C 标识
+          // 提取弹簧扭矩数据
+          const springTorque = torqueData.springTorque || {};
+          const SST = springTorque.SST; // 弹簧复位起点扭矩
+          const SET = springTorque.SET; // 弹簧复位终点扭矩
+          
+          // 提取气源扭矩数据（根据工作压力）
+          const airTorque = torqueData.airTorque || {};
+          const pressureKey_sr = `${working_pressure}MPa`;
+          const airTorqueAtPressure = airTorque[pressureKey_sr] || {};
+          const AST = airTorqueAtPressure.AST; // 气源动作起点扭矩
+          const AET = airTorqueAtPressure.AET; // 气源动作终点扭矩
+          
+          console.log(`  🔍 SF-SR执行器 ${actuator.model_base} 扭矩数据:`, {
+            springTorque: { SST, SET },
+            airTorque: { AST, AET },
+            failSafePosition: failSafePosition
+          });
+          
+          // 根据故障安全位置和阀门类型判断
+          if (failSafePosition === 'Fail Close') {
+            // 故障关 (STC): 弹簧关阀，气源开阀
+            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩 × 安全系数
+            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩 × 安全系数
+            const condition1 = SET && SET >= requiredClosingTorque * safetyFactor;
+            const condition2 = AST && AST >= requiredOpeningTorque * safetyFactor;
             
-            console.log(`  ✓ ${actuator.model_base}/C: 蝶阀适用，倾斜扭矩 ${cantedTorque} N·m >= ${requiredTorque} N·m`);
-          } else {
-            console.log(`  ✗ ${actuator.model_base}/C: 蝶阀不适用，倾斜扭矩 ${cantedTorque || 'N/A'} N·m < ${requiredTorque} N·m`);
+            if (condition1 && condition2) {
+              shouldInclude = true;
+              actualTorque = Math.min(SET / safetyFactor, AST / safetyFactor);
+              
+              // 根据阀门类型确定轭架类型
+              if (actualValveType === 'Ball Valve') {
+                yokeType = 'Symmetric';
+                recommendedModel = `${actuator.model_base}-STC`; // 不带 /C
+              } else if (actualValveType === 'Butterfly Valve') {
+                yokeType = 'Canted';
+                recommendedModel = `${actuator.model_base}/C-STC`; // 带 /C 标识
+              }
+              
+              console.log(`  ✓ ${recommendedModel}: 故障关匹配成功`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}-STC: 故障关不匹配`);
+            }
+            
+          } else if (failSafePosition === 'Fail Open') {
+            // 故障开 (STO): 弹簧开阀，气源关阀
+            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩 × 安全系数
+            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩 × 安全系数
+            const condition1 = SST && SST >= requiredOpeningTorque * safetyFactor;
+            const condition2 = AET && AET >= requiredClosingTorque * safetyFactor;
+            
+            if (condition1 && condition2) {
+              shouldInclude = true;
+              actualTorque = Math.min(SST / safetyFactor, AET / safetyFactor);
+              
+              // 根据阀门类型确定轭架类型
+              if (actualValveType === 'Ball Valve') {
+                yokeType = 'Symmetric';
+                recommendedModel = `${actuator.model_base}-STO`; // 不带 /C
+              } else if (actualValveType === 'Butterfly Valve') {
+                yokeType = 'Canted';
+                recommendedModel = `${actuator.model_base}/C-STO`; // 带 /C 标识
+              }
+              
+              console.log(`  ✓ ${recommendedModel}: 故障开匹配成功`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}-STO: 故障开不匹配`);
+            }
           }
         }
 
@@ -251,7 +359,7 @@ exports.calculateSelection = async (req, res) => {
           }
           
           // ========== 生成最终型号名称 ==========
-          // 规则：基础型号 + 温度代码（如果不是 'No code'）
+          // 规则：推荐型号（已包含/C和STC/STO） + 温度代码
           let finalModelName = recommendedModel;
           if (temperature_code && temperature_code !== 'No code') {
             finalModelName = `${recommendedModel}-${temperature_code.toUpperCase()}`;
@@ -262,7 +370,7 @@ exports.calculateSelection = async (req, res) => {
           finalResults.push({
             _id: actuator._id,
             model_base: actuator.model_base,
-            recommended_model: recommendedModel, // 推荐型号（可能带 /C）
+            recommended_model: recommendedModel, // 推荐型号（可能带 /C 和 STC/STO）
             final_model_name: finalModelName, // ⭐ 最终完整型号（含温度代码）
             series: actuator.series,
             mechanism: actuator.mechanism,
@@ -270,6 +378,7 @@ exports.calculateSelection = async (req, res) => {
             action_type: actuator.action_type,
             valve_type: actualValveType, // 阀门类型
             yoke_type: yokeType, // 轭架类型：Symmetric 或 Canted
+            fail_safe_position: failSafePosition, // ⭐ 故障安全位置
             temperature_code: temperature_code, // ⭐ 温度代码
             price: adjustedPrice, // ⭐ 调整后的价格
             base_price: actuator.base_price, // 原始基础价格
@@ -343,37 +452,69 @@ exports.calculateSelection = async (req, res) => {
           }
 
         } else if (actuator.action_type === 'SR') {
-          // SR (弹簧复位): 需要同时满足 spring_end 和 air_start
-          const torqueData = actuator.torque_data || {};
+          // SR (单作用): 根据故障安全位置判断扭矩匹配逻辑
+          const torqueData = actuator.torqueData || actuator.torque_data || {};
           
-          const springEndTorque = torqueData.spring_end || torqueData.spring_end;
-          let airStartTorque = null;
+          // 提取弹簧扭矩数据
+          const springTorque = torqueData.springTorque || {};
+          const SST = springTorque.SST; // 弹簧复位起点扭矩
+          const SRT = springTorque.SRT; // 弹簧复位运行扭矩
+          const SET = springTorque.SET; // 弹簧复位终点扭矩
           
-          // 查找 air_start 相关的键
-          const airStartKey = Object.keys(torqueData).find(key => 
-            key.includes('air_start') && key.includes(working_pressure.toString())
-          );
+          // 提取气源扭矩数据（根据工作压力）
+          const airTorque = torqueData.airTorque || {};
+          const pressureKey = `${working_pressure}MPa`;
+          const airTorqueAtPressure = airTorque[pressureKey] || {};
+          const AST = airTorqueAtPressure.AST; // 气源动作起点扭矩
+          const ART = airTorqueAtPressure.ART; // 气源动作运行扭矩
+          const AET = airTorqueAtPressure.AET; // 气源动作终点扭矩
           
-          if (airStartKey) {
-            airStartTorque = torqueData[airStartKey];
-          }
+          console.log(`  🔍 SR执行器 ${actuator.model_base} 扭矩数据:`, {
+            springTorque: { SST, SRT, SET },
+            airTorque: { AST, ART, AET },
+            failSafePosition: failSafePosition
+          });
           
-          // 如果找不到精确匹配，尝试找最接近的
-          if (!airStartTorque) {
-            const airStartKeys = Object.keys(torqueData)
-              .filter(key => key.includes('air_start'));
+          // 根据故障安全位置判断
+          if (failSafePosition === 'Fail Close') {
+            // 故障关 (STC): 弹簧关阀，气源开阀
+            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩 × 安全系数
+            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩 × 安全系数
+            const condition1 = SET && SET >= requiredClosingTorque * safetyFactor;
+            const condition2 = AST && AST >= requiredOpeningTorque * safetyFactor;
             
-            if (airStartKeys.length > 0) {
-              // 使用第一个可用的 air_start 值
-              airStartTorque = torqueData[airStartKeys[0]];
+            if (condition1 && condition2) {
+              shouldInclude = true;
+              actualTorque = Math.min(SET / safetyFactor, AST / safetyFactor);
+              
+              console.log(`  ✓ ${actuator.model_base}-STC: 故障关匹配成功`);
+              console.log(`    - SET (${SET}) >= 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+              console.log(`    - AST (${AST}) >= 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}-STC: 故障关不匹配`);
+              if (!condition1) console.log(`    - SET (${SET}) < 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+              if (!condition2) console.log(`    - AST (${AST}) < 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
             }
-          }
-          
-          // 两个条件都要满足
-          if (springEndTorque >= requiredTorque && 
-              airStartTorque && airStartTorque >= requiredTorque) {
-            shouldInclude = true;
-            actualTorque = Math.min(springEndTorque, airStartTorque);
+            
+          } else if (failSafePosition === 'Fail Open') {
+            // 故障开 (STO): 弹簧开阀，气源关阀
+            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩 × 安全系数
+            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩 × 安全系数
+            const condition1 = SST && SST >= requiredOpeningTorque * safetyFactor;
+            const condition2 = AET && AET >= requiredClosingTorque * safetyFactor;
+            
+            if (condition1 && condition2) {
+              shouldInclude = true;
+              actualTorque = Math.min(SST / safetyFactor, AET / safetyFactor);
+              
+              console.log(`  ✓ ${actuator.model_base}-STO: 故障开匹配成功`);
+              console.log(`    - SST (${SST}) >= 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
+              console.log(`    - AET (${AET}) >= 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+            } else {
+              console.log(`  ✗ ${actuator.model_base}-STO: 故障开不匹配`);
+              if (!condition1) console.log(`    - SST (${SST}) < 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
+              if (!condition2) console.log(`    - AET (${AET}) < 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+            }
           }
         }
 
@@ -434,23 +575,35 @@ exports.calculateSelection = async (req, res) => {
           }
           
           // ========== 生成最终型号名称（AT/GY系列）==========
-          // 规则：基础型号 + 温度代码（如果不是 'No code'）
+          // 规则：基础型号 + 故障安全位置后缀(SR) + 温度代码
           let finalModelName = actuator.model_base;
-          if (temperature_code && temperature_code !== 'No code') {
-            finalModelName = `${actuator.model_base}-${temperature_code.toUpperCase()}`;
+          
+          // 如果是单作用执行器，添加 STC 或 STO 后缀
+          if (actuator.action_type === 'SR' && failSafePosition) {
+            if (failSafePosition === 'Fail Close') {
+              finalModelName = `${actuator.model_base}-STC`;
+            } else if (failSafePosition === 'Fail Open') {
+              finalModelName = `${actuator.model_base}-STO`;
+            }
           }
           
-          console.log(`  📝 最终型号: ${finalModelName} (基础: ${actuator.model_base}, 温度: ${temperature_code})`);
+          // 添加温度代码（如果不是 'No code'）
+          if (temperature_code && temperature_code !== 'No code') {
+            finalModelName = `${finalModelName}-${temperature_code.toUpperCase()}`;
+          }
+          
+          console.log(`  📝 最终型号: ${finalModelName} (基础: ${actuator.model_base}, 故障位置: ${failSafePosition || 'N/A'}, 温度: ${temperature_code})`);
 
           finalResults.push({
             _id: actuator._id,
             model_base: actuator.model_base,
-            final_model_name: finalModelName, // ⭐ 最终完整型号（含温度代码）
+            final_model_name: finalModelName, // ⭐ 最终完整型号（含故障安全位置后缀和温度代码）
             series: actuator.series,
             mechanism: actuator.mechanism,
             body_size: actuator.body_size,
             action_type: actuator.action_type,
             spring_range: actuator.spring_range,
+            fail_safe_position: failSafePosition, // ⭐ 故障安全位置
             
             // 价格信息（详细）
             price: basePrice, // 基础价格
@@ -529,10 +682,13 @@ exports.calculateSelection = async (req, res) => {
         valve_torque: actualValveTorque, // 阀门扭矩
         safety_factor: actualSafetyFactor, // 安全系数
         required_torque: requiredTorque, // 计算后的需求扭矩
+        required_opening_torque: requiredOpeningTorque, // 开启扭矩（单作用）
+        required_closing_torque: requiredClosingTorque, // 关闭扭矩（单作用）
         working_pressure,
         working_angle: mechanism === 'Scotch Yoke' ? working_angle : 'N/A',
         mechanism,
         valve_type: mechanism === 'Scotch Yoke' ? actualValveType : 'N/A', // 阀门类型
+        fail_safe_position: failSafePosition || 'Not Applicable', // ⭐ 故障安全位置
         temperature_code: temperature_code || 'No code', // ⭐ 温度代码（所有系列）
         temperature_type: mechanism === 'Rack & Pinion' ? temperature_type : 'N/A', // 使用温度（AT/GY系列）
         needs_handwheel: mechanism === 'Rack & Pinion' ? needs_handwheel : 'N/A', // 是否需要手轮（AT/GY系列）

@@ -1,7 +1,16 @@
 import axios from 'axios'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
 import { useAuthStore } from '../store/authStore'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
+
+// Configure NProgress
+NProgress.configure({ 
+  showSpinner: false,  // Hide spinner, only show bar
+  trickleSpeed: 200,   // Adjust speed
+  minimum: 0.08        // Minimum progress percentage
+})
 
 // Create axios instance
 const api = axios.create({
@@ -13,9 +22,18 @@ const api = axios.create({
   withCredentials: true
 })
 
-// Request interceptor to add auth token (向后兼容，Cookie模式下不需要手动添加token)
+// Track active requests for NProgress
+let activeRequests = 0
+
+// Request interceptor to add auth token and start NProgress
 api.interceptors.request.use(
   (config) => {
+    // Start NProgress on first request
+    if (activeRequests === 0) {
+      NProgress.start()
+    }
+    activeRequests++
+    
     // Cookie 模式下，token 会自动通过 Cookie 发送，无需手动添加
     // 保留此代码以向后兼容可能仍使用 localStorage 的情况
     const token = useAuthStore.getState().token
@@ -25,21 +43,40 @@ api.interceptors.request.use(
     return config
   },
   (error) => {
+    // Decrement and stop NProgress on error
+    activeRequests--
+    if (activeRequests === 0) {
+      NProgress.done()
+    }
     return Promise.reject(error)
   }
 )
 
-// Response interceptor to handle errors
+// Response interceptor to handle errors and stop NProgress
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Decrement and stop NProgress on success
+    activeRequests--
+    if (activeRequests === 0) {
+      NProgress.done()
+    }
+    return response
+  },
   async (error) => {
-    if (error.response?.status === 401) {
+    // Decrement and stop NProgress on error
+    activeRequests--
+    if (activeRequests === 0) {
+      NProgress.done()
+    }
+    
+    // 🔒 防止无限循环：只处理非 logout 请求的 401 错误
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/logout')) {
       // 🔒 安全改进：在401错误时调用后端 logout API 清除 Cookie
       try {
         await api.post('/auth/logout')
       } catch (logoutError) {
-        // 即使 logout 失败也继续清除本地状态
-        console.error('Logout failed:', logoutError)
+        // 即使 logout 失败也继续清除本地状态（这是预期行为）
+        console.error('Logout API call failed (expected if already logged out):', logoutError)
       }
       
       // Unauthorized - clear auth and redirect to login
@@ -127,18 +164,37 @@ export const selectionAPI = {
 
 // ==================== 项目管理 API ====================
 export const projectsAPI = {
-  // CRUD
-  getAll: (params) => api.get('/new-projects', { params }),
-  getById: (id) => api.get(`/new-projects/${id}`),
-  create: (data) => api.post('/new-projects', data),
-  update: (id, data) => api.put(`/new-projects/${id}`, data),
-  delete: (id) => api.delete(`/new-projects/${id}`),
+  // CRUD - 使用 /projects 端点
+  getAll: (params) => api.get('/projects', { params }),
+  getById: (id) => api.get(`/projects/${id}`),
+  create: (data) => api.post('/projects', data),
+  update: (id, data) => api.put(`/projects/${id}`, data),
+  delete: (id) => api.delete(`/projects/${id}`),
+  
+  // 项目选型
+  addSelection: (projectId, data) => api.post(`/projects/${projectId}/selections`, data),
+  updateSelection: (projectId, selectionId, data) => api.put(`/projects/${projectId}/selections/${selectionId}`, data),
+  removeSelection: (projectId, selectionId) => api.delete(`/projects/${projectId}/selections/${selectionId}`),
   
   // 自动选型
   autoSelect: (id, data) => api.post(`/new-projects/${id}/auto-select`, data),
   
   // 统计
-  getStats: () => api.get('/new-projects/stats/summary')
+  getStats: () => api.get('/projects/stats/summary'),
+  
+  // 获取技术工程师列表
+  getTechnicalEngineers: () => api.get('/projects/technical-engineers/list'),
+  
+  // 指派技术工程师
+  assignTechnicalEngineer: (projectId, data) => api.post(`/projects/${projectId}/assign-technical`, data),
+  
+  // 🔒 技术清单版本管理
+  submitTechnicalList: (id, notes) => api.post(`/new-projects/${id}/submit-technical-list`, { notes }),
+  rejectTechnicalList: (id, suggestions, target_version) => api.post(`/new-projects/${id}/reject-technical-list`, { suggestions, target_version }),
+  respondToModification: (id, request_id, response, accept) => api.post(`/new-projects/${id}/respond-modification`, { request_id, response, accept }),
+  confirmTechnicalVersion: (id, version) => api.post(`/new-projects/${id}/confirm-technical-version`, { version }),
+  getTechnicalVersions: (id) => api.get(`/new-projects/${id}/technical-versions`),
+  getModificationRequests: (id) => api.get(`/new-projects/${id}/modification-requests`)
 }
 
 // ==================== 旧的 Products/Accessories API（向后兼容）====================
@@ -332,6 +388,9 @@ export const qualityAPI = {
   // 审核
   review: (id, data) => api.post(`/quality/checks/${id}/review`, data),
   
+  // 质检通过，更新生产订单状态
+  markProductionOrderQCPassed: (productionOrderId, data) => api.post(`/quality/production-order/${productionOrderId}/pass`, data),
+  
   // 统计和分析
   getStats: (params) => api.get('/quality/stats', { params }),
   getDefectAnalysis: (params) => api.get('/quality/defect-analysis', { params })
@@ -400,12 +459,30 @@ export const ordersAPI = {
   // 付款记录
   addPayment: (id, data) => api.post(`/orders/${id}/payment`, data),
   
+  // 质检通过的订单列表（商务工程师）
+  getQCPassedOrders: (params) => api.get('/orders/qc-passed/list', { params }),
+  
+  // 待发货订单列表（物流人员）
+  getReadyToShipOrders: (params) => api.get('/orders/ready-to-ship/list', { params }),
+  
+  // 确认收到70%尾款（商务工程师）
+  confirmFinalPayment: (id, data) => api.post(`/orders/${id}/confirm-final-payment`, data),
+  
+  // 准备发货（商务工程师确认尾款后）
+  markAsReadyToShip: (id, data) => api.post(`/orders/${id}/mark-ready-to-ship`, data),
+  
+  // 录入物流信息（物流人员）
+  addShipment: (id, data) => api.post(`/orders/${id}/add-shipment`, data),
+  
   // 统计
   getStatistics: () => api.get('/orders/statistics')
 }
 
 // ==================== 生产管理 API ====================
 export const productionAPI = {
+  // 从项目创建销售订单和生产订单（确认收款后）
+  createFromProject: (projectId, data) => api.post(`/production/from-project/${projectId}`, data),
+  
   // 从销售订单创建生产订单
   createFromOrder: (salesOrderId, data) => api.post(`/production/from-order/${salesOrderId}`, data),
   
@@ -431,7 +508,19 @@ export const productionAPI = {
   getGanttData: (params) => api.get('/production/gantt/data', { params }),
   
   // 统计
-  getStatistics: () => api.get('/production/statistics')
+  getStatistics: () => api.get('/production/statistics'),
+  
+  // BOM展开
+  explodeBOM: (id) => api.post(`/production/${id}/explode-bom`),
+  
+  // 生成采购需求
+  generateProcurement: (id, data) => api.post(`/production/${id}/generate-procurement`, data),
+  
+  // 更新执行器BOM结构
+  updateActuatorBOM: (actuatorId, bom_structure) => api.put(`/data-management/actuators/${actuatorId}/bom-structure`, { bom_structure }),
+  
+  // 生产完成，标记为待质检
+  markAsAwaitingQC: (id, data) => api.post(`/production/${id}/mark-awaiting-qc`, data)
 }
 
 // ==================== 售后服务 API ====================
@@ -460,6 +549,29 @@ export const ticketsAPI = {
   
   // 统计
   getStatistics: () => api.get('/tickets/statistics')
+}
+
+// ==================== 合同管理 API ====================
+export const contractsAPI = {
+  // 上传草签合同（销售经理，Won状态）
+  uploadDraft: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/draft`, data),
+  
+  // 商务工程师审核并上传盖章合同
+  reviewAndUploadSealed: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/review`, data),
+  
+  // 上传最终签署合同（销售经理，Pending Client Signature状态）
+  uploadFinal: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/final`, data),
+  
+  // 获取项目合同信息
+  getContractInfo: (projectId) => api.get(`/contracts/projects/${projectId}/contract`),
+  
+  // 🔒 获取合同版本历史和哈希校验记录
+  getContractVersionHistory: (projectId) => api.get(`/contracts/projects/${projectId}/contract/version-history`),
+  
+  // 删除合同文件
+  deleteContractFile: (projectId, contractType) => api.delete(`/contracts/projects/${projectId}/contract`, {
+    data: { contractType }
+  })
 }
 
 // ==================== 数据管理 API ====================
@@ -529,7 +641,7 @@ export const dataManagementAPI = {
     getByRole: (role) => api.get(`/data-management/users/role/${role}`),
     getActiveUsers: () => api.get('/data-management/users/active'),
     toggleStatus: (id) => api.patch(`/data-management/users/${id}/toggle-status`),
-    resetPassword: (id, newPassword) => api.post(`/data-management/users/${id}/reset-password`, { newPassword })
+    resetPassword: (id, newPassword) => api.put(`/data-management/users/${id}/reset-password`, { newPassword })
   }
 }
 

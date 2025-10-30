@@ -8,67 +8,53 @@ const Accessory = require('../models/Accessory');
 // Sample data
 const users = [
   {
-    username: 'admin',
-    name: 'Admin User',
-    email: 'admin@cmax.com',
+    phone: '13800138000',
+    full_name: '系统管理员',
     password: 'admin123',
     role: 'Administrator',
-    department: 'IT',
-    phone: '+1-555-0100'
+    department: 'IT'
   },
   {
-    username: 'tech_engineer',
-    name: 'John Engineer',
-    email: 'john@cmax.com',
+    phone: '13800138001',
+    full_name: '张工程师',
     password: 'tech123',
     role: 'Technical Engineer',
-    department: 'Engineering',
-    phone: '+1-555-0101'
+    department: 'Engineering'
   },
   {
-    username: 'sales_manager',
-    name: 'Sarah Sales',
-    email: 'sarah@cmax.com',
+    phone: '13800138002',
+    full_name: '李经理',
     password: 'manager123',
     role: 'Sales Manager',
-    department: 'Sales',
-    phone: '+1-555-0102'
+    department: 'Sales'
   },
   {
-    username: 'sales_engineer',
-    name: 'Mike Commerce',
-    email: 'mike@cmax.com',
+    phone: '13800138003',
+    full_name: '王销售',
     password: 'sales123',
     role: 'Sales Engineer',
-    department: 'Sales',
-    phone: '+1-555-0103'
+    department: 'Sales'
   },
   {
-    username: 'procurement',
-    name: 'Lisa Buyer',
-    email: 'lisa@cmax.com',
+    phone: '13800138004',
+    full_name: '赵采购',
     password: 'proc123',
     role: 'Procurement Specialist',
-    department: 'Procurement',
-    phone: '+1-555-0104'
+    department: 'Procurement'
   },
   {
-    username: 'production_planner',
-    name: 'Tom Scheduler',
-    email: 'tom@cmax.com',
+    phone: '13800138005',
+    full_name: '刘计划员',
     password: 'prod123',
     role: 'Production Planner',
-    department: 'Production',
-    phone: '+1-555-0105'
+    department: 'Production'
   },
   {
-    username: 'aftersales',
-    name: 'Anna Support',
-    email: 'anna@cmax.com',
+    phone: '13800138006',
+    full_name: '陈售后',
     password: 'after123',
     role: 'After-sales Engineer',
-    department: 'After Sales',
-    phone: '+1-555-0106'
+    department: 'After Sales'
   }
 ];
 
@@ -252,7 +238,7 @@ const accessories = [
     category: '连接与传动类',
     price: 300,
     description: 'ISO5211标准安装套件',
-    manufacturer: 'C-MAX',
+    manufacturer: 'Project Ark',
     model_number: 'MK-ISO5211',
     specifications: new Map([
       ['标准', 'ISO5211'],
@@ -274,7 +260,7 @@ const accessories = [
     category: '辅助与安装工具',
     price: 450,
     description: '更换用NBR密封件套装',
-    manufacturer: 'C-MAX',
+    manufacturer: 'Project Ark',
     model_number: 'SK-NBR',
     specifications: new Map([
       ['材质', 'NBR（丁腈橡胶）'],
@@ -323,23 +309,23 @@ const seedDatabase = async () => {
     console.log('║     Database seeded successfully! 🎉          ║');
     console.log('╚════════════════════════════════════════════════╝\n');
     
-    console.log('📋 Sample Login Credentials:');
+    console.log('📋 示例登录凭证:');
     console.log('┌────────────────────────────────────────────────┐');
-    console.log('│ Administrator:                                 │');
-    console.log('│   Username: admin                              │');
-    console.log('│   Password: admin123                           │');
+    console.log('│ 系统管理员:                                     │');
+    console.log('│   手机号: 13800138000                           │');
+    console.log('│   密码: admin123                                │');
     console.log('├────────────────────────────────────────────────┤');
-    console.log('│ Technical Engineer:                            │');
-    console.log('│   Username: tech_engineer                      │');
-    console.log('│   Password: tech123                            │');
+    console.log('│ 技术工程师:                                     │');
+    console.log('│   手机号: 13800138001                           │');
+    console.log('│   密码: tech123                                 │');
     console.log('├────────────────────────────────────────────────┤');
-    console.log('│ Sales Manager:                                 │');
-    console.log('│   Username: sales_manager                      │');
-    console.log('│   Password: manager123                         │');
+    console.log('│ 销售经理:                                       │');
+    console.log('│   手机号: 13800138002                           │');
+    console.log('│   密码: manager123                              │');
     console.log('├────────────────────────────────────────────────┤');
-    console.log('│ Sales Engineer:                                │');
-    console.log('│   Username: sales_engineer                     │');
-    console.log('│   Password: sales123                           │');
+    console.log('│ 销售工程师:                                     │');
+    console.log('│   手机号: 13800138003                           │');
+    console.log('│   密码: sales123                                │');
     console.log('└────────────────────────────────────────────────┘\n');
 
     process.exit(0);

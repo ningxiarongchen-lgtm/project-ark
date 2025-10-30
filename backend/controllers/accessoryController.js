@@ -8,7 +8,7 @@ const fs = require('fs');
 // @access  Private
 exports.getAllAccessories = async (req, res) => {
   try {
-    const { category, min_price, max_price, search } = req.query;
+    const { category, min_price, max_price, search, page = 1, limit = 10 } = req.query;
     
     let query = { is_active: true };
     
@@ -33,12 +33,26 @@ exports.getAllAccessories = async (req, res) => {
       ];
     }
     
-    const accessories = await Accessory.find(query).sort({ category: 1, price: 1 });
+    // 分页
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const accessories = await Accessory.find(query)
+      .sort({ category: 1, price: 1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // 获取总数
+    const total = await Accessory.countDocuments(query);
     
     res.json({
       success: true,
-      count: accessories.length,
-      data: accessories
+      data: accessories,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     res.status(500).json({

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Card, Descriptions, Table, Button, Tag, Space, message, 
   Modal, Form, Input, InputNumber, Select, Steps, Divider,
-  Row, Col, Statistic, Timeline, Badge, Tabs
+  Row, Col, Statistic, Timeline, Badge, Tabs, Typography
 } from 'antd'
 import { 
   ArrowLeftOutlined, EditOutlined, CheckCircleOutlined, 
@@ -33,6 +33,8 @@ const OrderDetails = () => {
   const [ticketModalVisible, setTicketModalVisible] = useState(false)
   const [ticketForm] = Form.useForm()
   const [creatingTicket, setCreatingTicket] = useState(false)
+  const [engineers, setEngineers] = useState([]) // 技术工程师列表
+  const [uploadedAttachments, setUploadedAttachments] = useState([]) // 已上传的附件
   
   // 发货记录相关
   const [shipmentModalVisible, setShipmentModalVisible] = useState(false)
@@ -52,7 +54,19 @@ const OrderDetails = () => {
   useEffect(() => {
     fetchOrder()
     fetchServiceTickets()
+    fetchEngineers()
   }, [id])
+
+  // 获取技术工程师列表
+  const fetchEngineers = async () => {
+    try {
+      const response = await axios.get('/api/data-management/users/role/Technical Engineer')
+      setEngineers(response.data.data || [])
+    } catch (error) {
+      console.error('获取工程师列表失败:', error)
+      // 不显示错误，静默失败
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -188,15 +202,16 @@ const OrderDetails = () => {
 
     // 从订单信息预填充客户信息
     ticketForm.setFieldsValue({
-      ticketType: 'Maintenance',
-      priority: 'Normal',
-      customer: {
-        name: order.client?.name || '',
-        company: order.client?.company || '',
-        phone: order.client?.phone || ''
-      }
+      service_type: '维修',
+      priority: '正常',
+      client_name: order.projectSnapshot?.client?.name || '',
+      'client_info.company': order.projectSnapshot?.client?.company || '',
+      'client_info.phone': order.projectSnapshot?.client?.phone || '',
+      'client_info.contact_person': order.projectSnapshot?.client?.name || ''
     })
 
+    // 清空之前上传的附件
+    setUploadedAttachments([])
     setTicketModalVisible(true)
   }
 
@@ -204,22 +219,44 @@ const OrderDetails = () => {
   const handleCreateTicket = async (values) => {
     setCreatingTicket(true)
     try {
-      console.log('🎫 正在创建售后工单...')
+      console.log('🎫 正在创建售后工单...', values)
 
-      // 添加关联的销售订单ID
+      // 构建符合新模型的工单数据
       const ticketData = {
-        ...values,
-        salesOrder: id
+        // 关联的销售订单
+        related_order_id: id,
+        
+        // 客户信息
+        client_name: values.client_name,
+        client_info: values.client_info || {},
+        
+        // 服务类型与优先级
+        service_type: values.service_type,
+        priority: values.priority,
+        
+        // 问题信息
+        title: values.title,
+        description: values.description,
+        issue_category: values.issue_category,
+        severity: values.severity,
+        
+        // 附件
+        attachments: uploadedAttachments,
+        
+        // 指派的技术工程师（如果有选择）
+        assigned_engineer_id: values.assigned_engineer_id
       }
 
       const response = await ticketsAPI.create(ticketData)
 
       console.log('✅ 售后工单创建成功:', response.data)
 
-      message.success(`售后工单创建成功！工单号: ${response.data.data.ticketNumber}`)
+      message.success(`售后工单创建成功！工单号: ${response.data.data.ticket_number || response.data.data.ticketNumber}`)
 
+      // 关闭Modal并重置
       setTicketModalVisible(false)
       ticketForm.resetFields()
+      setUploadedAttachments([])
       
       // 刷新售后工单列表
       fetchServiceTickets()
@@ -227,7 +264,7 @@ const OrderDetails = () => {
       // 询问是否查看详情
       Modal.confirm({
         title: '售后工单创建成功',
-        content: `工单号: ${response.data.data.ticketNumber}。是否立即查看详情？`,
+        content: `工单号: ${response.data.data.ticket_number || response.data.data.ticketNumber}。是否立即查看详情？`,
         okText: '查看详情',
         cancelText: '留在当前页',
         onOk: () => {
@@ -581,52 +618,73 @@ const OrderDetails = () => {
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 24 }} wrap>
-        <Button 
-          icon={<ArrowLeftOutlined />} 
-          onClick={() => navigate('/orders')}
-        >
-          返回订单列表
-        </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => setStatusModalVisible(true)}
-        >
-          更新状态
-        </Button>
-        <Button
-          icon={<DollarOutlined />}
-          onClick={() => setPaymentModalVisible(true)}
-        >
-          添加付款记录
-        </Button>
-        <Button
-          type="primary"
-          icon={<ToolOutlined />}
-          onClick={handleOpenProductionModal}
-          disabled={!['Confirmed', 'In Production'].includes(order.status)}
-          style={{
-            background: 'linear-gradient(135deg, #ff9a56 0%, #ff6a00 100%)',
-            border: 'none'
-          }}
-        >
-          创建生产任务
-        </Button>
-        <Button
-          type="primary"
-          icon={<SendOutlined />}
-          onClick={handleOpenShipmentModal}
-          disabled={!['Confirmed', 'In Production', 'Shipped'].includes(order.status)}
-          style={{
-            background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
-            border: 'none'
-          }}
-        >
-          添加发货记录
-        </Button>
-      </Space>
+    <div style={{ padding: '24px' }}>
+      {/* 页面头部 */}
+      <div style={{ marginBottom: 24 }}>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space align="center">
+              <Button 
+                icon={<ArrowLeftOutlined />} 
+                onClick={() => navigate(-1)}
+              >
+                返回
+              </Button>
+              <div>
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                  {order.orderNumber}
+                </Typography.Title>
+                <Typography.Text type="secondary">订单详情</Typography.Text>
+              </div>
+            </Space>
+            <Space>
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => setStatusModalVisible(true)}
+              >
+                更新状态
+              </Button>
+              <Button
+                icon={<DollarOutlined />}
+                onClick={() => setPaymentModalVisible(true)}
+              >
+                添加付款记录
+              </Button>
+              <Button
+                type="primary"
+                icon={<ToolOutlined />}
+                onClick={handleOpenProductionModal}
+                disabled={!['Confirmed', 'In Production'].includes(order.status)}
+                style={{
+                  background: 'linear-gradient(135deg, #ff9a56 0%, #ff6a00 100%)',
+                  border: 'none'
+                }}
+              >
+                创建生产任务
+              </Button>
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={handleOpenShipmentModal}
+                disabled={!['Confirmed', 'In Production', 'Shipped'].includes(order.status)}
+                style={{
+                  background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)',
+                  border: 'none'
+                }}
+              >
+                添加发货记录
+              </Button>
+              <Button
+                icon={<CustomerServiceOutlined />}
+                onClick={handleOpenTicketModal}
+              >
+                创建售后工单
+              </Button>
+            </Space>
+          </Space>
+        </Space>
+      </div>
 
       {/* 订单基本信息 */}
       <Card title="订单信息" style={{ marginBottom: 16 }}>
@@ -916,6 +974,20 @@ const OrderDetails = () => {
             }
             key="4"
           >
+            <div style={{ marginBottom: 16 }}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleOpenTicketModal}
+                style={{
+                  background: 'linear-gradient(135deg, #1890ff 0%, #0050b3 100%)',
+                  border: 'none'
+                }}
+              >
+                快速创建售后工单
+              </Button>
+            </div>
+
             {serviceTickets.length > 0 ? (
               <Table
                 columns={ticketColumns}
@@ -930,7 +1002,7 @@ const OrderDetails = () => {
                 <CustomerServiceOutlined style={{ fontSize: 48, marginBottom: 16 }} />
                 <div>暂无售后记录</div>
                 <div style={{ marginTop: 8, fontSize: '12px' }}>
-                  可点击上方"快速创建售后工单"按钮
+                  点击上方"快速创建售后工单"按钮开始创建
                 </div>
               </div>
             )}
@@ -1541,41 +1613,45 @@ const OrderDetails = () => {
         title={
           <Space>
             <CustomerServiceOutlined style={{ color: '#1890ff', fontSize: 20 }} />
-            <span style={{ fontSize: 16, fontWeight: 'bold' }}>快速创建售后工单</span>
+            <span style={{ fontSize: 16, fontWeight: 'bold' }}>创建售后工单</span>
           </Space>
         }
         open={ticketModalVisible}
         onCancel={() => {
           setTicketModalVisible(false)
           ticketForm.resetFields()
+          setUploadedAttachments([])
         }}
         onOk={() => ticketForm.submit()}
         confirmLoading={creatingTicket}
         okText="创建工单"
         cancelText="取消"
-        width={700}
+        width={800}
       >
         <Form
           form={ticketForm}
           layout="vertical"
           onFinish={handleCreateTicket}
         >
+          {/* 基本信息 */}
+          <Divider orientation="left" style={{ marginTop: 0 }}>基本信息</Divider>
+          
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name="ticketType"
-                label="工单类型"
-                rules={[{ required: true, message: '请选择工单类型' }]}
+                name="service_type"
+                label="服务类型"
+                rules={[{ required: true, message: '请选择服务类型' }]}
               >
-                <Select placeholder="选择类型">
-                  <Option value="Installation">安装</Option>
-                  <Option value="Maintenance">维护</Option>
-                  <Option value="Repair">维修</Option>
-                  <Option value="Inspection">检查</Option>
-                  <Option value="Training">培训</Option>
-                  <Option value="Consultation">咨询</Option>
-                  <Option value="Complaint">投诉</Option>
-                  <Option value="Other">其他</Option>
+                <Select placeholder="选择服务类型">
+                  <Option value="维修">维修</Option>
+                  <Option value="备件">备件</Option>
+                  <Option value="技术咨询">技术咨询</Option>
+                  <Option value="安装调试">安装调试</Option>
+                  <Option value="设备巡检">设备巡检</Option>
+                  <Option value="培训">培训</Option>
+                  <Option value="投诉处理">投诉处理</Option>
+                  <Option value="其他">其他</Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -1585,31 +1661,41 @@ const OrderDetails = () => {
                 name="priority"
                 label="优先级"
                 rules={[{ required: true, message: '请选择优先级' }]}
-                initialValue="Normal"
               >
                 <Select placeholder="选择优先级">
-                  <Option value="Low">低</Option>
-                  <Option value="Normal">正常</Option>
-                  <Option value="High">高</Option>
-                  <Option value="Urgent">紧急</Option>
-                  <Option value="Critical">严重</Option>
+                  <Option value="低">低</Option>
+                  <Option value="正常">正常</Option>
+                  <Option value="高">高</Option>
+                  <Option value="紧急">紧急</Option>
+                  <Option value="危急">危急</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
+          {/* 客户信息 */}
+          <Divider orientation="left">客户信息</Divider>
+
           <Form.Item
-            name={['customer', 'name']}
-            label="客户姓名"
-            rules={[{ required: true, message: '请输入客户姓名' }]}
+            name="client_name"
+            label="客户名称"
+            rules={[{ required: true, message: '请输入客户名称' }]}
           >
-            <Input placeholder="客户姓名" />
+            <Input placeholder="客户名称" />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name={['customer', 'phone']}
+                name={['client_info', 'company']}
+                label="公司名称"
+              >
+                <Input placeholder="公司名称（可选）" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name={['client_info', 'phone']}
                 label="联系电话"
                 rules={[{ required: true, message: '请输入联系电话' }]}
               >
@@ -1618,61 +1704,151 @@ const OrderDetails = () => {
             </Col>
           </Row>
 
-          <Form.Item
-            name={['customer', 'company']}
-            label="公司名称"
-          >
-            <Input placeholder="公司名称" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name={['client_info', 'contact_person']}
+                label="联系人"
+              >
+                <Input placeholder="联系人姓名（可选）" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name={['client_info', 'email']}
+                label="电子邮件"
+              >
+                <Input placeholder="电子邮件（可选）" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          {/* 问题描述 */}
+          <Divider orientation="left">问题描述</Divider>
 
           <Form.Item
-            name={['issue', 'title']}
+            name="title"
             label="问题标题"
             rules={[{ required: true, message: '请输入问题标题' }]}
           >
-            <Input placeholder="简要描述问题" />
+            <Input 
+              placeholder="简要描述问题（例如：执行器无法正常启动）" 
+              maxLength={200}
+              showCount
+            />
           </Form.Item>
 
           <Form.Item
-            name={['issue', 'description']}
-            label="问题详情"
-            rules={[{ required: true, message: '请输入问题详情' }]}
+            name="description"
+            label="问题详细描述"
+            rules={[{ required: true, message: '请输入问题详细描述' }]}
+            extra="请详细描述问题现象、发生时间、客户反馈等信息"
           >
-            <TextArea rows={4} placeholder="详细描述问题情况" />
+            <TextArea 
+              rows={5} 
+              placeholder="请详细描述问题情况，包括：&#10;1. 问题现象&#10;2. 发生时间&#10;3. 故障频率&#10;4. 客户原始反馈&#10;5. 其他相关信息"
+            />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                name={['issue', 'category']}
-                label="问题类别"
+                name="issue_category"
+                label="问题分类"
               >
-                <Select placeholder="选择类别">
-                  <Option value="Hardware Failure">硬件故障</Option>
-                  <Option value="Software Issue">软件问题</Option>
-                  <Option value="Performance Problem">性能问题</Option>
-                  <Option value="Installation Issue">安装问题</Option>
-                  <Option value="User Error">用户错误</Option>
-                  <Option value="Other">其他</Option>
+                <Select placeholder="选择问题分类（可选）">
+                  <Option value="硬件故障">硬件故障</Option>
+                  <Option value="软件问题">软件问题</Option>
+                  <Option value="性能问题">性能问题</Option>
+                  <Option value="安装问题">安装问题</Option>
+                  <Option value="操作问题">操作问题</Option>
+                  <Option value="配件需求">配件需求</Option>
+                  <Option value="技术咨询">技术咨询</Option>
+                  <Option value="其他">其他</Option>
                 </Select>
               </Form.Item>
             </Col>
 
             <Col span={12}>
               <Form.Item
-                name={['issue', 'severity']}
+                name="severity"
                 label="严重程度"
-                initialValue="Moderate"
               >
-                <Select placeholder="选择严重程度">
-                  <Option value="Minor">轻微</Option>
-                  <Option value="Moderate">中等</Option>
-                  <Option value="Major">严重</Option>
-                  <Option value="Critical">紧急</Option>
+                <Select placeholder="选择严重程度（可选）">
+                  <Option value="轻微">轻微</Option>
+                  <Option value="中等">中等</Option>
+                  <Option value="严重">严重</Option>
+                  <Option value="危急">危急</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
+
+          {/* 附件上传 */}
+          <Divider orientation="left">附件上传</Divider>
+
+          <Form.Item
+            label="上传现场照片/视频"
+            extra="支持客户提供的现场照片、视频或其他相关文件"
+          >
+            <CloudUpload
+              onSuccess={(fileData) => {
+                const newAttachment = {
+                  file_name: fileData.name,
+                  file_url: fileData.url,
+                  file_type: fileData.name.match(/\.(jpg|jpeg|png|gif)$/i) ? 'image' : 
+                            fileData.name.match(/\.(mp4|avi|mov)$/i) ? 'video' : 'document',
+                  file_size: fileData.size || 0
+                }
+                setUploadedAttachments(prev => [...prev, newAttachment])
+                message.success(`文件 ${fileData.name} 上传成功`)
+              }}
+              onRemove={(file) => {
+                setUploadedAttachments(prev => 
+                  prev.filter(att => att.file_name !== file.name)
+                )
+              }}
+              multiple
+              listType="picture-card"
+            >
+              <div>
+                <UploadOutlined style={{ fontSize: 24 }} />
+                <div style={{ marginTop: 8 }}>点击上传</div>
+              </div>
+            </CloudUpload>
+            
+            {uploadedAttachments.length > 0 && (
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#666' }}>
+                已上传 {uploadedAttachments.length} 个文件
+              </div>
+            )}
+          </Form.Item>
+
+          {/* 指派技术工程师 */}
+          <Divider orientation="left">指派给技术工程师</Divider>
+
+          <Form.Item
+            name="assigned_engineer_id"
+            label="指派技术工程师"
+            extra="选择负责处理此工单的技术工程师（可选，也可以稍后再分配）"
+          >
+            <Select 
+              placeholder="选择技术工程师（可选）" 
+              allowClear
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+              }
+            >
+              {engineers.map(engineer => (
+                <Option key={engineer._id} value={engineer._id}>
+                  {engineer.full_name || engineer.name} - {engineer.department || '技术部'}
+                  {engineer.email && ` (${engineer.email})`}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
         </Form>
 
         {/* 显示订单关联信息 */}
@@ -1680,11 +1856,14 @@ const OrderDetails = () => {
           <Card 
             title="关联订单信息" 
             size="small" 
-            style={{ marginTop: 16, background: '#f0f5ff' }}
+            style={{ marginTop: 16, background: '#f0f5ff', borderRadius: 8 }}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="small">
               <div>
                 <strong>订单号:</strong> {order.orderNumber}
+              </div>
+              <div>
+                <strong>项目名称:</strong> {order.projectSnapshot?.projectName || '-'}
               </div>
               <div>
                 <strong>订单日期:</strong> {dayjs(order.orderDate).format('YYYY-MM-DD')}

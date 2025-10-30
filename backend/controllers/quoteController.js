@@ -9,12 +9,15 @@ const { calculatePrice } = require('../utils/pricing');
 // @access  Private
 exports.getQuotes = async (req, res) => {
   try {
-    const { status, project } = req.query;
+    const { status, project, page = 1, limit = 10 } = req.query;
     
     let query = {};
     
     if (status) query.status = status;
     if (project) query.project = project;
+
+    // 分页
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const quotes = await Quote.find(query)
       .populate('project', 'projectNumber projectName client')
@@ -22,11 +25,22 @@ exports.getQuotes = async (req, res) => {
       .populate('approvedBy', 'name email')
       .populate('items.product')
       .populate('items.accessory')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // 获取总数
+    const total = await Quote.countDocuments(query);
 
     res.json({
-      count: quotes.length,
-      quotes
+      success: true,
+      data: quotes,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

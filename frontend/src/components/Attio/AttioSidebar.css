@@ -1,0 +1,110 @@
+/**
+ * AttioSidebar CSS - Pixel-Perfect Attio Sidebar Styles
+ * 
+ * Features:
+ * - Background: #FBFBFA
+ * - Non-selected: gray icons and text (#8A8A87)
+ * - Hover: background #F1F1F0, black icons and text
+ * - Active: background #F1F1F0, black icons and text, 2px purple left border
+ */
+
+/* Sidebar background */
+.attio-sidebar .ant-menu {
+  background: transparent !important;
+  border-right: none !important;
+}
+
+/* Menu items - base state */
+.attio-sidebar .ant-menu-item,
+.attio-sidebar .ant-menu-submenu-title {
+  border-radius: 6px;
+  margin: 4px 8px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  color: #8A8A87 !important;              /* Gray text */
+  font-size: 15px;
+  font-weight: 400;
+  padding: 0 12px !important;
+  position: relative;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Menu item icons - base state */
+.attio-sidebar .ant-menu-item .anticon,
+.attio-sidebar .ant-menu-submenu-title .anticon {
+  color: #8A8A87 !important;              /* Gray icons */
+  font-size: 18px;
+  transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover state */
+.attio-sidebar .ant-menu-item:hover,
+.attio-sidebar .ant-menu-submenu-title:hover {
+  background-color: #F1F1F0 !important;   /* Light gray background */
+  color: #1A1A1A !important;              /* Black text */
+}
+
+.attio-sidebar .ant-menu-item:hover .anticon,
+.attio-sidebar .ant-menu-submenu-title:hover .anticon {
+  color: #1A1A1A !important;              /* Black icons on hover */
+}
+
+/* Selected/Active state */
+.attio-sidebar .ant-menu-item-selected,
+.attio-sidebar .ant-menu-item-active {
+  background-color: #F1F1F0 !important;   /* Light gray background */
+  color: #1A1A1A !important;              /* Black text */
+}
+
+.attio-sidebar .ant-menu-item-selected .anticon,
+.attio-sidebar .ant-menu-item-active .anticon {
+  color: #1A1A1A !important;              /* Black icons */
+}
+
+/* Purple left border for selected item */
+.attio-sidebar .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 20px;
+  background-color: #6E62E4;              /* Purple bar */
+  border-radius: 0 2px 2px 0;
+}
+
+/* Remove default Ant Design active border */
+.attio-sidebar .ant-menu-item-selected::after,
+.attio-sidebar .ant-menu-item::after {
+  border-right: none !important;
+}
+
+/* Submenu items */
+.attio-sidebar .ant-menu-sub {
+  background: transparent !important;
+}
+
+.attio-sidebar .ant-menu-sub .ant-menu-item {
+  padding-left: 48px !important;
+}
+
+/* Remove default highlights */
+.attio-sidebar .ant-menu-item-selected,
+.attio-sidebar .ant-menu-item-active {
+  border-right: none !important;
+}
+
+/* Collapsed state - hide text but keep icons */
+.attio-sidebar.collapsed .ant-menu-item,
+.attio-sidebar.collapsed .ant-menu-submenu-title {
+  padding: 0 !important;
+  text-align: center;
+  justify-content: center;
+}
+
+.attio-sidebar.collapsed .ant-menu-item .anticon,
+.attio-sidebar.collapsed .ant-menu-submenu-title .anticon {
+  margin-right: 0 !important;
+}
+

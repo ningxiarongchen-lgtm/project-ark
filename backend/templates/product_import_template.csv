@@ -1,0 +1,4 @@
+modelNumber,series,description,torqueValue,torqueMin,torqueMax,operatingPressure,pressureMin,pressureMax,rotation,tempMin,tempMax,length,width,height,weight,portSize,mountingType,materialBody,materialPiston,materialSeal,cycleLife,features,basePrice,currency,inStock,leadTime,category,tags,isActive,notes
+SF-100,SF-Series,标准气动执行器,100,80,120,6,4,8,90°,-20,80,200,150,180,5.5,G1/4,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,"耐用,高效,防腐",1500,USD,true,14,Standard,"气动,执行器",true,适用于标准应用场景
+SF-200,SF-Series,高扭矩气动执行器,200,160,240,6,4,8,90°,-20,80,250,180,200,8.2,G3/8,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,"高扭矩,耐用",2800,USD,true,14,High Torque,"气动,高扭矩",true,适用于重载应用
+

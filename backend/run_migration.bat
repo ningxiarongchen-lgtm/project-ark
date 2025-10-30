@@ -5,7 +5,7 @@ REM
 REM 用途：快速执行价格字段迁移
 REM 使用：run_migration.bat
 REM
-REM @author C-MAX 技术团队
+REM @author Project Ark 技术团队
 REM @date 2025-10-27
 REM ==========================================
 

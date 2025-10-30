@@ -5,7 +5,7 @@
  *       保留原有的 base_price 字段
  * 执行：node migration_price_tiers.js
  * 
- * @author C-MAX 技术团队
+ * @author Project Ark 技术团队
  * @date 2025-10-28
  * @version 2.0.0
  */
@@ -55,7 +55,7 @@ const stats = {
  */
 async function connectDatabase() {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/project_ark';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax';
     
     log.info(`正在连接数据库: ${mongoUri}`);
     

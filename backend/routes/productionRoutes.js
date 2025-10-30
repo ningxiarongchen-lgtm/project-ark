@@ -1,11 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const productionController = require('../controllers/productionController');
+const bomController = require('../controllers/bomController');
 const { protect, authorize } = require('../middleware/auth');
 const { checkProductionOrderOwnership } = require('../middleware/ownership');
 
 // 所有路由都需要认证
 router.use(protect);
+
+/**
+ * @route   POST /api/production/from-project/:projectId
+ * @desc    从项目创建销售订单和生产订单（确认收款后）
+ * @access  Private (Sales Engineer only)
+ */
+router.post('/from-project/:projectId', authorize('Sales Engineer', 'Administrator'), productionController.createProductionOrderFromProject);
 
 /**
  * @route   POST /api/production/from-order/:salesOrderId
@@ -70,6 +78,27 @@ router.post('/:id/assign-resources', authorize('Production Planner', 'Administra
  * @access  Private
  */
 router.delete('/:id', authorize('Administrator'), productionController.deleteProductionOrder);
+
+/**
+ * @route   POST /api/production/:id/explode-bom
+ * @desc    展开生产订单的BOM
+ * @access  Private (Production Planner)
+ */
+router.post('/:id/explode-bom', authorize('Production Planner', 'Administrator'), bomController.explodeBOM);
+
+/**
+ * @route   POST /api/production/:id/generate-procurement
+ * @desc    生成采购需求
+ * @access  Private (Production Planner)
+ */
+router.post('/:id/generate-procurement', authorize('Production Planner', 'Administrator'), bomController.generateProcurementRequest);
+
+/**
+ * @route   POST /api/production/:id/mark-awaiting-qc
+ * @desc    生产完成，标记为待质检
+ * @access  Private (Production Planner)
+ */
+router.post('/:id/mark-awaiting-qc', authorize('Production Planner', 'Administrator'), productionController.markAsAwaitingQC);
 
 module.exports = router;
 

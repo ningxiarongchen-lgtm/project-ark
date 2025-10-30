@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -35,6 +36,10 @@ const actuatorManagementRoutes = require('./routes/actuatorManagementRoutes');
 const accessoryManagementRoutes = require('./routes/accessoryManagementRoutes');
 const supplierManagementRoutes = require('./routes/supplierManagementRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
+// 合同管理路由
+const contractRoutes = require('./routes/contract');
+// 产品目录路由（销售经理专用）
+const catalogRoutes = require('./routes/catalog.routes');
 
 // 测试环境专用路由（仅在测试环境加载）
 let testingRoutes = null;
@@ -71,6 +76,24 @@ app.use(cors({
 // 🔒 Cookie解析中间件（用于读取HttpOnly Cookie中的token）
 app.use(cookieParser());
 
+// 🔒 全局 Rate Limiting（防止暴力攻击和 DoS）
+// 在开发和测试环境中放宽限制
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15分钟窗口
+  max: process.env.NODE_ENV === 'production' ? 200 : 10000, // 开发/测试环境放宽到10000次
+  message: {
+    success: false,
+    message: '请求过于频繁，请稍后再试'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // 跳过成功的健康检查请求
+  skip: (req) => req.path === '/api/health'
+});
+
+// 应用到所有 /api 路由（生产环境启用，开发环境也启用但限制很宽松）
+app.use('/api/', apiLimiter);
+
 // Body解析中间件（限制请求体大小，防止DoS攻击）
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -78,6 +101,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // 静态文件服务 - 用于访问本地上传的文件
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/templates', express.static(path.join(__dirname, 'templates')));
 
 // Logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -112,6 +136,10 @@ app.use('/api/data-management/actuators', actuatorManagementRoutes);
 app.use('/api/data-management/accessories', accessoryManagementRoutes);
 app.use('/api/data-management/suppliers', supplierManagementRoutes);
 app.use('/api/data-management/users', userManagementRoutes);
+// 合同管理API路由
+app.use('/api/contracts', contractRoutes);
+// 产品目录API路由（销售经理专用，无价格信息）
+app.use('/api/catalog', catalogRoutes);
 
 // 测试环境专用API路由（仅在测试环境可用）
 if (testingRoutes) {
@@ -123,7 +151,7 @@ if (testingRoutes) {
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Project Ark - C-MAX Platform API is running',
+    message: 'Project Ark Platform API is running',
     timestamp: new Date().toISOString()
   });
 });
@@ -131,7 +159,7 @@ app.get('/api/health', (req, res) => {
 // Welcome route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Welcome to Project Ark - C-MAX Platform API',
+    message: 'Welcome to Project Ark Platform API',
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
@@ -160,24 +188,40 @@ app.use((req, res) => {
 // Error handler (must be last)
 app.use(errorHandler);
 
-// Start server
-const PORT = process.env.PORT || 5000;
+// Export app for testing
+module.exports = app;
 
-app.listen(PORT, () => {
-  console.log(`
+// Start server (only skip if running in automated test suite with SKIP_SERVER_START=true)
+if (process.env.SKIP_SERVER_START !== 'true') {
+  const PORT = process.env.PORT || 5001;
+  const http = require('http');
+  const { initializeSocket } = require('./services/socketService');
+
+  // Create HTTP server
+  const httpServer = http.createServer(app);
+
+  // Initialize Socket.IO
+  initializeSocket(httpServer);
+
+  httpServer.listen(PORT, () => {
+    console.log(`
 ╔════════════════════════════════════════════════════════╗
-║        Project Ark - C-MAX Platform API               ║
+║        Project Ark Platform API                        ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}                             ║
 ║   Server running on port ${PORT}                        ║
 ║   API: http://localhost:${PORT}                        ║
+║   WebSocket: ws://localhost:${PORT}                    ║
 ╚════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.log('UNHANDLED REJECTION! Shutting down...');
-  console.log(err.name, err.message);
-  process.exit(1);
-});
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err) => {
+    console.log('UNHANDLED REJECTION! Shutting down...');
+    console.log(err.name, err.message);
+    httpServer.close(() => {
+      process.exit(1);
+    });
+  });
+}
 

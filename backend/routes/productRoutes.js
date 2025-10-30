@@ -6,15 +6,25 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
-  searchProducts
+  searchProducts,
+  bulkImportProducts
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
+const { dataUpload } = require('../middleware/upload');
 
 // All routes are protected
 router.use(protect);
 
 // Search products (selection engine)
 router.post('/search', searchProducts);
+
+// Bulk import products
+router.post(
+  '/import',
+  authorize('Administrator', 'Technical Engineer'),
+  dataUpload.single('productFile'),
+  bulkImportProducts
+);
 
 // CRUD operations
 router.route('/')

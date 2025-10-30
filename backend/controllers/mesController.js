@@ -25,8 +25,8 @@ exports.getWorkCenters = async (req, res) => {
     if (is_active !== undefined) query.is_active = is_active === 'true';
     
     const workCenters = await WorkCenter.find(query)
-      .populate('supervisor', 'username email')
-      .populate('operators', 'username email')
+      .populate('supervisor', 'full_name phone')
+      .populate('operators', 'full_name phone')
       .sort({ code: 1 });
     
     res.status(200).json({
@@ -49,8 +49,8 @@ exports.getWorkCenters = async (req, res) => {
 exports.getWorkCenterById = async (req, res) => {
   try {
     const workCenter = await WorkCenter.findById(req.params.id)
-      .populate('supervisor', 'username email role')
-      .populate('operators', 'username email role');
+      .populate('supervisor', 'full_name phone role')
+      .populate('operators', 'full_name phone role');
     
     if (!workCenter) {
       return res.status(404).json({
@@ -190,7 +190,7 @@ exports.getRoutings = async (req, res) => {
     const routings = await Routing.find(query)
       .populate('product.product_id', 'model_base version')
       .populate('operations.work_center', 'code name type')
-      .populate('created_by', 'username email')
+      .populate('created_by', 'full_name phone')
       .sort({ createdAt: -1 });
     
     res.status(200).json({
@@ -216,10 +216,10 @@ exports.getRoutingById = async (req, res) => {
       .populate('product.product_id', 'model_base version')
       .populate('operations.work_center', 'code name type workshop')
       .populate('operations.alternative_work_centers', 'code name type')
-      .populate('created_by', 'username email')
-      .populate('last_modified_by', 'username email')
-      .populate('approval.approver', 'username email')
-      .populate('release.released_by', 'username email');
+      .populate('created_by', 'full_name phone')
+      .populate('last_modified_by', 'full_name phone')
+      .populate('approval.approver', 'full_name phone')
+      .populate('release.released_by', 'full_name phone');
     
     if (!routing) {
       return res.status(404).json({
@@ -253,7 +253,7 @@ exports.createRouting = async (req, res) => {
     const populatedRouting = await Routing.findById(routing._id)
       .populate('product.product_id', 'model_base version')
       .populate('operations.work_center', 'code name type')
-      .populate('created_by', 'username email');
+      .populate('created_by', 'full_name phone');
     
     res.status(201).json({
       success: true,
@@ -391,7 +391,7 @@ exports.getWorkOrders = async (req, res) => {
       .populate('product.product_id', 'model_base version')
       .populate('work_center', 'code name type')
       .populate('production_order', 'productionOrderNumber status')
-      .populate('assigned_operators.operator', 'username email')
+      .populate('assigned_operators.operator', 'full_name phone')
       .sort({ 'plan.planned_start_time': 1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -424,11 +424,11 @@ exports.getWorkOrderById = async (req, res) => {
       .populate('work_center', 'code name type workshop location')
       .populate('production_order', 'productionOrderNumber status priority')
       .populate('sales_order', 'orderNumber')
-      .populate('assigned_operators.operator', 'username email role')
-      .populate('execution_logs.operator', 'username email')
-      .populate('quality_checks.checked_by', 'username email')
-      .populate('issues.reported_by', 'username email')
-      .populate('created_by', 'username email');
+      .populate('assigned_operators.operator', 'full_name phone role')
+      .populate('execution_logs.operator', 'full_name phone')
+      .populate('quality_checks.checked_by', 'full_name phone')
+      .populate('issues.reported_by', 'full_name phone')
+      .populate('created_by', 'full_name phone');
     
     if (!workOrder) {
       return res.status(404).json({

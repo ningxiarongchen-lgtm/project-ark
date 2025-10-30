@@ -69,8 +69,6 @@ const PurchaseOrderManagement = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState(null);
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // 筛选状态
   const [statusFilter, setStatusFilter] = useState('');
@@ -127,10 +125,9 @@ const PurchaseOrderManagement = () => {
     }
   };
 
-  // 查看订单详情
+  // 查看订单详情 - 导航到详情页
   const handleViewDetail = (order) => {
-    setSelectedOrder(order);
-    setDetailModalVisible(true);
+    navigate(`/purchase-orders/${order._id}`);
   };
 
   // 删除采购订单
@@ -159,12 +156,15 @@ const PurchaseOrderManagement = () => {
 
   // 状态配置
   const statusConfig = {
-    draft: { color: 'default', text: '草稿' },
-    pending: { color: 'orange', text: '待审核' },
-    confirmed: { color: 'blue', text: '已确认' },
-    shipped: { color: 'cyan', text: '已发货' },
-    received: { color: 'green', text: '已收货' },
-    cancelled: { color: 'red', text: '已取消' }
+    '草稿 (Draft)': { color: 'default', text: '草稿' },
+    '待处理 (Pending)': { color: 'default', text: '待处理' },
+    '待拟定合同 (Pending Contract Draft)': { color: 'orange', text: '待拟定合同' },
+    '待商务审核 (Pending Commercial Review)': { color: 'blue', text: '待商务审核' },
+    '待供应商确认 (Pending Supplier Confirmation)': { color: 'cyan', text: '待供应商确认' },
+    '执行中 (In Progress)': { color: 'processing', text: '执行中' },
+    '已发货 (Shipped)': { color: 'purple', text: '已发货' },
+    '已收货 (Received)': { color: 'success', text: '已收货' },
+    '已取消 (Cancelled)': { color: 'error', text: '已取消' }
   };
 
   // 表格列定义
@@ -202,36 +202,9 @@ const PurchaseOrderManagement = () => {
       key: 'status',
       width: 140,
       align: 'center',
-      render: (status, record) => {
+      render: (status) => {
         const config = statusConfig[status] || { color: 'default', text: status };
-        return (
-          <Select
-            value={status}
-            onChange={(value) => handleUpdateStatus(record._id, value)}
-            style={{ width: 120 }}
-            size="small"
-            disabled={['received', 'cancelled'].includes(status)}
-          >
-            <Select.Option value="draft">
-              <Tag color="default">草稿</Tag>
-            </Select.Option>
-            <Select.Option value="pending">
-              <Tag color="orange">待审核</Tag>
-            </Select.Option>
-            <Select.Option value="confirmed">
-              <Tag color="blue">已确认</Tag>
-            </Select.Option>
-            <Select.Option value="shipped">
-              <Tag color="cyan">已发货</Tag>
-            </Select.Option>
-            <Select.Option value="received">
-              <Tag color="green">已收货</Tag>
-            </Select.Option>
-            <Select.Option value="cancelled">
-              <Tag color="red">已取消</Tag>
-            </Select.Option>
-          </Select>
-        );
+        return <Tag color={config.color}>{config.text}</Tag>;
       }
     },
     {
@@ -274,12 +247,12 @@ const PurchaseOrderManagement = () => {
             type="link"
             icon={<EditOutlined />}
             onClick={() => navigate(`/purchase-orders/edit/${record._id}`)}
-            disabled={['received', 'cancelled'].includes(record.status)}
+            disabled={['已收货 (Received)', '已取消 (Cancelled)'].includes(record.status)}
             size="small"
           >
             编辑
           </Button>
-          {hasAnyRole(['Administrator']) && record.status === 'draft' && (
+          {hasAnyRole(['Administrator']) && record.status === '草稿 (Draft)' && (
             <Popconfirm
               title="确定删除此采购订单吗？"
               onConfirm={() => handleDelete(record._id)}
@@ -365,17 +338,20 @@ const PurchaseOrderManagement = () => {
 
             <Select
               placeholder="筛选状态"
-              style={{ width: 140 }}
+              style={{ width: 160 }}
               allowClear
               onChange={setStatusFilter}
               value={statusFilter || undefined}
             >
-              <Select.Option value="draft">草稿</Select.Option>
-              <Select.Option value="pending">待审核</Select.Option>
-              <Select.Option value="confirmed">已确认</Select.Option>
-              <Select.Option value="shipped">已发货</Select.Option>
-              <Select.Option value="received">已收货</Select.Option>
-              <Select.Option value="cancelled">已取消</Select.Option>
+              <Select.Option value="草稿 (Draft)">草稿</Select.Option>
+              <Select.Option value="待处理 (Pending)">待处理</Select.Option>
+              <Select.Option value="待拟定合同 (Pending Contract Draft)">待拟定合同</Select.Option>
+              <Select.Option value="待商务审核 (Pending Commercial Review)">待商务审核</Select.Option>
+              <Select.Option value="待供应商确认 (Pending Supplier Confirmation)">待供应商确认</Select.Option>
+              <Select.Option value="执行中 (In Progress)">执行中</Select.Option>
+              <Select.Option value="已发货 (Shipped)">已发货</Select.Option>
+              <Select.Option value="已收货 (Received)">已收货</Select.Option>
+              <Select.Option value="已取消 (Cancelled)">已取消</Select.Option>
             </Select>
 
             <Select
@@ -427,246 +403,6 @@ const PurchaseOrderManagement = () => {
         />
       </Card>
 
-      {/* 订单详情Modal */}
-      <Modal
-        title={`采购订单详情 - ${selectedOrder?.order_number || ''}`}
-        open={detailModalVisible}
-        onCancel={() => setDetailModalVisible(false)}
-        width={900}
-        footer={[
-          <Button key="close" onClick={() => setDetailModalVisible(false)}>
-            关闭
-          </Button>,
-          <Button
-            key="edit"
-            type="primary"
-            onClick={() => {
-              setDetailModalVisible(false);
-              navigate(`/purchase-orders/edit/${selectedOrder._id}`);
-            }}
-            disabled={
-              selectedOrder &&
-              ['received', 'cancelled'].includes(selectedOrder.status)
-            }
-          >
-            编辑订单
-          </Button>
-        ]}
-      >
-        {selectedOrder && (
-          <div>
-            <Descriptions bordered column={2} size="small">
-              <Descriptions.Item label="订单号" span={2}>
-                <strong>{selectedOrder.order_number}</strong>
-              </Descriptions.Item>
-              <Descriptions.Item label="供应商">
-                {selectedOrder.supplier_id?.name}
-              </Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={statusConfig[selectedOrder.status]?.color}>
-                  {statusConfig[selectedOrder.status]?.text}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="订单日期">
-                {selectedOrder.order_date
-                  ? dayjs(selectedOrder.order_date).format('YYYY-MM-DD')
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="预计交货">
-                {selectedOrder.expected_delivery_date
-                  ? dayjs(selectedOrder.expected_delivery_date).format(
-                      'YYYY-MM-DD'
-                    )
-                  : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="付款条款" span={2}>
-                {selectedOrder.payment_terms || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="收货地址" span={2}>
-                {selectedOrder.shipping_address || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="联系人">
-                {selectedOrder.contact_person || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="联系电话">
-                {selectedOrder.contact_phone || '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="创建人">
-                {selectedOrder.created_by?.username}
-              </Descriptions.Item>
-              <Descriptions.Item label="创建时间">
-                {dayjs(selectedOrder.createdAt).format('YYYY-MM-DD HH:mm')}
-              </Descriptions.Item>
-              <Descriptions.Item label="订单备注" span={2}>
-                {selectedOrder.notes || '-'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            <Divider>订单明细</Divider>
-
-            <Table
-              columns={[
-                {
-                  title: '产品名称',
-                  dataIndex: 'product_name',
-                  key: 'product_name'
-                },
-                {
-                  title: '产品编码',
-                  dataIndex: 'product_code',
-                  key: 'product_code'
-                },
-                {
-                  title: '规格',
-                  dataIndex: 'specification',
-                  key: 'specification'
-                },
-                {
-                  title: '数量',
-                  dataIndex: 'quantity',
-                  key: 'quantity',
-                  align: 'center'
-                },
-                {
-                  title: '单位',
-                  dataIndex: 'unit',
-                  key: 'unit',
-                  align: 'center'
-                },
-                {
-                  title: '单价',
-                  dataIndex: 'unit_price',
-                  key: 'unit_price',
-                  align: 'right',
-                  render: (price) => `¥${price.toLocaleString()}`
-                },
-                {
-                  title: '小计',
-                  dataIndex: 'subtotal',
-                  key: 'subtotal',
-                  align: 'right',
-                  render: (subtotal) => (
-                    <strong style={{ color: '#f5222d' }}>
-                      ¥{subtotal.toLocaleString()}
-                    </strong>
-                  )
-                }
-              ]}
-              dataSource={selectedOrder.items}
-              rowKey={(record, index) => index}
-              pagination={false}
-              size="small"
-              summary={() => (
-                <Table.Summary>
-                  <Table.Summary.Row>
-                    <Table.Summary.Cell colSpan={6} align="right">
-                      <strong>订单总额：</strong>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell align="right">
-                      <strong style={{ color: '#f5222d', fontSize: '16px' }}>
-                        ¥{selectedOrder.total_amount?.toLocaleString()}
-                      </strong>
-                    </Table.Summary.Cell>
-                  </Table.Summary.Row>
-                </Table.Summary>
-              )}
-            />
-            
-            <Divider>采购文件</Divider>
-            
-            {canAccess && (
-              <div style={{ marginBottom: 16 }}>
-                <CloudUpload
-                  onSuccess={async (fileData) => {
-                    try {
-                      await axios.post(`/api/purchase-orders/${selectedOrder._id}/add-file`, {
-                        file_name: fileData.name,
-                        file_url: fileData.url,
-                      });
-                      message.success('文件已上传！');
-                      // 刷新订单列表
-                      fetchPurchaseOrders();
-                      // 更新selectedOrder以显示新文件
-                      const response = await purchaseOrdersAPI.getById(selectedOrder._id);
-                      setSelectedOrder(response.data.data);
-                    } catch (error) {
-                      message.error('上传文件失败: ' + (error.response?.data?.message || error.message));
-                    }
-                  }}
-                >
-                  <Button icon={<UploadOutlined />} type="dashed" block>
-                    上传采购文件
-                  </Button>
-                </CloudUpload>
-              </div>
-            )}
-            
-            {selectedOrder.documents && selectedOrder.documents.length > 0 ? (
-              <Table
-                dataSource={selectedOrder.documents}
-                rowKey={(record, index) => `doc_${index}`}
-                pagination={false}
-                size="small"
-                columns={[
-                  {
-                    title: '文件名',
-                    dataIndex: 'name',
-                    key: 'name',
-                    render: (text) => (
-                      <Space>
-                        <FileTextOutlined style={{ color: '#1890ff' }} />
-                        {text}
-                      </Space>
-                    )
-                  },
-                  {
-                    title: '上传时间',
-                    dataIndex: 'uploadedAt',
-                    key: 'uploadedAt',
-                    width: 180,
-                    render: (date) => date ? dayjs(date).format('YYYY-MM-DD HH:mm') : '-'
-                  },
-                  {
-                    title: '操作',
-                    key: 'actions',
-                    width: 150,
-                    render: (_, record) => (
-                      <Space>
-                        <Button
-                          type="link"
-                          icon={<EyeOutlined />}
-                          size="small"
-                          onClick={() => window.open(record.url, '_blank')}
-                        >
-                          查看
-                        </Button>
-                        <Button
-                          type="link"
-                          icon={<DownloadOutlined />}
-                          size="small"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = record.url;
-                            link.download = record.name;
-                            link.click();
-                          }}
-                        >
-                          下载
-                        </Button>
-                      </Space>
-                    )
-                  }
-                ]}
-              />
-            ) : (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: '#999', background: '#fafafa', borderRadius: '4px' }}>
-                <FolderOutlined style={{ fontSize: 32, marginBottom: 8 }} />
-                <div>暂无采购文件</div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };
