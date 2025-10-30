@@ -1,0 +1,23 @@
+{
+  "name": "project-ark",
+  "version": "1.0.0",
+  "description": "气动执行器智能选型与全生命周期管理系统",
+  "private": true,
+  "scripts": {
+    "docs:health-check": "node ./scripts/check_docs_freshness.js"
+  },
+  "keywords": [
+    "actuators",
+    "pneumatic",
+    "selection",
+    "erp",
+    "manufacturing"
+  ],
+  "author": "Project Ark Team",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+}
+

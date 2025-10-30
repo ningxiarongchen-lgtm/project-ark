@@ -485,6 +485,16 @@ tail -f backend/server.log
 
 ---
 
+## 🩺 文档健康检查
+
+定期运行以下命令，确保文档保持最新：
+```bash
+npm run docs:health-check
+```
+详见: `scripts/README.md`
+
+---
+
 **欢迎来到 Project Ark！** 🚀
 
 © 2025 Project Ark Team. All Rights Reserved.
