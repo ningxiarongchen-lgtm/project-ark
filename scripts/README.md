@@ -103,20 +103,15 @@ npm run docs:health-check
 
 #### 融入工作流
 
-**方案1: 添加到 CI/CD**
-```yaml
-# .github/workflows/docs-check.yml
-name: Docs Health Check
-on:
-  schedule:
-    - cron: '0 0 1 * *'  # 每月1号运行
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: npm run docs:health-check
-```
+**方案1: 添加到 CI/CD** ✅ 已实现
+
+GitHub Actions 工作流已配置！查看 `.github/workflows/docs-health-check.yml`
+
+特性：
+- ✅ 每月1号自动运行
+- ✅ 支持手动触发
+- ✅ PR 涉及文档时自动检查
+- ✅ 详细文档: `.github/workflows/README.md`
 
 **方案2: Git Pre-commit Hook**
 ```bash

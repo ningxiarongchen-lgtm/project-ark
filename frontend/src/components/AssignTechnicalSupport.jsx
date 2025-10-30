@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button, Modal, Form, Select, Input, message, Spin, App } from 'antd'
+import { Button, Modal, Form, Select, Input, message, Spin } from 'antd'
 import { UserAddOutlined } from '@ant-design/icons'
 import { projectsAPI } from '../services/api'
 
@@ -11,7 +11,6 @@ const { Option } = Select
  * 用于销售经理/销售工程师将项目指派给技术工程师进行选型
  */
 const AssignTechnicalSupport = ({ project, onSuccess }) => {
-  const { message: antdMessage } = App.useApp()
   const [modalVisible, setModalVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [engineers, setEngineers] = useState([])
@@ -26,7 +25,7 @@ const AssignTechnicalSupport = ({ project, onSuccess }) => {
       setEngineers(response.data.data || [])
     } catch (error) {
       console.error('获取技术工程师列表失败:', error)
-      antdMessage.error('获取技术工程师列表失败')
+      message.error('获取技术工程师列表失败')
     } finally {
       setLoadingEngineers(false)
     }
@@ -49,7 +48,7 @@ const AssignTechnicalSupport = ({ project, onSuccess }) => {
         notes: values.notes || ''
       })
 
-      antdMessage.success('技术工程师指派成功！项目状态已更新为"选型中"')
+      message.success('技术工程师指派成功！项目状态已更新为"选型中"')
       setModalVisible(false)
       form.resetFields()
       
@@ -59,7 +58,7 @@ const AssignTechnicalSupport = ({ project, onSuccess }) => {
       }
     } catch (error) {
       console.error('指派失败:', error)
-      antdMessage.error(error.response?.data?.message || '指派技术工程师失败')
+      message.error(error.response?.data?.message || '指派技术工程师失败')
     } finally {
       setLoading(false)
     }

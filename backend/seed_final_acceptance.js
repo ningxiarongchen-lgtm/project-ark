@@ -446,6 +446,7 @@ async function seedActuators() {
             const actuator = {
               model_base: row.model_base || row.型号,
               series: row.series || row.系列,
+              mechanism: '齿轮齿条',  // AT/GY系列都是齿轮齿条机构
               body_size: row.body_size || row.机身尺寸,
               action_type: row.action_type || row.作用方式,
               base_price_normal: parseFloat(row.base_price_normal || row.常温价格 || 0),
@@ -511,126 +512,366 @@ async function seedActuators() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// Part E: 创建手动操作装置数据
+// Part D.2: 导入SF系列执行器数据
 // ═══════════════════════════════════════════════════════════════════════
 
-const manualOverrideData = [
-  {
-    model: 'MO-100',
-    name: '手动操作装置 100型',
-    compatible_body_sizes: ['100'],
-    price: 580,
-    application: '紧急情况下手动操作阀门',
-    specifications: {
-      operation_type: '手轮',
-      gear_ratio: '1:1',
-      output_torque: 50,
-      weight: 2.5,
-      mounting_position: '顶部',
-      material: '铸铁',
-      protection_class: 'IP65'
-    },
-    dimensions: {
-      length: 150,
-      width: 100,
-      height: 80
-    }
-  },
-  {
-    model: 'MO-150',
-    name: '手动操作装置 150型',
-    compatible_body_sizes: ['150'],
-    price: 680,
-    application: '紧急情况下手动操作阀门',
-    specifications: {
-      operation_type: '手轮',
-      gear_ratio: '1:1',
-      output_torque: 80,
-      weight: 3.8,
-      mounting_position: '顶部',
-      material: '铸铁',
-      protection_class: 'IP65'
-    },
-    dimensions: {
-      length: 180,
-      width: 120,
-      height: 100
-    }
-  },
-  {
-    model: 'MO-200',
-    name: '手动操作装置 200型',
-    compatible_body_sizes: ['200'],
-    price: 880,
-    application: '紧急情况下手动操作阀门',
-    specifications: {
-      operation_type: '手轮',
-      gear_ratio: '2:1',
-      output_torque: 120,
-      weight: 5.2,
-      mounting_position: '顶部',
-      material: '铸铁',
-      protection_class: 'IP65'
-    },
-    dimensions: {
-      length: 220,
-      width: 150,
-      height: 120
-    }
-  },
-  {
-    model: 'MO-250',
-    name: '手动操作装置 250型',
-    compatible_body_sizes: ['250'],
-    price: 1080,
-    application: '紧急情况下手动操作阀门',
-    specifications: {
-      operation_type: '手轮',
-      gear_ratio: '2:1',
-      output_torque: 180,
-      weight: 7.5,
-      mounting_position: '顶部',
-      material: '球墨铸铁',
-      protection_class: 'IP65'
-    },
-    dimensions: {
-      length: 260,
-      width: 180,
-      height: 150
-    }
-  }
-];
-
-async function seedManualOverrides() {
+async function seedSFActuators() {
   console.log('\n╔═══════════════════════════════════════════════════════════════╗');
-  console.log('║  Part E: 创建手动操作装置数据                               ║');
+  console.log('║  Part D.2: 导入SF系列执行器数据                            ║');
   console.log('╚═══════════════════════════════════════════════════════════════╝\n');
   
   try {
-    const created = await ManualOverride.create(manualOverrideData);
+    const csvPath = path.join(__dirname, 'data_imports', 'sf_actuators_data.csv');
     
-    console.log(`✅ 成功创建 ${created.length} 个手动操作装置型号！\n`);
+    if (!fs.existsSync(csvPath)) {
+      console.log('⚠️  未找到SF系列CSV文件，跳过SF系列数据导入');
+      console.log(`   期望路径: ${csvPath}\n`);
+      return [];
+    }
     
-    // 打印信息
-    console.log('╔═══════════════════════════════════════════════════════════╗');
-    console.log('║                  手动操作装置列表                         ║');
-    console.log('╠═══════════════════════════════════════════════════════════╣');
-    console.log('║ 型号      │ 兼容尺寸 │ 价格(元) │ 输出扭矩(Nm)    ║');
-    console.log('╠═══════════╪══════════╪══════════╪═════════════════╣');
+    console.log('📄 读取文件:', csvPath);
     
-    manualOverrideData.forEach(mo => {
-      const model = mo.model.padEnd(9);
-      const sizes = mo.compatible_body_sizes.join(',').padEnd(8);
-      const price = mo.price.toString().padEnd(8);
-      const torque = mo.specifications.output_torque.toString().padEnd(15);
-      console.log(`║ ${model} │ ${sizes} │ ${price} │ ${torque} ║`);
+    const actuators = [];
+    let rowCount = 0;
+    
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(csvPath)
+        .pipe(csv())
+        .on('data', (row) => {
+          rowCount++;
+          try {
+            // 解析扭矩数据（JSON格式）
+            let torqueSymmetric = {};
+            let torqueCanted = {};
+            
+            if (row.torque_symmetric) {
+              try {
+                torqueSymmetric = JSON.parse(row.torque_symmetric.replace(/'/g, '"'));
+              } catch (e) {
+                console.warn(`   ⚠️  行 ${rowCount}: 对称扭矩数据解析失败`);
+              }
+            }
+            
+            if (row.torque_canted) {
+              try {
+                torqueCanted = JSON.parse(row.torque_canted.replace(/'/g, '"'));
+              } catch (e) {
+                console.warn(`   ⚠️  行 ${rowCount}: 偏心扭矩数据解析失败`);
+              }
+            }
+            
+            // SF系列：从每个型号生成两个变体
+            // 1. 不带C的型号 → 球阀版（对称拨叉）
+            // 2. 带C的型号 → 蝶阀版（偏心拨叉）
+            
+            // 球阀版（不带C）
+            const ballValveActuator = {
+              series: 'SF',
+              model_base: row.model_base,  // 不带C，如 SF10-150DA
+              action_type: row.action_type,
+              mechanism: '拨叉式',
+              valve_type: '球阀',  // 明确标记为球阀
+              yoke_type: row.body_size,
+              max_torque: extractMaxTorque(torqueSymmetric, {}),  // 只用对称拨叉的扭矩
+              fail_safe_position: row.action_type === 'DA' ? '不适用' : (row.spring_range ? '可配置' : '不适用'),
+              operating_pressure: '4-7 bar',
+              rotation_angle: 90,
+              weight: calculateEstimatedWeight(row.body_size),
+              base_price_normal: parseFloat(row.base_price) || 0,
+              
+              // 球阀版只保留对称拨叉数据
+              torque_data: {
+                symmetric: torqueSymmetric
+              },
+              
+              dimensions: {
+                outline: {
+                  L1: parseFloat(row.L1) || 0,
+                  L2: parseFloat(row.L2) || 0,
+                  m1: parseFloat(row.m1) || 0,
+                  m2: parseFloat(row.m2) || 0,
+                  A: parseFloat(row.A) || 0,
+                  H1: parseFloat(row.H1) || 0,
+                  H2: parseFloat(row.H2) || 0,
+                  D: parseFloat(row.D) || 0
+                },
+                flange: {
+                  standard: row.connect_flange || ''
+                },
+                pneumaticConnection: {
+                  size: row.G || ''
+                }
+              },
+              
+              product_type: '执行器',
+              description: `SF系列${row.body_size}型拨叉式执行器（球阀用，对称拨叉）`,
+              specifications: {
+                body_size: row.body_size || '',
+                cylinder_size: row.cylinder_size || '',
+                spring_range: row.spring_range || '',
+                valve_type_supported: ['球阀']
+              },
+              
+              status: '已发布'
+            };
+            
+            // 蝶阀版（带C - 偏心拨叉）
+            // 型号格式：SF10/C-150DA（在body_size后插入/C）
+            const butterflyModelBase = row.model_base.replace(/^(SF\d+)-/, '$1/C-');
+            
+            const butterflyValveActuator = {
+              series: 'SF',
+              model_base: butterflyModelBase,  // 带C，如 SF10/C-150DA
+              action_type: row.action_type,
+              mechanism: '拨叉式',
+              valve_type: '蝶阀',  // 明确标记为蝶阀（偏心拨叉）
+              yoke_type: row.body_size,
+              max_torque: extractMaxTorque({}, torqueCanted),  // 只用偏心拨叉的扭矩
+              fail_safe_position: row.action_type === 'DA' ? '不适用' : (row.spring_range ? '可配置' : '不适用'),
+              operating_pressure: '4-7 bar',
+              rotation_angle: 90,
+              weight: calculateEstimatedWeight(row.body_size),
+              base_price_normal: parseFloat(row.base_price) || 0,
+              
+              // 蝶阀版只保留偏心拨叉数据
+              torque_data: {
+                canted: torqueCanted
+              },
+              
+              dimensions: {
+                outline: {
+                  L1: parseFloat(row.L1) || 0,
+                  L2: parseFloat(row.L2) || 0,
+                  m1: parseFloat(row.m1) || 0,
+                  m2: parseFloat(row.m2) || 0,
+                  A: parseFloat(row.A) || 0,
+                  H1: parseFloat(row.H1) || 0,
+                  H2: parseFloat(row.H2) || 0,
+                  D: parseFloat(row.D) || 0
+                },
+                flange: {
+                  standard: row.connect_flange || ''
+                },
+                pneumaticConnection: {
+                  size: row.G || ''
+                }
+              },
+              
+              product_type: '执行器',
+              description: `SF系列${row.body_size}型拨叉式执行器（蝶阀用，偏心拨叉）`,
+              specifications: {
+                body_size: row.body_size || '',
+                cylinder_size: row.cylinder_size || '',
+                spring_range: row.spring_range || '',
+                valve_type_supported: ['蝶阀']
+              },
+              
+              status: '已发布'
+            };
+            
+            // 添加两个版本
+            actuators.push(ballValveActuator);
+            actuators.push(butterflyValveActuator);
+          } catch (error) {
+            console.warn(`   ⚠️  行 ${rowCount} 解析失败:`, error.message);
+          }
+        })
+        .on('end', resolve)
+        .on('error', reject);
     });
     
-    console.log('╚═══════════════════════════════════════════════════════════╝\n');
+    console.log(`📦 共读取 ${actuators.length} 条SF系列执行器数据`);
+    
+    // 调试：显示第一条数据
+    if (actuators.length > 0) {
+      console.log('\n📝 样本数据（第1条）:');
+      console.log(`   型号: ${actuators[0].model_base}`);
+      console.log(`   系列: ${actuators[0].series}`);
+      console.log(`   类型: ${actuators[0].action_type}`);
+      console.log(`   机构: ${actuators[0].mechanism}`);
+      console.log(`   价格: ${actuators[0].base_price_normal}`);
+    }
+    
+    if (actuators.length > 0) {
+      // 批量插入
+      try {
+        console.log('\n🔄 开始批量插入...');
+        const created = await Actuator.insertMany(actuators, { ordered: false });
+        console.log(`✅ 成功导入 ${created.length} 个SF系列型号！`);
+      
+      // 显示统计
+      const stats = {
+        total: created.length,
+        DA: created.filter(a => a.type === 'DA').length,
+        SR: created.filter(a => a.type === 'SR').length
+      };
+      
+        console.log('\n📊 SF系列导入统计:');
+        console.log(`   总计: ${stats.total} 个型号`);
+        console.log(`   双作用 (DA): ${stats.DA} 个`);
+        console.log(`   单作用 (SR): ${stats.SR} 个\n`);
+        
+        return created;
+      } catch (insertError) {
+        console.error('❌ SF系列插入失败:', insertError.message);
+        if (insertError.writeErrors) {
+          console.error('   详细错误:', insertError.writeErrors[0]);
+        }
+        console.log(`   ℹ️  样本数据:`, JSON.stringify(actuators[0], null, 2));
+        return [];
+      }
+    } else {
+      console.log('⚠️  没有有效的SF系列数据可导入\n');
+      return [];
+    }
+    
+  } catch (error) {
+    if (error.code === 11000) {
+      console.log('⚠️  部分SF型号已存在（跳过重复项）\n');
+      return [];
+    }
+    console.error('❌ 导入SF系列数据失败:', error.message);
+    throw error;
+  }
+}
+
+// 辅助函数：提取最大扭矩
+function extractMaxTorque(symmetric, canted) {
+  const allTorques = [];
+  
+  if (symmetric && typeof symmetric === 'object') {
+    Object.values(symmetric).forEach(val => {
+      if (typeof val === 'number') allTorques.push(val);
+    });
+  }
+  
+  if (canted && typeof canted === 'object') {
+    Object.values(canted).forEach(val => {
+      if (typeof val === 'number') allTorques.push(val);
+    });
+  }
+  
+  return allTorques.length > 0 ? Math.max(...allTorques) : 0;
+}
+
+// 辅助函数：根据body_size估算重量
+function calculateEstimatedWeight(bodySize) {
+  const size = parseInt(bodySize) || 150;
+  // 简单的重量估算公式
+  return Math.round(size / 20);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Part E: 创建手动操作装置数据（从CSV导入）
+// ═══════════════════════════════════════════════════════════════════════
+
+async function seedManualOverrides() {
+  console.log('\n╔═══════════════════════════════════════════════════════════════╗');
+  console.log('║  Part E: 导入手动操作装置数据                               ║');
+  console.log('╚═══════════════════════════════════════════════════════════════╝\n');
+  
+  try {
+    const csvPath = path.join(__dirname, 'data_imports', 'manual_overrides_data.csv');
+    
+    if (!fs.existsSync(csvPath)) {
+      console.log('⚠️  未找到手动操作装置CSV文件，跳过导入');
+      console.log(`   期望路径: ${csvPath}\n`);
+      return [];
+    }
+    
+    console.log('📄 读取文件:', csvPath);
+    
+    const manualOverrides = [];
+    let rowCount = 0;
+    
+    await new Promise((resolve, reject) => {
+      fs.createReadStream(csvPath)
+        .pipe(csv())
+        .on('data', (row) => {
+          rowCount++;
+          try {
+            // 判断操作类型
+            let operationType = '手轮';
+            if (row.name && row.name.includes('蜗轮')) {
+              operationType = '蜗轮箱';
+            } else if (row.name && row.name.includes('手柄')) {
+              operationType = '手柄';
+            } else if (row.name && row.name.includes('链轮')) {
+              operationType = '链轮';
+            }
+            
+            const manualOverride = {
+              model: row.model_base,
+              name: row.name || `${row.model_base}手动操作装置`,
+              price: parseFloat(row.price) || 0,
+              compatible_body_sizes: row.compatible_body_sizes ? [row.compatible_body_sizes] : [],
+              application: '紧急情况下手动操作阀门或执行器',
+              specifications: {
+                operation_type: operationType,
+                gear_ratio: operationType === '蜗轮箱' ? '多级减速' : '1:1',
+                output_torque: Math.floor(parseFloat(row.price) / 10) || 50, // 估算扭矩
+                weight: Math.floor(parseFloat(row.price) / 100) || 3,
+                mounting_position: '顶部',
+                material: operationType === '蜗轮箱' ? '球墨铸铁' : '铸铁',
+                protection_class: 'IP65'
+              },
+              stock_info: {
+                available: true,
+                lead_time: 7
+              },
+              is_active: true
+            };
+            
+            manualOverrides.push(manualOverride);
+          } catch (error) {
+            console.warn(`   ⚠️  行 ${rowCount} 解析失败:`, error.message);
+          }
+        })
+        .on('end', resolve)
+        .on('error', reject);
+    });
+    
+    console.log(`📦 共读取 ${manualOverrides.length} 条手动操作装置数据`);
+    
+    if (manualOverrides.length > 0) {
+      // 批量插入
+      try {
+        const created = await ManualOverride.insertMany(manualOverrides, { ordered: false });
+        console.log(`✅ 成功导入 ${created.length} 个手动操作装置型号！`);
+        
+        // 按类型统计
+        const stats = {
+          total: created.length,
+          handwheel: created.filter(m => m.specifications.operation_type === '手轮').length,
+          wormgear: created.filter(m => m.specifications.operation_type === '蜗轮箱').length,
+          handle: created.filter(m => m.specifications.operation_type === '手柄').length
+        };
+        
+        console.log('\n📊 手动操作装置导入统计:');
+        console.log(`   总计: ${stats.total} 个型号`);
+        console.log(`   手轮装置: ${stats.handwheel} 个`);
+        console.log(`   蜗轮箱: ${stats.wormgear} 个`);
+        console.log(`   手柄: ${stats.handle} 个\n`);
     
     return created;
+      } catch (insertError) {
+        console.error('❌ 手动操作装置插入失败:', insertError.message);
+        if (insertError.writeErrors) {
+          console.error('   详细错误:', insertError.writeErrors[0]);
+        }
+        return [];
+      }
+    } else {
+      console.log('⚠️  没有有效的手动操作装置数据可导入\n');
+      return [];
+    }
+    
   } catch (error) {
-    console.error('❌ 创建手动操作装置数据失败:', error.message);
+    if (error.code === 11000) {
+      console.log('⚠️  部分手动操作装置型号已存在（跳过重复项）\n');
+      return [];
+    }
+    console.error('❌ 导入手动操作装置数据失败:', error.message);
     throw error;
   }
 }
@@ -764,6 +1005,38 @@ const accessoriesData = [
       body_sizes: ['100', '150', '200', '250']
     },
     description: '加速执行器排气，提高响应速度'
+  },
+  // 定位反馈类
+  {
+    name: '位置指示器（机械式）',
+    category: '检测与反馈类',
+    base_price_normal: 280,
+    specifications: new Map([
+      ['显示类型', '机械刻度盘'],
+      ['可视角度', '180°'],
+      ['材质', '铝合金+亚克力'],
+      ['防护等级', 'IP67']
+    ]),
+    compatibility_rules: {
+      body_sizes: ['100', '150', '200', '250']
+    },
+    description: '机械式位置指示器，现场直观显示阀门位置'
+  },
+  {
+    name: '电气定位器',
+    category: '检测与反馈类',
+    base_price_normal: 1580,
+    specifications: new Map([
+      ['输入信号', '4-20mA'],
+      ['输出信号', '数字+模拟'],
+      ['精度', '±0.5%'],
+      ['防护等级', 'IP67'],
+      ['通讯协议', 'HART']
+    ]),
+    compatibility_rules: {
+      body_sizes: ['100', '150', '200', '250']
+    },
+    description: '智能电气定位器，高精度位置控制与反馈'
   }
 ];
 
@@ -1058,9 +1331,13 @@ async function main() {
     const suppliers = await seedSuppliers();
     stats.suppliersCreated = suppliers.length;
     
-    // Part D: 导入执行器数据
+    // Part D: 导入执行器数据（AT/GY系列）
     const actuators = await seedActuators();
     stats.actuatorsCreated = actuators.length;
+    
+    // Part D.2: 导入SF系列执行器数据
+    const sfActuators = await seedSFActuators();
+    stats.sfActuatorsCreated = sfActuators.length;
     
     // Part E: 创建手动操作装置
     const manualOverrides = await seedManualOverrides();
@@ -1088,7 +1365,8 @@ async function main() {
     console.log(`  🗑️  已清除记录:       ${stats.deletedCount} 条`);
     console.log(`  👥 测试用户:          ${stats.usersCreated} 个`);
     console.log(`  🏢 供应商:            ${stats.suppliersCreated} 个`);
-    console.log(`  📦 执行器型号:        ${stats.actuatorsCreated} 个`);
+    console.log(`  📦 执行器型号(AT/GY): ${stats.actuatorsCreated} 个`);
+    console.log(`  📦 执行器型号(SF):    ${stats.sfActuatorsCreated} 个`);
     console.log(`  🔧 手动操作装置:      ${stats.manualOverridesCreated} 个`);
     console.log(`  🔌 配件:              ${stats.accessoriesCreated} 个`);
     console.log(`  📋 示例项目:          ${stats.projectsCreated} 个`);

@@ -7,9 +7,10 @@ import {
 import { 
   ProjectOutlined, DatabaseOutlined, ThunderboltOutlined,
   PlusOutlined, FolderOpenOutlined, RightOutlined,
-  UserOutlined, CheckCircleOutlined
+  UserOutlined, CheckCircleOutlined, DollarOutlined,
+  ToolOutlined, ClockCircleOutlined
 } from '@ant-design/icons'
-import { projectsAPI, actuatorsAPI, manualOverridesAPI } from '../services/api'
+import { projectsAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GreetingWidget from '../components/dashboards/GreetingWidget'
 import dayjs from 'dayjs'
@@ -22,9 +23,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     projectCount: 0,
-    actuatorCount: 0,
-    overrideCount: 0,
-    selectionCount: 0
+    pendingQuoteCount: 0,      // 待完成报价数
+    pendingSelectionCount: 0,  // 待完成选型数
+    pendingProjectCount: 0     // 待项目完成数量
   })
   const [recentProjects, setRecentProjects] = useState([])
 
@@ -36,36 +37,43 @@ const Dashboard = () => {
     try {
       setLoading(true)
       
-      // 并行获取数据
-      const [projectsRes, actuatorsRes, overridesRes] = await Promise.all([
-        projectsAPI.getAll(),
-        actuatorsAPI.getAll(),
-        manualOverridesAPI.getAll()
-      ])
+      // 获取项目数据
+      const projectsRes = await projectsAPI.getAll()
 
       // 安全提取数据 - 后端返回格式: { success: true, data: [...] }
       const projects = Array.isArray(projectsRes.data?.data) 
         ? projectsRes.data.data 
         : (Array.isArray(projectsRes.data) ? projectsRes.data : [])
-      
-      const actuators = Array.isArray(actuatorsRes.data?.data)
-        ? actuatorsRes.data.data
-        : (Array.isArray(actuatorsRes.data) ? actuatorsRes.data : [])
-      
-      const overrides = Array.isArray(overridesRes.data?.data)
-        ? overridesRes.data.data
-        : (Array.isArray(overridesRes.data) ? overridesRes.data : [])
 
       // 计算统计数据
-      const selectionCount = projects.reduce((sum, project) => {
-        return sum + (project.selections?.length || 0)
-      }, 0)
+      // 待完成报价：状态为"待报价"或"技术方案完成"的项目
+      const pendingQuoteCount = projects.filter(p => 
+        p.status === '待报价' || 
+        p.status === '技术方案完成' || 
+        p.status === 'Awaiting Quotation'
+      ).length
+
+      // 待完成选型：状态为"待选型"或"进行中"的项目
+      const pendingSelectionCount = projects.filter(p => 
+        p.status === '待选型' || 
+        p.status === '进行中' ||
+        p.status === 'In Progress' ||
+        p.status === 'Awaiting Selection'
+      ).length
+
+      // 待项目完成：所有未完成的项目（不包括"已完成"、"已取消"）
+      const pendingProjectCount = projects.filter(p => 
+        p.status !== '已完成' && 
+        p.status !== '已取消' &&
+        p.status !== 'Completed' &&
+        p.status !== 'Cancelled'
+      ).length
 
       setStats({
         projectCount: projects.length,
-        actuatorCount: actuators.length,
-        overrideCount: overrides.length,
-        selectionCount: selectionCount
+        pendingQuoteCount,
+        pendingSelectionCount,
+        pendingProjectCount
       })
 
       // 获取最近的5个项目
@@ -147,7 +155,7 @@ const Dashboard = () => {
         {/* 动态问候语 */}
         <GreetingWidget />
 
-        {/* 统计卡片 */}
+        {/* 统计卡片 - 只显示4个业务相关指标 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={12} lg={6}>
             <Card>
@@ -163,10 +171,21 @@ const Dashboard = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="完成选型"
-                value={stats.selectionCount}
-                prefix={<CheckCircleOutlined />}
-                suffix="次"
+                title="待项目完成数量"
+                value={stats.pendingProjectCount}
+                prefix={<ClockCircleOutlined />}
+                suffix="个"
+                valueStyle={{ color: '#fa8c16' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card>
+              <Statistic
+                title="待完成报价数"
+                value={stats.pendingQuoteCount}
+                prefix={<DollarOutlined />}
+                suffix="个"
                 valueStyle={{ color: '#52c41a' }}
               />
             </Card>
@@ -174,22 +193,11 @@ const Dashboard = () => {
           <Col xs={24} sm={12} lg={6}>
             <Card>
               <Statistic
-                title="执行器库"
-                value={stats.actuatorCount}
-                prefix={<DatabaseOutlined />}
+                title="待完成选型数"
+                value={stats.pendingSelectionCount}
+                prefix={<ToolOutlined />}
                 suffix="个"
                 valueStyle={{ color: '#722ed1' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="手动装置"
-                value={stats.overrideCount}
-                prefix={<DatabaseOutlined />}
-                suffix="个"
-                valueStyle={{ color: '#fa8c16' }}
               />
             </Card>
           </Col>
