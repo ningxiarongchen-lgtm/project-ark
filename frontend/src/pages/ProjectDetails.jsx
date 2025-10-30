@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Descriptions, Table, Button, Tag, Space, Spin, message, Modal, Form, InputNumber, Input, Tooltip, Divider, Statistic, Row, Col, Alert, Tabs, Typography, Popconfirm, Dropdown, List, Radio, Select, Checkbox } from 'antd'
-import { ArrowLeftOutlined, FileTextOutlined, PlusOutlined, DeleteOutlined, ThunderboltOutlined, SaveOutlined, EyeOutlined, FilePdfOutlined, UnorderedListOutlined, FileSearchOutlined, EditOutlined, CheckOutlined, CloseOutlined, FileExcelOutlined, DownloadOutlined, DownOutlined, HistoryOutlined, SwapOutlined, BulbOutlined, RobotOutlined, ShoppingCartOutlined, CheckCircleOutlined, SendOutlined, DollarOutlined, FileProtectOutlined, UploadOutlined, FolderOutlined, SettingOutlined, TagsOutlined, UserAddOutlined } from '@ant-design/icons'
+import { Card, Descriptions, Table, Button, Tag, Space, Spin, message, Modal, Form, InputNumber, Input, Tooltip, Divider, Statistic, Row, Col, Alert, Tabs, Typography, Popconfirm, Dropdown, List, Radio, Select, Checkbox, Timeline } from 'antd'
+import { ArrowLeftOutlined, FileTextOutlined, PlusOutlined, DeleteOutlined, ThunderboltOutlined, SaveOutlined, EyeOutlined, FilePdfOutlined, UnorderedListOutlined, FileSearchOutlined, EditOutlined, CheckOutlined, CloseOutlined, FileExcelOutlined, DownloadOutlined, DownOutlined, HistoryOutlined, SwapOutlined, BulbOutlined, RobotOutlined, ShoppingCartOutlined, CheckCircleOutlined, SendOutlined, DollarOutlined, FileProtectOutlined, UploadOutlined, FolderOutlined, SettingOutlined, TagsOutlined, UserAddOutlined, UserOutlined } from '@ant-design/icons'
 import { projectsAPI, quotesAPI, aiAPI, ordersAPI, contractsAPI, productionAPI } from '../services/api'
 import { optimizeProjectSelection } from '../utils/optimization'
 import { generateSelectionQuotePDF } from '../utils/pdfGenerator'
@@ -163,18 +163,20 @@ const ProjectDetails = () => {
   const fetchProject = async () => {
     try {
       const response = await projectsAPI.getById(id)
-      setProject(response.data)
+      // 🔧 修复：后端返回格式是 { success: true, data: project }
+      const projectData = response.data.data || response.data
+      setProject(projectData)
       
       // 🔒 加载技术清单版本信息
-      if (response.data.technical_list_versions) {
-        setTechnicalVersions(response.data.technical_list_versions || [])
-        setCurrentTechnicalVersion(response.data.current_technical_version)
-        setTechnicalListLocked(response.data.technical_list_locked || false)
+      if (projectData.technical_list_versions) {
+        setTechnicalVersions(projectData.technical_list_versions || [])
+        setCurrentTechnicalVersion(projectData.current_technical_version)
+        setTechnicalListLocked(projectData.technical_list_locked || false)
       }
       
       // 🔒 加载修改建议
-      if (response.data.modification_requests) {
-        setModificationRequests(response.data.modification_requests || [])
+      if (projectData.modification_requests) {
+        setModificationRequests(projectData.modification_requests || [])
       }
     } catch (error) {
       message.error('Failed to load project details')
@@ -2785,28 +2787,6 @@ const ProjectDetails = () => {
 
       <Space style={{ marginBottom: 24 }} wrap>
         
-        {/* 基础功能按钮 */}
-        <RoleBasedAccess allowedRoles={['Administrator', 'Sales Engineer', 'Sales Manager']}>
-          <Button
-            type="primary"
-            icon={<FilePdfOutlined />}
-            onClick={handleGenerateQuotePDF}
-            disabled={!project.selections || project.selections.length === 0}
-          >
-            生成报价单PDF
-          </Button>
-        </RoleBasedAccess>
-        
-        <RoleBasedAccess allowedRoles={['Administrator', 'Sales Engineer', 'Sales Manager']}>
-          <Button
-            icon={<FileTextOutlined />}
-            onClick={() => setQuoteModalVisible(true)}
-            disabled={!project.selections || project.selections.length === 0}
-          >
-            创建正式报价
-          </Button>
-        </RoleBasedAccess>
-        
         {/* 工作流按钮（基于角色和项目状态动态显示） */}
         {renderWorkflowButtons()}
       </Space>
@@ -2854,24 +2834,40 @@ const ProjectDetails = () => {
           <Descriptions.Item label="Application">{project.application || '-'}</Descriptions.Item>
           {project.technical_requirements && (
             <Descriptions.Item label="客户技术需求 / Technical Requirements" span={2}>
-              <Alert
-                message="销售经理提供的客户技术要求"
-                description={
-                  <pre style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    fontFamily: 'monospace', 
-                    fontSize: '13px',
-                    margin: '8px 0 0 0',
-                    padding: '8px',
-                    background: '#f5f5f5',
-                    borderRadius: '4px'
+              <Card 
+                size="small"
+                style={{ 
+                  background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '8px'
+                }}
+              >
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  <div style={{ 
+                    fontSize: '14px', 
+                    color: '#8c8c8c',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <UserOutlined style={{ color: '#1890ff' }} />
+                    <span>销售经理提供的客户技术要求</span>
+                  </div>
+                  <div style={{ 
+                    fontSize: '15px',
+                    lineHeight: '1.8',
+                    color: '#262626',
+                    padding: '12px 16px',
+                    background: '#ffffff',
+                    borderRadius: '6px',
+                    border: '1px solid #e8e8e8',
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'Arial, sans-serif'
                   }}>
                     {project.technical_requirements}
-                  </pre>
-                }
-                type="info"
-                showIcon
-              />
+                  </div>
+                </Space>
+              </Card>
             </Descriptions.Item>
           )}
           <Descriptions.Item label="Created By">{project.createdBy?.name}</Descriptions.Item>
@@ -3285,8 +3281,8 @@ const ProjectDetails = () => {
               )
             }] : []),
             
-            // Tab 1: 选型明细 - 非技术工程师可见
-            ...(user?.role !== 'Technical Engineer' ? [{
+            // Tab 1: 选型明细 - 非技术工程师可见，但销售经理不可见
+            ...(user?.role !== 'Technical Engineer' && user?.role !== 'Sales Manager' ? [{
               key: 'selections',
               label: (
                 <span>
@@ -3416,8 +3412,8 @@ const ProjectDetails = () => {
               ),
             }] : []),
             
-            // Tab 2: BOM清单 - 仅特定角色可见（排除技术工程师）
-            ...(['Administrator', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist'].includes(user?.role) ? [{
+            // Tab 2: BOM清单 - 仅特定角色可见（排除技术工程师和销售经理）
+            ...(['Administrator', 'Sales Engineer', 'Procurement Specialist'].includes(user?.role) ? [{
               key: 'bom',
               label: (
                 <span>

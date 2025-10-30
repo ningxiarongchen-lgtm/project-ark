@@ -6,7 +6,7 @@ const ManualOverride = require('./models/ManualOverride');
 // MongoDB 连接
 const connectDB = async () => {
   try {
-    const dbUri = 'mongodb://localhost:27017/cmax-actuators';
+    const dbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax';
     await mongoose.connect(dbUri);
     console.log('✅ MongoDB 连接成功');
     console.log('📍 数据库:', mongoose.connection.name);

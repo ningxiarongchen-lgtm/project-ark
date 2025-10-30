@@ -235,7 +235,7 @@ exports.getTechnicalEngineers = async (req, res) => {
     
     const technicalEngineers = await User.find({ 
       role: 'Technical Engineer',
-      is_active: true 
+      isActive: { $ne: false }  // ✅ 修复：使用正确的字段名 isActive（驼峰命名）
     })
     .select('phone full_name email role department')
     .sort({ full_name: 1 });

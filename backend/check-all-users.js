@@ -6,7 +6,7 @@ const User = require('./models/User');
 
 const connectDB = async () => {
   try {
-    const dbUri = 'mongodb://localhost:27017/cmax-actuators';
+    const dbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/cmax';
     const conn = await mongoose.connect(dbUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,

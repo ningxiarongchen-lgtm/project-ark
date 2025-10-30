@@ -67,16 +67,21 @@ bash 停止演示环境.sh
 4. 📡 **API参考** → `API_REFERENCE.md`
 
 ### 🎯 我要做演示，需要准备材料
-1. 🎬 **标准演示剧本** → `docs/4_DEMO_WALKTHROUGH.md` （⭐ 推荐首选）
-2. ⚡ **快速开始** → `演示-快速开始.md`
-3. 📋 **操作手册** → `演示操作手册.md`
-4. 🎴 **快速参考卡** → `演示快速参考.md`
-5. 📦 **演示系统总览** → `README-演示系统.md`
+1. 🎬 **标准演示剧本** → `docs/4_DEMO_WALKTHROUGH.md` （客户演示用）
+2. 🎯 **UAT验收测试剧本** → `docs/8_UAT_ACCEPTANCE_SCRIPT.md` （⭐ 发布前必做）
+3. ⚡ **快速开始** → `演示-快速开始.md`
+4. 📋 **操作手册** → `演示操作手册.md`
+5. 🎴 **快速参考卡** → `演示快速参考.md`
+6. 📦 **演示系统总览** → `README-演示系统.md`
 
 ### 🧪 我要测试验收系统
-1. ✅ **验收指南** → `FINAL_ACCEPTANCE_GUIDE.md`
-2. 🔬 **测试脚本** → `backend/test-*.sh`
-3. 📊 **完整实现总结** → `COMPLETE_IMPLEMENTATION_SUMMARY.md`
+1. 📋 **手动测试用例清单** → `docs/5_MANUAL_TEST_CASES.md` （⭐ 发布前必做）
+2. 🏗️ **质量保证体系** → `docs/6_QUALITY_ASSURANCE_SYSTEM.md` （⭐ 工程化质量保证）
+3. 🐛 **Bug追踪记录** → `docs/7_BUG_TRACKING.md` （⭐ 知识沉淀）
+4. 📦 **核心数据清单** → `docs/9_DATA_INVENTORY.md` （⭐ 数据完整性保证）
+5. ✅ **验收指南** → `FINAL_ACCEPTANCE_GUIDE.md`
+6. 🔬 **测试脚本** → `backend/test-*.sh`
+7. 📊 **完整实现总结** → `COMPLETE_IMPLEMENTATION_SUMMARY.md`
 
 ### 🛠️ 我要部署或维护系统
 1. 🚀 **启动脚本** → `START_TEST_ENVIRONMENT.sh`

@@ -1,20 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Table, Input, Select, Button, Space, Tag, Statistic, Row, Col, Alert, Spin, App } from 'antd'
+import { Card, Table, Input, Select, Button, Space, Tag, Statistic, Row, Col, Alert, Spin, message } from 'antd'
 import { SearchOutlined, ReloadOutlined, DatabaseOutlined, TagsOutlined } from '@ant-design/icons'
-import axios from 'axios'
+import api from '../services/api'
 
 const { Search } = Input
 
 const ProductCatalog = () => {
-  const { message } = App.useApp()
   const [products, setProducts] = useState([])
   const [filteredProducts, setFilteredProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [seriesFilter, setSeriesFilter] = useState(null)
   const [actionTypeFilter, setActionTypeFilter] = useState(null)
-  const [yokeTypeFilter, setYokeTypeFilter] = useState(null)
-  const [productTypeFilter, setProductTypeFilter] = useState(null)
   const [mechanismFilter, setMechanismFilter] = useState(null)
   const [valveTypeFilter, setValveTypeFilter] = useState(null)
 
@@ -22,7 +19,7 @@ const ProductCatalog = () => {
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await axios.get('/api/catalog/products')
+      const response = await api.get('/catalog/products')
       setProducts(response.data.data)
       setFilteredProducts(response.data.data)
       message.success(`成功加载 ${response.data.count} 个产品`)
@@ -32,7 +29,7 @@ const ProductCatalog = () => {
     } finally {
       setLoading(false)
     }
-  }, [message])
+  }, [])
 
   useEffect(() => {
     fetchProducts()
@@ -61,16 +58,6 @@ const ProductCatalog = () => {
       result = result.filter(product => product.action_type === actionTypeFilter)
     }
 
-    // 轭架类型筛选
-    if (yokeTypeFilter) {
-      result = result.filter(product => product.yoke_type === yokeTypeFilter)
-    }
-
-    // 产品类型筛选
-    if (productTypeFilter) {
-      result = result.filter(product => product.product_type === productTypeFilter)
-    }
-
     // 机构类型筛选
     if (mechanismFilter) {
       result = result.filter(product => product.mechanism === mechanismFilter)
@@ -82,13 +69,11 @@ const ProductCatalog = () => {
     }
 
     setFilteredProducts(result)
-  }, [searchKeyword, seriesFilter, actionTypeFilter, yokeTypeFilter, productTypeFilter, mechanismFilter, valveTypeFilter, products])
+  }, [searchKeyword, seriesFilter, actionTypeFilter, mechanismFilter, valveTypeFilter, products])
 
   // 获取唯一值用于筛选
   const uniqueSeries = [...new Set(products.map(p => p.series))].filter(Boolean)
   const uniqueActionTypes = [...new Set(products.map(p => p.action_type))].filter(Boolean)
-  const uniqueYokeTypes = [...new Set(products.map(p => p.yoke_type))].filter(Boolean)
-  const uniqueProductTypes = [...new Set(products.map(p => p.product_type))].filter(Boolean)
   const uniqueMechanisms = [...new Set(products.map(p => p.mechanism))].filter(Boolean)
   const uniqueValveTypes = [...new Set(products.map(p => p.valve_type))].filter(Boolean)
 
@@ -97,8 +82,6 @@ const ProductCatalog = () => {
     setSearchKeyword('')
     setSeriesFilter(null)
     setActionTypeFilter(null)
-    setYokeTypeFilter(null)
-    setProductTypeFilter(null)
     setMechanismFilter(null)
     setValveTypeFilter(null)
   }
@@ -111,19 +94,6 @@ const ProductCatalog = () => {
       width: 60,
       render: (_, __, index) => index + 1,
       fixed: 'left'
-    },
-    {
-      title: '产品类型',
-      dataIndex: 'product_type',
-      key: 'product_type',
-      width: 120,
-      fixed: 'left',
-      render: (text) => {
-        const color = text === '执行器' ? 'blue' : text === '手动操作装置' ? 'green' : 'orange'
-        return <Tag color={color}>{text}</Tag>
-      },
-      filters: uniqueProductTypes.map(t => ({ text: t, value: t })),
-      onFilter: (value, record) => record.product_type === value
     },
     {
       title: '型号',
@@ -179,42 +149,6 @@ const ProductCatalog = () => {
       }
     },
     {
-      title: '轭架类型',
-      dataIndex: 'yoke_type',
-      key: 'yoke_type',
-      width: 120,
-      render: (text) => <Tag>{text || '-'}</Tag>
-    },
-    {
-      title: '输出扭矩(Nm)',
-      dataIndex: 'output_torque',
-      key: 'output_torque',
-      width: 120,
-      render: (torque) => <strong>{torque ? torque.toLocaleString() : '-'}</strong>,
-      sorter: (a, b) => (a.output_torque || 0) - (b.output_torque || 0)
-    },
-    {
-      title: '工作角度(°)',
-      dataIndex: 'rotation_angle',
-      key: 'rotation_angle',
-      width: 110,
-      render: (angle) => angle || '-'
-    },
-    {
-      title: '工作压力(bar)',
-      dataIndex: 'operating_pressure',
-      key: 'operating_pressure',
-      width: 120,
-      render: (pressure) => pressure || '-'
-    },
-    {
-      title: '重量(kg)',
-      dataIndex: 'weight',
-      key: 'weight',
-      width: 100,
-      render: (weight) => weight || '-'
-    },
-    {
       title: '库存量',
       dataIndex: 'inventory_quantity',
       key: 'inventory_quantity',
@@ -238,14 +172,6 @@ const ProductCatalog = () => {
         const text = isActive ? '可售' : '停产'
         return <Tag color={color}>{text}</Tag>
       }
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      width: 250,
-      ellipsis: true,
-      render: (text) => text || '-'
     }
   ]
 
@@ -267,9 +193,9 @@ const ProductCatalog = () => {
           />
         </div>
 
-        {/* 统计信息 */}
+        {/* 统计信息 - 只显示5个核心指标 */}
         <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="产品总数"
@@ -279,7 +205,7 @@ const ProductCatalog = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="筛选结果"
@@ -289,39 +215,7 @@ const ProductCatalog = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="执行器"
-                value={products.filter(p => p.product_type === '执行器').length}
-                suffix="个"
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="手动操作装置"
-                value={products.filter(p => p.product_type === '手动操作装置').length}
-                suffix="个"
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="附件"
-                value={products.filter(p => p.product_type === '附件').length}
-                suffix="个"
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="有库存产品"
@@ -331,7 +225,7 @@ const ProductCatalog = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
                 title="产品系列"
@@ -341,11 +235,11 @@ const ProductCatalog = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} md={8} lg={4}>
             <Card>
               <Statistic
-                title="产品类型"
-                value={uniqueProductTypes.length}
+                title="机构类型"
+                value={uniqueMechanisms.length}
                 suffix="种"
                 valueStyle={{ color: '#eb2f96' }}
               />
@@ -376,20 +270,6 @@ const ProductCatalog = () => {
               {uniqueSeries.map(series => (
                 <Select.Option key={series} value={series}>
                   {series}
-                </Select.Option>
-              ))}
-            </Select>
-
-            <Select
-              placeholder="产品类型"
-              style={{ width: 150 }}
-              allowClear
-              value={productTypeFilter}
-              onChange={setProductTypeFilter}
-            >
-              {uniqueProductTypes.map(type => (
-                <Select.Option key={type} value={type}>
-                  {type}
                 </Select.Option>
               ))}
             </Select>
@@ -430,20 +310,6 @@ const ProductCatalog = () => {
               onChange={setActionTypeFilter}
             >
               {uniqueActionTypes.map(type => (
-                <Select.Option key={type} value={type}>
-                  {type}
-                </Select.Option>
-              ))}
-            </Select>
-
-            <Select
-              placeholder="轭架类型"
-              style={{ width: 150 }}
-              allowClear
-              value={yokeTypeFilter}
-              onChange={setYokeTypeFilter}
-            >
-              {uniqueYokeTypes.map(type => (
                 <Select.Option key={type} value={type}>
                   {type}
                 </Select.Option>
