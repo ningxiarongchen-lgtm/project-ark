@@ -74,13 +74,13 @@ const menuConfig = [
     key: '/data-management',
     label: '产品数据管理',
     icon: <DatabaseOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Procurement Specialist'],
+    roles: ['Administrator', 'Procurement Specialist'],  // 🔒 移除技术工程师权限
   },
   {
     key: '/product-import',
     label: '产品批量导入',
     icon: <UploadOutlined />,
-    roles: ['Administrator', 'Technical Engineer'],
+    roles: ['Administrator'],  // 🔒 移除技术工程师权限
   },
   {
     key: '/admin',

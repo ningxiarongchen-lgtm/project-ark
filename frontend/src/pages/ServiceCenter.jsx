@@ -25,10 +25,12 @@ const ServiceCenter = () => {
   const { user, hasAnyRole } = useAuth()
   
   // 权限检查
-  const canCreate = hasAnyRole(['Administrator', 'After-sales Engineer', 'Sales Engineer', 'Technical Engineer', 'Sales Manager'])
+  // 🔒 只有销售经理和管理员可以创建售后工单
+  const canCreate = hasAnyRole(['Administrator', 'Sales Manager'])
   const canDelete = hasAnyRole(['Administrator'])
   const isAftersalesEngineer = user?.role === 'After-sales Engineer'
   const isSalesManager = user?.role === 'Sales Manager'
+  const isTechnicalEngineer = user?.role === 'Technical Engineer'
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(false)
   const [statistics, setStatistics] = useState(null)
@@ -170,14 +172,14 @@ const ServiceCenter = () => {
   // 状态标签颜色
   const getStatusColor = (status) => {
     const colorMap = {
-      'Open': 'default',
-      'Assigned': 'cyan',
-      'In Progress': 'processing',
-      'Pending Parts': 'warning',
-      'On Hold': 'orange',
-      'Resolved': 'success',
-      'Closed': 'default',
-      'Cancelled': 'error'
+      'Open': 'default',           // 未开始 - 灰色
+      'Assigned': 'cyan',          // 未开始 - 青色
+      'In Progress': 'processing', // 进行中 - 蓝色
+      'Pending Parts': 'processing', // 进行中 - 蓝色
+      'On Hold': 'warning',        // 进行中 - 橙色
+      'Resolved': 'success',       // 已完成 - 绿色
+      'Closed': 'success',         // 已完成 - 绿色
+      'Cancelled': 'error'         // 已取消 - 红色
     }
     return colorMap[status] || 'default'
   }
@@ -207,13 +209,13 @@ const ServiceCenter = () => {
   }
 
   const statusNameMap = {
-    'Open': '待处理',
-    'Assigned': '已分配',
-    'In Progress': '处理中',
-    'Pending Parts': '等待零件',
-    'On Hold': '暂停',
-    'Resolved': '已解决',
-    'Closed': '已关闭',
+    'Open': '未开始',           // 销售经理创建后，未分配给工程师
+    'Assigned': '未开始',       // 已分配给工程师但未开始
+    'In Progress': '进行中',    // 工程师正在处理
+    'Pending Parts': '进行中',  // 等待零件（也算进行中）
+    'On Hold': '进行中',        // 暂停（也算进行中）
+    'Resolved': '已完成',       // 已解决
+    'Closed': '已完成',         // 已关闭
     'Cancelled': '已取消'
   }
 
@@ -393,7 +395,8 @@ const ServiceCenter = () => {
             <CustomerServiceOutlined style={{ marginRight: 8 }} />
             售后服务中心
           </h2>
-          <RoleBasedAccess allowedRoles={['Administrator', 'After-sales Engineer', 'Sales Engineer', 'Technical Engineer']}>
+          {/* 🔒 只有销售经理可以创建工单 */}
+          <RoleBasedAccess allowedRoles={['Administrator', 'Sales Manager']}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -405,19 +408,25 @@ const ServiceCenter = () => {
           </RoleBasedAccess>
         </div>
         
-        {/* 售后工程师的"我的工单"提示 */}
-        {isAftersalesEngineer && showMyTicketsOnly && (
+        {/* 技术工程师的工作提示 */}
+        {(isTechnicalEngineer || isAftersalesEngineer) && (
           <Alert
-            message="当前显示：我的工单"
-            description="正在显示分配给您的工单。点击下方按钮可查看所有工单。"
+            message={isAftersalesEngineer && showMyTicketsOnly ? "当前显示：我的工单" : "技术工程师工作说明"}
+            description={
+              isAftersalesEngineer && showMyTicketsOnly 
+                ? "正在显示分配给您的工单。点击下方按钮可查看所有工单。"
+                : "您可以查看销售经理提交的售后工单，领取工单后进行处理。工单状态：未开始 → 进行中 → 已完成"
+            }
             type="info"
             showIcon
             closable
             style={{ marginBottom: 16 }}
             action={
-              <Button size="small" onClick={() => setShowMyTicketsOnly(false)}>
-                查看所有工单
-              </Button>
+              isAftersalesEngineer && showMyTicketsOnly ? (
+                <Button size="small" onClick={() => setShowMyTicketsOnly(false)}>
+                  查看所有工单
+                </Button>
+              ) : null
             }
           />
         )}
@@ -501,13 +510,13 @@ const ServiceCenter = () => {
                 setPagination({ ...pagination, current: 1 })
               }}
             >
-              <Option value="Open">待处理</Option>
-              <Option value="Assigned">已分配</Option>
-              <Option value="In Progress">处理中</Option>
-              <Option value="Pending Parts">等待零件</Option>
-              <Option value="On Hold">暂停</Option>
-              <Option value="Resolved">已解决</Option>
-              <Option value="Closed">已关闭</Option>
+              <Option value="Open">未开始</Option>
+              <Option value="Assigned">未开始（已分配）</Option>
+              <Option value="In Progress">进行中</Option>
+              <Option value="Pending Parts">进行中（等待零件）</Option>
+              <Option value="On Hold">进行中（暂停）</Option>
+              <Option value="Resolved">已完成</Option>
+              <Option value="Closed">已完成（已关闭）</Option>
               <Option value="Cancelled">已取消</Option>
             </Select>
 
