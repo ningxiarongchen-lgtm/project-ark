@@ -130,10 +130,10 @@ const Dashboard = () => {
       },
       {
         icon: <DatabaseOutlined />,
-        title: '产品管理',
+        title: '产品数据管理',
         description: '查看和管理产品数据',
         color: '#722ed1',
-        onClick: () => navigate('/products')
+        onClick: () => navigate('/data-management')
       }
     )
   }

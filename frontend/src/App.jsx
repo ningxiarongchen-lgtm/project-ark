@@ -97,11 +97,8 @@ function App() {
         }>
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="products" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']}>
-              <Products />
-            </ProtectedRoute>
-          } />
+          {/* 产品路由重定向到产品数据管理，保持向后兼容 */}
+          <Route path="products" element={<Navigate to="/data-management" replace />} />
           <Route path="products/:id" element={
             <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']}>
               <ProductDetails />
