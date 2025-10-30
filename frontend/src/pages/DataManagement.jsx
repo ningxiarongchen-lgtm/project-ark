@@ -14,7 +14,6 @@ import {
 import ActuatorManagement from '../components/dataManagement/ActuatorManagement';
 import AccessoryManagement from '../components/dataManagement/AccessoryManagement';
 import SupplierManagement from '../components/dataManagement/SupplierManagement';
-import UserManagement from '../components/dataManagement/UserManagement';
 import { useAuthStore } from '../store/authStore';
 
 const { TabPane } = Tabs;
@@ -31,23 +30,22 @@ const DataManagement = () => {
   const hasActuatorAccess = isAdmin || isTechnical;
   const hasAccessoryAccess = isAdmin || isTechnical;
   const hasSupplierAccess = isAdmin || isProcurement;
-  const hasUserAccess = isAdmin;
   
   return (
     <div style={{ padding: '24px' }}>
       <Card
         title={
           <span>
-            <DatabaseOutlined /> 产品数据管理
+            <DatabaseOutlined /> 数据管理
           </span>
         }
         extra={
           <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#666' }}>
-            管理系统核心产品数据
+            管理执行器、配件和供应商数据
           </span>
         }
       >
-        {!hasActuatorAccess && !hasAccessoryAccess && !hasSupplierAccess && !hasUserAccess && (
+        {!hasActuatorAccess && !hasAccessoryAccess && !hasSupplierAccess && (
           <Alert
             message="权限不足"
             description="您没有权限访问数据管理功能。请联系管理员。"
@@ -102,20 +100,6 @@ const DataManagement = () => {
               key="suppliers"
             >
               <SupplierManagement />
-            </TabPane>
-          )}
-          
-          {hasUserAccess && (
-            <TabPane
-              tab={
-                <span>
-                  <UserOutlined />
-                  用户管理
-                </span>
-              }
-              key="users"
-            >
-              <UserManagement />
             </TabPane>
           )}
         </Tabs>

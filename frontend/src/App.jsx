@@ -48,6 +48,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 const DataManagement = lazy(() => import('./pages/DataManagement'))
 const ProductCatalog = lazy(() => import('./pages/ProductCatalog'))
 const ProductImport = lazy(() => import('./pages/ProductImport'))
+const AdminReports = lazy(() => import('./pages/AdminReports'))
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordCheck }) => {
@@ -131,6 +132,11 @@ function App() {
           <Route path="admin" element={
             <ProtectedRoute requiredRole="Administrator">
               <AdminPanel />
+            </ProtectedRoute>
+          } />
+          <Route path="admin/reports" element={
+            <ProtectedRoute requiredRole="Administrator">
+              <AdminReports />
             </ProtectedRoute>
           } />
           <Route path="data-management" element={

@@ -99,6 +99,17 @@ actuatorController.getBySeries = async (req, res) => {
 actuatorController.getStatistics = async (req, res) => {
   try {
     const totalCount = await Actuator.countDocuments();
+    
+    // 统计有价格的产品数量（常温、低温或高温任一价格存在即可）
+    const withPrice = await Actuator.countDocuments({ 
+      $or: [
+        { base_price_normal: { $exists: true, $ne: null, $gt: 0 } },
+        { base_price_low: { $exists: true, $ne: null, $gt: 0 } },
+        { base_price_high: { $exists: true, $ne: null, $gt: 0 } }
+      ]
+    });
+    const withoutPrice = totalCount - withPrice;
+    
     const bySeries = await Actuator.aggregate([
       { $group: { _id: '$series', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
@@ -106,17 +117,19 @@ actuatorController.getStatistics = async (req, res) => {
     const byActionType = await Actuator.aggregate([
       { $group: { _id: '$action_type', count: { $sum: 1 } } }
     ]);
-    const byPricingModel = await Actuator.aggregate([
-      { $group: { _id: '$pricing_model', count: { $sum: 1 } } }
+    const byStatus = await Actuator.aggregate([
+      { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
     
     res.json({
       success: true,
       statistics: {
         totalCount,
+        withPrice,
+        withoutPrice,
         bySeries,
         byActionType,
-        byPricingModel
+        byStatus
       }
     });
   } catch (error) {

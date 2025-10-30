@@ -75,17 +75,30 @@ accessoryController.checkLowStock = async (req, res) => {
 accessoryController.getStatistics = async (req, res) => {
   try {
     const totalCount = await Accessory.countDocuments();
+    
+    // 统计有价格的配件数量（常温、低温或高温任一价格存在即可）
+    const withPrice = await Accessory.countDocuments({
+      $or: [
+        { base_price_normal: { $exists: true, $ne: null, $gt: 0 } },
+        { base_price_low: { $exists: true, $ne: null, $gt: 0 } },
+        { base_price_high: { $exists: true, $ne: null, $gt: 0 } }
+      ]
+    });
+    const withoutPrice = totalCount - withPrice;
+    
     const byCategory = await Accessory.aggregate([
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
+    
+    // 计算库存总价值（使用常温价格）
     const totalStockValue = await Accessory.aggregate([
       {
         $project: {
           stockValue: {
             $multiply: [
-              { $ifNull: ['$stock_quantity', 0] },
-              { $ifNull: ['$base_price', { $ifNull: ['$price', 0] }] }
+              { $ifNull: ['$stock_info.quantity', 0] },
+              { $ifNull: ['$base_price_normal', 0] }
             ]
           }
         }
@@ -97,6 +110,8 @@ accessoryController.getStatistics = async (req, res) => {
       success: true,
       statistics: {
         totalCount,
+        withPrice,
+        withoutPrice,
         byCategory,
         totalStockValue: totalStockValue[0]?.totalValue || 0
       }

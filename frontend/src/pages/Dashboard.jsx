@@ -176,7 +176,7 @@ const Dashboard = () => {
         title: '用户管理',
         description: '管理系统用户和权限',
         color: '#1890ff',
-        onClick: () => navigate('/admin/users')
+        onClick: () => navigate('/admin')
       },
       {
         icon: <DatabaseOutlined />,
@@ -187,17 +187,17 @@ const Dashboard = () => {
       },
       {
         icon: <DatabaseOutlined />,
-        title: '供应商管理',
-        description: '管理供应商信息和资质',
+        title: '数据管理',
+        description: '管理执行器、配件和供应商',
         color: '#722ed1',
-        onClick: () => navigate('/suppliers')
+        onClick: () => navigate('/data-management')
       },
       {
         icon: <ProjectOutlined />,
-        title: '系统总览',
-        description: '查看系统数据统计',
+        title: '系统报表',
+        description: '查看数据统计和报表',
         color: '#fa8c16',
-        onClick: () => navigate('/projects')
+        onClick: () => navigate('/admin/reports')
       }
     )
   } 
@@ -592,10 +592,10 @@ const Dashboard = () => {
               <Col xs={24} md={6}>
                 <Space direction="vertical">
                   <Title level={5}>
-                    <span style={{ color: '#722ed1' }}>3.</span> 供应商管理
+                    <span style={{ color: '#722ed1' }}>3.</span> 数据管理
                   </Title>
                   <Text type="secondary">
-                    维护供应商档案，管理供应商资质和评级，建立可靠的供应商体系。
+                    管理执行器、配件和供应商数据，维护产品价格和技术参数，保证数据准确性。
                   </Text>
                 </Space>
               </Col>
