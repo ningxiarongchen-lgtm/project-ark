@@ -34,3 +34,11 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# JWT密钥文件（不要提交到Git）
+JWT*.txt
+*密钥*.txt
+
+# 部署相关的敏感文件
+backend/.env.production
+.env.production
