@@ -210,7 +210,7 @@ const testUsers = [
     full_name: '刘商务',
     phone: '13000000004',
     password: 'password',
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: '商务部',
     isActive: true,
     passwordChangeRequired: false
@@ -252,17 +252,8 @@ const testUsers = [
     passwordChangeRequired: false
   },
   {
-    full_name: '吴售后',
-    phone: '13000000009',
-    password: 'password',
-    role: 'After-sales Engineer',
-    department: '售后服务部',
-    isActive: true,
-    passwordChangeRequired: false
-  },
-  {
     full_name: '郑工人',
-    phone: '13000000010',
+    phone: '13000000009',
     password: 'password',
     role: 'Shop Floor Worker',
     department: '生产车间',
@@ -1083,7 +1074,7 @@ async function seedExampleBusinessData() {
     const users = await User.find({});
     const salesManager = users.find(u => u.role === 'Sales Manager');
     const techEngineer = users.find(u => u.role === 'Technical Engineer');
-    const salesEngineer = users.find(u => u.role === 'Sales Engineer');
+    const salesEngineer = users.find(u => u.role === 'Business Engineer');
     
     if (!salesManager || !techEngineer) {
       console.log('⚠️  未找到必要的用户角色，跳过示例业务数据创建\n');
@@ -1389,9 +1380,9 @@ async function main() {
     console.log('   │ 生产计划员          │ 13000000006   │ password       │');
     console.log('   │ 质检员              │ 13000000007   │ password       │');
     console.log('   │ 物流专员            │ 13000000008   │ password       │');
-    console.log('   │ 售后工程师          │ 13000000009   │ password       │');
-    console.log('   │ 车间工人            │ 13000000010   │ password       │');
+    console.log('   │ 车间工人            │ 13000000009   │ password       │');
     console.log('   └─────────────────────┴───────────────┴────────────────┘\n');
+    console.log('   注：技术工程师负责技术选型和售后工单处理\n');
     
     console.log('💡 提示：');
     console.log('   - 所有测试账户初始密码均为: password');

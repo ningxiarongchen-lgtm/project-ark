@@ -709,7 +709,92 @@ const projectSchema = new mongoose.Schema({
     responded_at: {
       type: Date
     }
-  }]
+  }],
+  
+  // 💰 合同与付款信息（用于"款到发货"流程）
+  contract: {
+    // 合同签订状态
+    contractSigned: {
+      type: Boolean,
+      default: false
+    },
+    
+    // 合同签订日期
+    contractSignedDate: {
+      type: Date
+    },
+    
+    // 合同总金额
+    totalAmount: {
+      type: Number,
+      min: 0
+    },
+    
+    // 定金金额
+    depositAmount: {
+      type: Number,
+      min: 0
+    },
+    
+    // 定金状态
+    depositStatus: {
+      type: String,
+      enum: ['Pending', 'Received', 'Not Required'],
+      default: 'Pending'
+    },
+    
+    // 定金收款日期
+    depositReceivedDate: {
+      type: Date
+    },
+    
+    // 尾款金额
+    finalPaymentAmount: {
+      type: Number,
+      min: 0
+    },
+    
+    // 尾款状态（核心字段，控制发货）
+    finalPaymentStatus: {
+      type: String,
+      enum: ['Pending', 'Confirmed'],
+      default: 'Pending'
+    },
+    
+    // 尾款确认日期
+    finalPaymentConfirmedDate: {
+      type: Date
+    },
+    
+    // 尾款确认人（商务工程师）
+    finalPaymentConfirmedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    
+    // 发货状态
+    deliveryStatus: {
+      type: String,
+      enum: ['Pending', 'Ready to Ship', 'Shipped', 'Delivered'],
+      default: 'Pending'
+    },
+    
+    // 发货日期
+    shippedDate: {
+      type: Date
+    },
+    
+    // 交付日期
+    deliveredDate: {
+      type: Date
+    },
+    
+    // 付款备注
+    paymentNotes: {
+      type: String,
+      trim: true
+    }
+  }
   
 }, {
   timestamps: true

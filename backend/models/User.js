@@ -31,12 +31,11 @@ const userSchema = new mongoose.Schema({
       'Administrator',
       'Sales Manager',
       'Technical Engineer',
-      'Sales Engineer',
+      'Business Engineer',
       'Procurement Specialist',
       'Production Planner',
       'QA Inspector',
       'Logistics Specialist',
-      'After-sales Engineer',
       'Shop Floor Worker'
     ],
     required: [true, '请提供用户角色'],

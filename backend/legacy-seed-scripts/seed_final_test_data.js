@@ -62,7 +62,7 @@ const testUsers = [
     phone: '13800000004', 
     password: 'Password1!', 
     full_name: 'Charlie Commercial', 
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: 'Sales'
   },
   { 
@@ -95,13 +95,6 @@ const testUsers = [
   },
   { 
     phone: '13800000009', 
-    password: 'Password1!', 
-    full_name: 'Andy Aftersales', 
-    role: 'After-sales Engineer',
-    department: 'After-sales Service'
-  },
-  { 
-    phone: '13800000010', 
     password: 'Password1!', 
     full_name: 'Wendy Worker', 
     role: 'Shop Floor Worker',
@@ -257,12 +250,11 @@ const verifyData = async () => {
       'Administrator',
       'Sales Manager',
       'Technical Engineer',
-      'Sales Engineer',
+      'Business Engineer',
       'Procurement Specialist',
       'Production Planner',
       'QA Inspector',
       'Logistics Specialist',
-      'After-sales Engineer',
       'Shop Floor Worker'
     ];
     
@@ -319,13 +311,14 @@ const printTestAccounts = () => {
   console.log('   1. Administrator         - 系统管理员，拥有所有权限');
   console.log('   2. Sales Manager         - 销售经理，审核报价和合同');
   console.log('   3. Technical Engineer    - 技术工程师，执行选型计算');
-  console.log('   4. Sales Engineer        - 商务工程师，创建项目和报价');
+  console.log('   4. Business Engineer        - 商务工程师，创建项目和报价');
   console.log('   5. Procurement Specialist- 采购专员，处理采购订单');
   console.log('   6. Production Planner    - 生产计划员，制定生产计划');
   console.log('   7. QA Inspector          - 质检员，执行质量检查');
   console.log('   8. Logistics Specialist  - 物流专员，管理发货');
-  console.log('   9. After-sales Engineer  - 售后工程师，处理售后工单');
-  console.log('   10. Shop Floor Worker    - 车间工人，执行生产任务');
+  console.log('   9. Shop Floor Worker     - 车间工人，执行生产任务');
+  console.log('\n');
+  console.log('   注：技术工程师（Technical Engineer）负责技术选型和售后工单处理');
   console.log('\n');
   console.log('💡 下一步操作：');
   console.log('   1. 启动后端服务: npm start (在 backend 目录)');

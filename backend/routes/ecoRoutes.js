@@ -25,7 +25,7 @@ router.get('/stats', getEcoStats);
 router.get('/by-product/:actuatorId', getEcosByProduct);
 
 // 审批操作（需要管理员或经理权限）
-router.post('/:id/submit', authorize('Technical Engineer', 'Sales Engineer', 'Administrator'), submitForApproval);
+router.post('/:id/submit', authorize('Technical Engineer', 'Business Engineer', 'Administrator'), submitForApproval);
 router.post('/:id/approve', authorize('Sales Manager', 'Administrator'), approveEco);
 router.post('/:id/reject', authorize('Sales Manager', 'Administrator'), rejectEco);
 router.post('/:id/close', authorize('Sales Manager', 'Administrator'), closeEco);
@@ -33,11 +33,11 @@ router.post('/:id/close', authorize('Sales Manager', 'Administrator'), closeEco)
 // CRUD 操作
 router.route('/')
   .get(getEcos)
-  .post(authorize('Technical Engineer', 'Sales Engineer', 'Administrator'), createEco);
+  .post(authorize('Technical Engineer', 'Business Engineer', 'Administrator'), createEco);
 
 router.route('/:id')
   .get(getEcoById)
-  .put(authorize('Technical Engineer', 'Sales Engineer', 'Administrator'), updateEco)
+  .put(authorize('Technical Engineer', 'Business Engineer', 'Administrator'), updateEco)
   .delete(authorize('Administrator'), deleteEco);
 
 module.exports = router;

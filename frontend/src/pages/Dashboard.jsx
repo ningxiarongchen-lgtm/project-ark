@@ -13,12 +13,16 @@ import {
   FileTextOutlined, BellOutlined, FileSearchOutlined, SendOutlined,
   SettingOutlined, DownloadOutlined, CloseOutlined, UploadOutlined
 } from '@ant-design/icons'
-import { projectsAPI, ticketsAPI, materialRequirementsAPI, purchaseOrdersAPI, productionAPI, contractsAPI } from '../services/api'
+import { projectsAPI, ticketsAPI, materialRequirementsAPI, purchaseOrdersAPI, productionAPI, contractsAPI } from '../services/api'                              
 import { useAuthStore } from '../store/authStore'
 import GreetingWidget from '../components/dashboards/GreetingWidget'
 import ProcurementDashboard from './ProcurementDashboard'
 import PlannerDashboard from './PlannerDashboard'
+import QAInspectorDashboard from './QAInspectorDashboard'
+import LogisticsDashboard from './LogisticsDashboard'
+import ShopFloorDashboard from './ShopFloorDashboard'
 import ContractReminders from '../components/ContractReminders'
+import PendingFinalPaymentWidget from '../components/dashboards/PendingFinalPaymentWidget'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -46,17 +50,28 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
       setLoading(true)
       
       // 获取商务工程师专属统计数据和合同统计
-      const [statsRes, projectsRes, contractStatsRes] = await Promise.all([
+      const promises = [
         projectsAPI.getSalesEngineerStats(),
-        projectsAPI.getProjects({ limit: 10 }),
-        contractsAPI.getStats().catch(() => ({ data: { pending: 0 } }))
-      ])
+        projectsAPI.getAll({ limit: 10 })
+      ]
+      
+      // 只有特定角色才能访问合同统计
+      const allowedRoles = ['Administrator', 'Business Engineer']
+      if (allowedRoles.includes(user?.role)) {
+        promises.push(contractsAPI.getStats())
+      }
+      
+      const results = await Promise.all(promises)
+      const statsRes = results[0]
+      const projectsRes = results[1]
+      const contractStatsRes = results[2]
       
       setStats({
         ...statsRes.data,
-        pendingContracts: contractStatsRes.data?.pending || 0
+        pendingContracts: contractStatsRes?.data?.pending || 0
       })
-      setRecentProjects(projectsRes.data || [])
+      // 修复：后端返回 { success: true, data: [...] }，需要取 .data.data
+      setRecentProjects(projectsRes.data?.data || [])
     } catch (error) {
       console.error('获取商务工程师数据失败:', error)
     } finally {
@@ -81,13 +96,16 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     )
   }
 
   return (
     <div>
+      {/* 动态问候语 */}
+      <GreetingWidget />
+
       {/* 🎯 顶部统计卡片区 - 7个核心指标 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
@@ -170,7 +188,12 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
       </Row>
 
       {/* 🔔 合同提醒区 */}
-      <ContractReminders onNavigateToContract={(contractId) => navigate(`/contracts?id=${contractId}`)} />
+      <ContractReminders onNavigateToContract={(contractId) => navigate(`/contracts?id=${contractId}`)} />                                                      
+
+      {/* 💰 待确认尾款模块（质检已合格，等待确认收款）*/}
+      <div style={{ marginBottom: 24 }}>
+        <PendingFinalPaymentWidget />
+      </div>
 
       {/* ⚡ 快捷操作区 */}
       <Card 
@@ -327,49 +350,55 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
         )}
       </Card>
 
-      {/* 💼 业务流程指南 - 完整7步工作流程 */}
+      {/* 💼 业务流程指南 */}
       <Card 
-        title="💼 商务工程师完整工作流程" 
-        style={{ marginTop: 24 }}
+        bordered={false}
+        style={{ 
+          marginTop: 24,
+          backgroundColor: '#fff'
+        }}
       >
         <Row gutter={[16, 16]}>
           <Col xs={24} md={6}>
-            <Space direction="vertical">
-              <Title level={5}>
-                <span style={{ color: '#1890ff' }}>1.</span> 接收项目并报价
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+                1. 创建项目并指派
               </Title>
-              <Text type="secondary">
-                技术选型完成后，接收项目进行商务报价。根据BOM清单设置价格策略，完成后期销售可下载报价单给客户。
+              <Text type="secondary" style={{ fontSize: 14, lineHeight: '22px' }}>
+                拿到客户技术文件或需求后，创建项目，上传技术文件，指派技术工程师进行选型。
               </Text>
             </Space>
           </Col>
+          
           <Col xs={24} md={6}>
-            <Space direction="vertical">
-              <Title level={5}>
-                <span style={{ color: '#fa8c16' }}>2.</span> 审核销售合同
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Title level={4} style={{ margin: 0, color: '#fa8c16' }}>
+                2. 询价阶段
               </Title>
-              <Text type="secondary">
-                客户接受报价后，销售上传合同。审核合同内容和金额，确认无误后下载，提交公司盖章。
+              <Text type="secondary" style={{ fontSize: 14, lineHeight: '22px' }}>
+                技术选型完成后，商务报价完成，下载报价单给客户。此时为"询价中"状态，尚未签约。
               </Text>
             </Space>
           </Col>
+          
           <Col xs={24} md={6}>
-            <Space direction="vertical">
-              <Title level={5}>
-                <span style={{ color: '#52c41a' }}>3.</span> 回传盖章合同
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Title level={4} style={{ margin: 0, color: '#52c41a' }}>
+                3. 赢单阶段
               </Title>
-              <Text type="secondary">
-                公司盖章完成后，上传盖章合同给销售。由销售转交客户签字盖章，项目后正式赢单。
+              <Text type="secondary" style={{ fontSize: 14, lineHeight: '22px' }}>
+                客户接受报价后，上传销售合同，等商务审核盖章后给客户。客户盖章后才正式"赢单"。
               </Text>
             </Space>
           </Col>
+          
           <Col xs={24} md={6}>
-            <Space direction="vertical">
-              <Title level={5}>
-                <span style={{ color: '#722ed1' }}>4.</span> 跟进生产
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Title level={4} style={{ margin: 0, color: '#722ed1' }}>
+                4. 跟进生产
               </Title>
-              <Text type="secondary">
-                合同履行后，客户收到预付款到货情况，预付款到货后通知生产排期。
+              <Text type="secondary" style={{ fontSize: 14, lineHeight: '22px' }}>
+                合同签订后，跟进客户预付款到账情况，预付款到账后通知生产排期。
               </Text>
             </Space>
           </Col>
@@ -500,7 +529,7 @@ const Dashboard = () => {
 
       // 获取售后工单数据
       let pendingTicketCount = 0
-      if (user?.role === 'Technical Engineer' || user?.role === 'After-sales Engineer') {
+      if (user?.role === 'Technical Engineer') {
         try {
           const ticketsRes = await ticketsAPI.getAll()
           const tickets = Array.isArray(ticketsRes.data?.data) 
@@ -667,7 +696,7 @@ const Dashboard = () => {
   }
 
   // 💼 商务工程师：直接返回专属Dashboard v2.0
-  if (user?.role === 'Sales Engineer') {
+  if (user?.role === 'Business Engineer') {
     return <SalesEngineerDashboardV2 user={user} navigate={navigate} />
   }
 
@@ -679,6 +708,21 @@ const Dashboard = () => {
   // 🏭 生产计划员：直接返回专属Dashboard
   if (user?.role === 'Production Planner') {
     return <PlannerDashboard />
+  }
+
+  // 🔍 质检员：直接返回专属Dashboard
+  if (user?.role === 'QA Inspector') {
+    return <QAInspectorDashboard />
+  }
+
+  // 🚚 物流专员：直接返回专属Dashboard
+  if (user?.role === 'Logistics Specialist') {
+    return <LogisticsDashboard />
+  }
+
+  // 👷 车间工人：直接返回专属Dashboard
+  if (user?.role === 'Shop Floor Worker') {
+    return <ShopFloorDashboard />
   }
 
   return (
@@ -1276,7 +1320,7 @@ const Dashboard = () => {
               {/* 使用指南 - 工作流程 */}
               <Card title="📖 技术工程师工作流程">
                 <Row gutter={[16, 16]}>
-                  <Col xs={24} md={8}>
+                  <Col xs={24} md={6}>
                     <Space direction="vertical">
                       <Title level={5}>
                         <span style={{ color: '#1890ff' }}>1.</span> 接收任务
@@ -1286,7 +1330,7 @@ const Dashboard = () => {
                       </Text>
                     </Space>
                   </Col>
-                  <Col xs={24} md={8}>
+                  <Col xs={24} md={6}>
                     <Space direction="vertical">
                       <Title level={5}>
                         <span style={{ color: '#fa8c16' }}>2.</span> 技术选型
@@ -1296,13 +1340,23 @@ const Dashboard = () => {
                       </Text>
                     </Space>
                   </Col>
-                  <Col xs={24} md={8}>
+                  <Col xs={24} md={6}>
                     <Space direction="vertical">
                       <Title level={5}>
                         <span style={{ color: '#52c41a' }}>3.</span> 提交商务
                       </Title>
                       <Text type="secondary">
                         完成选型后提交给商务报价，您的工作结束。
+                      </Text>
+                    </Space>
+                  </Col>
+                  <Col xs={24} md={6}>
+                    <Space direction="vertical">
+                      <Title level={5}>
+                        <span style={{ color: '#722ed1' }}>4.</span> 售后处理
+                      </Title>
+                      <Text type="secondary">
+                        接收并处理客户售后工单，解决产品使用中的问题。
                       </Text>
                     </Space>
                   </Col>

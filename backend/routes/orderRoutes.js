@@ -17,7 +17,7 @@ router.use(protect);
  * @desc    从项目创建销售订单
  * @access  Private
  */
-router.post('/from-project/:projectId', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), orderController.createOrderFromProject);
+router.post('/from-project/:projectId', authorize('Business Engineer', 'Sales Manager', 'Administrator'), orderController.createOrderFromProject);
 
 /**
  * @route   GET /api/orders
@@ -46,14 +46,14 @@ router.get('/:id', orderController.getOrderById);
  * @desc    更新订单
  * @access  Private
  */
-router.put('/:id', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), checkOrderOwnership, orderController.updateOrder);
+router.put('/:id', authorize('Business Engineer', 'Sales Manager', 'Administrator'), checkOrderOwnership, orderController.updateOrder);
 
 /**
  * @route   PATCH /api/orders/:id/status
  * @desc    更新订单状态
  * @access  Private
  */
-router.patch('/:id/status', authorize('Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.updateOrderStatus);
+router.patch('/:id/status', authorize('Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.updateOrderStatus);
 
 /**
  * @route   POST /api/orders/:id/approve
@@ -88,42 +88,42 @@ router.post('/:id/add-file', checkOrderOwnership, addOrderFile);
  * @desc    删除文件
  * @access  Private
  */
-router.delete('/:id/files/:fileId', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), checkOrderOwnership, deleteOrderFile);
+router.delete('/:id/files/:fileId', authorize('Business Engineer', 'Sales Manager', 'Administrator'), checkOrderOwnership, deleteOrderFile);
 
 /**
  * @route   GET /api/orders/qc-passed
  * @desc    获取质检通过的订单列表（商务工程师）
  * @access  Private
  */
-router.get('/qc-passed/list', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), orderController.getQCPassedOrders);
+router.get('/qc-passed/list', authorize('Business Engineer', 'Sales Manager', 'Administrator'), orderController.getQCPassedOrders);
 
 /**
  * @route   GET /api/orders/ready-to-ship
  * @desc    获取待发货订单列表（物流人员）
  * @access  Private
  */
-router.get('/ready-to-ship/list', authorize('Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.getReadyToShipOrders);
+router.get('/ready-to-ship/list', authorize('Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.getReadyToShipOrders);
 
 /**
  * @route   POST /api/orders/:id/confirm-final-payment
  * @desc    确认收到70%尾款（商务工程师）
  * @access  Private
  */
-router.post('/:id/confirm-final-payment', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), orderController.confirmFinalPayment);
+router.post('/:id/confirm-final-payment', authorize('Business Engineer', 'Sales Manager', 'Administrator'), orderController.confirmFinalPayment);
 
 /**
  * @route   POST /api/orders/:id/mark-ready-to-ship
  * @desc    准备发货（商务工程师确认尾款后）
  * @access  Private
  */
-router.post('/:id/mark-ready-to-ship', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), orderController.markAsReadyToShip);
+router.post('/:id/mark-ready-to-ship', authorize('Business Engineer', 'Sales Manager', 'Administrator'), orderController.markAsReadyToShip);
 
 /**
  * @route   POST /api/orders/:id/add-shipment
  * @desc    录入物流信息（物流人员）
  * @access  Private
  */
-router.post('/:id/add-shipment', authorize('Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.addShipmentInfo);
+router.post('/:id/add-shipment', authorize('Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Administrator'), orderController.addShipmentInfo);
 
 module.exports = router;
 

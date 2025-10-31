@@ -57,7 +57,7 @@ const TeamCollaboration = () => {
       {
         id: '3',
         name: '王商务',
-        role: 'Sales Engineer',
+        role: 'Business Engineer',
         avatar: null,
         status: 'busy',
         tasksCount: 6,

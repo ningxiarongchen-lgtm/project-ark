@@ -1,6 +1,8 @@
 const QualityCheck = require('../models/QualityCheck');
 const WorkOrder = require('../models/WorkOrder');
+const ProductionOrder = require('../models/ProductionOrder');
 const { updateProductionOrderProgress } = require('../services/mesService');
+const notificationService = require('../services/notificationService'); // 🔔 引入通知服务
 
 // @desc    获取所有质检任务
 // @route   GET /api/quality/checks
@@ -262,11 +264,33 @@ exports.completeInspection = async (req, res) => {
         
         // 更新生产订单进度
         await updateProductionOrderProgress(workOrder.production_order);
+
+        // 🔔 发送通知：质检通过 → 通知物流/发货人员
+        try {
+          const productionOrder = await ProductionOrder.findById(workOrder.production_order);
+          if (productionOrder) {
+            await notificationService.notifyQualityCheckPassed(qualityCheck, productionOrder);
+          }
+        } catch (notifyError) {
+          console.error('⚠️ 发送质检通过通知失败:', notifyError);
+          // 不中断主流程
+        }
       } else {
         // 质检不合格，根据处理方式更新工单
         // 暂时保持待质检状态，等待处理决定
         workOrder.actual.reject_quantity = qualityCheck.quantity.rejected_quantity;
         await workOrder.save();
+
+        // 🔔 发送通知：质检失败 → 通知生产负责人
+        try {
+          const productionOrder = await ProductionOrder.findById(workOrder.production_order);
+          if (productionOrder) {
+            await notificationService.notifyQualityCheckFailed(qualityCheck, productionOrder);
+          }
+        } catch (notifyError) {
+          console.error('⚠️ 发送质检失败通知失败:', notifyError);
+          // 不中断主流程
+        }
       }
     }
     

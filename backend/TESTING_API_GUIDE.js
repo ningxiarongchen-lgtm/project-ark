@@ -135,7 +135,7 @@ const advancedUsage = {
 const defaultTestUsers = [
   { role: 'Administrator',           phone: '18800000001', password: 'Test123456!' },
   { role: 'Sales Manager',           phone: '18800000002', password: 'Test123456!' },
-  { role: 'Sales Engineer',          phone: '18800000003', password: 'Test123456!' },
+  { role: 'Business Engineer',          phone: '18800000003', password: 'Test123456!' },
   { role: 'Technical Engineer',      phone: '18800000004', password: 'Test123456!' },
   { role: 'Procurement Specialist',  phone: '18800000005', password: 'Test123456!' },
   { role: 'Production Planner',      phone: '18800000006', password: 'Test123456!' },

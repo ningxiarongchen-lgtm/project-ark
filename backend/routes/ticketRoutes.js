@@ -17,7 +17,7 @@ router.use(protect);
  * @desc    创建服务工单
  * @access  Private
  */
-router.post('/', authorize('After-sales Engineer', 'Sales Engineer', 'Technical Engineer', 'Administrator'), ticketValidation, validate, ticketController.createTicket);
+router.post('/', authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), ticketValidation, validate, ticketController.createTicket);
 
 /**
  * @route   GET /api/tickets
@@ -53,35 +53,35 @@ router.get('/:id', ticketController.getTicketById);
  * @desc    更新服务工单
  * @access  Private
  */
-router.put('/:id', authorize('After-sales Engineer', 'Technical Engineer', 'Administrator'), checkTicketOwnership, ticketValidation, validate, ticketController.updateTicket);
+router.put('/:id', authorize('Technical Engineer', 'Administrator'), checkTicketOwnership, ticketValidation, validate, ticketController.updateTicket);
 
 /**
  * @route   PATCH /api/tickets/:id/status
  * @desc    更新工单状态
  * @access  Private
  */
-router.patch('/:id/status', authorize('After-sales Engineer', 'Technical Engineer', 'Administrator'), checkTicketOwnership, ticketController.updateTicketStatus);
+router.patch('/:id/status', authorize('Technical Engineer', 'Administrator'), checkTicketOwnership, ticketController.updateTicketStatus);
 
 /**
  * @route   POST /api/tickets/:id/assign
  * @desc    分配工程师
  * @access  Private
  */
-router.post('/:id/assign', authorize('After-sales Engineer', 'Sales Manager', 'Administrator'), ticketController.assignEngineer);
+router.post('/:id/assign', authorize('Technical Engineer', 'Sales Manager', 'Administrator'), ticketController.assignEngineer);
 
 /**
  * @route   POST /api/tickets/:id/follow-up
  * @desc    添加跟进记录
  * @access  Private
  */
-router.post('/:id/follow-up', authorize('After-sales Engineer', 'Technical Engineer', 'Administrator'), checkTicketOwnership, ticketController.addFollowUp);
+router.post('/:id/follow-up', authorize('Technical Engineer', 'Administrator'), checkTicketOwnership, ticketController.addFollowUp);
 
 /**
  * @route   POST /api/tickets/:id/feedback
  * @desc    提交客户反馈
  * @access  Private
  */
-router.post('/:id/feedback', authorize('After-sales Engineer', 'Sales Engineer', 'Administrator'), checkTicketOwnership, ticketController.submitFeedback);
+router.post('/:id/feedback', authorize('Technical Engineer', 'Sales Manager', 'Administrator'), checkTicketOwnership, ticketController.submitFeedback);
 
 /**
  * @route   PATCH /api/tickets/:id/accept
@@ -137,6 +137,6 @@ router.post('/:id/add-attachment', checkTicketOwnership, addTicketAttachment);
  * @desc    删除附件
  * @access  Private
  */
-router.delete('/:id/attachments/:attachmentId', authorize('After-sales Engineer', 'Technical Engineer', 'Administrator'), checkTicketOwnership, deleteTicketAttachment);
+router.delete('/:id/attachments/:attachmentId', authorize('Technical Engineer', 'Administrator'), checkTicketOwnership, deleteTicketAttachment);
 
 module.exports = router;

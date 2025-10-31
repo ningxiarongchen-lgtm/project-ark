@@ -58,10 +58,10 @@ const testUsers = [
     passwordChangeRequired: false
   },
   {
-    full_name: '测试销售工程师',
+    full_name: '测试商务工程师',
     phone: '13800000003',
     password: 'test123456',
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: '销售部',
     isActive: true,
     passwordChangeRequired: false
@@ -94,17 +94,8 @@ const testUsers = [
     passwordChangeRequired: false
   },
   {
-    full_name: '测试售后工程师',
-    phone: '13800000007',
-    password: 'test123456',
-    role: 'After-sales Engineer',
-    department: '售后服务部',
-    isActive: true,
-    passwordChangeRequired: false
-  },
-  {
     full_name: '测试质检员',
-    phone: '13800000008',
+    phone: '13800000007',
     password: 'test123456',
     role: 'QA Inspector',
     department: '质检部',

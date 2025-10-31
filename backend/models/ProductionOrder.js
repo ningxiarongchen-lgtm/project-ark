@@ -28,7 +28,20 @@ const productionOrderSchema = new mongoose.Schema({
   // 生产订单状态
   status: {
     type: String,
-    enum: ['Pending', 'Scheduled', 'In Production', 'Paused', 'Completed', 'Awaiting QC', 'QC Passed', 'Ready to Ship', 'Shipped', 'Cancelled', 'Delayed'],
+    enum: [
+      'Pending', 
+      'Scheduled', 
+      'In Production', 
+      'Paused', 
+      'Completed', 
+      'Awaiting QC', 
+      'QC Passed', 
+      'QC Passed, Awaiting Payment',  // 新状态：质检合格，等待尾款
+      'Ready to Ship',                 // 尾款已付，准备发货
+      'Shipped',                       // 已发货
+      'Cancelled', 
+      'Delayed'
+    ],     
     default: 'Pending'
   },
   

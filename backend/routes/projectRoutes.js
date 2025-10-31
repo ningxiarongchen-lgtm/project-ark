@@ -27,7 +27,7 @@ router.use(protect);
 
 // Statistics
 router.get('/stats/summary', getProjectStats);
-router.get('/stats/sales-engineer', authorize('Sales Engineer', 'Administrator'), getSalesEngineerStats);
+router.get('/stats/sales-engineer', authorize('Business Engineer', 'Administrator'), getSalesEngineerStats);
 
 // Get technical engineers list
 router.get('/technical-engineers/list', getTechnicalEngineers);
@@ -35,19 +35,19 @@ router.get('/technical-engineers/list', getTechnicalEngineers);
 // CRUD operations
 router.route('/')
   .get(getProjects)
-  .post(authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), projectValidation, validate, createProject);
+  .post(authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), projectValidation, validate, createProject);
 
 router.route('/:id')
   .get(getProjectById)
-  .put(authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, projectValidation, validate, updateProject)
+  .put(authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, projectValidation, validate, updateProject)
   .delete(authorize('Administrator'), deleteProject);
 
 // Assign technical engineer
-router.post('/:id/assign-technical', authorize('Sales Manager', 'Sales Engineer', 'Administrator'), assignTechnicalEngineer);
+router.post('/:id/assign-technical', authorize('Sales Manager', 'Business Engineer', 'Administrator'), assignTechnicalEngineer);
 
 // Product selections management
-router.post('/:id/selections', authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, addSelection);
-router.put('/:id/selections/:selectionId', authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, updateSelection);
+router.post('/:id/selections', authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, addSelection);
+router.put('/:id/selections/:selectionId', authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), checkProjectOwnership, updateSelection);
 router.delete('/:id/selections/:selectionId', authorize('Sales Manager', 'Administrator'), checkProjectOwnership, removeSelection);
 
 // File management - LeanCloud前端直传后关联

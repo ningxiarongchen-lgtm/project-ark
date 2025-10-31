@@ -40,7 +40,7 @@ describe('🏆 终极验收测试套件 - Complete E2E Workflow', () => {
     admin: { phone: '13000000001', password: 'password', name: 'Admin User' },
     salesManager: { phone: '13000000002', password: 'password', name: 'Sales Manager User' },
     techEngineer: { phone: '13000000003', password: 'password', name: 'Tech Engineer User' },
-    salesEngineer: { phone: '13000000004', password: 'password', name: 'Sales Engineer User' },
+    salesEngineer: { phone: '13000000004', password: 'password', name: 'Business Engineer User' },
     procurement: { phone: '13000000005', password: 'password', name: 'Procurement User' },
     planner: { phone: '13000000006', password: 'password', name: 'Planner User' },
     qa: { phone: '13000000007', password: 'password', name: 'QA User' },

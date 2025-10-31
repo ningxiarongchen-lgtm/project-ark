@@ -492,10 +492,10 @@ router.post('/reset-and-seed', async (req, res) => {
           passwordChangeRequired: false
         },
         {
-          full_name: 'Sales Engineer User',
+          full_name: 'Business Engineer User',
           phone: '18800000003',
           password: 'Test123456!',
-          role: 'Sales Engineer',
+          role: 'Business Engineer',
           department: '销售部',
           isActive: true,
           passwordChangeRequired: false
@@ -528,17 +528,8 @@ router.post('/reset-and-seed', async (req, res) => {
           passwordChangeRequired: false
         },
         {
-          full_name: 'After-sales User',
-          phone: '18800000007',
-          password: 'Test123456!',
-          role: 'After-sales Engineer',
-          department: '售后服务部',
-          isActive: true,
-          passwordChangeRequired: false
-        },
-        {
           full_name: 'QA Inspector User',
-          phone: '18800000008',
+          phone: '18800000007',
           password: 'Test123456!',
           role: 'QA Inspector',
           department: '质检部',
@@ -547,7 +538,7 @@ router.post('/reset-and-seed', async (req, res) => {
         },
         {
           full_name: 'Logistics User',
-          phone: '18800000009',
+          phone: '18800000008',
           password: 'Test123456!',
           role: 'Logistics Specialist',
           department: '物流部',
@@ -556,7 +547,7 @@ router.post('/reset-and-seed', async (req, res) => {
         },
         {
           full_name: 'Shop Floor User',
-          phone: '18800000010',
+          phone: '18800000009',
           password: 'Test123456!',
           role: 'Shop Floor Worker',
           department: '生产车间',

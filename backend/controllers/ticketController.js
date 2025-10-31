@@ -37,7 +37,7 @@ exports.createTicket = async (req, res) => {
     const created_by = {
       id: creator._id,
       name: creator.full_name || creator.name,
-      role: creator.role === 'Sales Engineer' ? '销售' :
+      role: creator.role === 'Business Engineer' ? '销售' :
             creator.role === 'Technical Engineer' ? '技术工程师' :
             creator.role === 'Technical Support' ? '技术主管' :
             creator.role === 'Customer Service' ? '客服' : '管理员'
@@ -394,6 +394,15 @@ exports.assignEngineer = async (req, res) => {
       { path: 'service.assignedEngineer', select: 'name email' },
       { path: 'service.serviceTeam', select: 'name email' }
     ]);
+
+    // 🔔 发送通知：工单分配 → 通知技术工程师
+    try {
+      const notificationService = require('../services/notificationService');
+      await notificationService.notifyTicketAssigned(ticket, engineerId);
+    } catch (notifyError) {
+      console.error('⚠️ 发送工单分配通知失败:', notifyError);
+      // 不中断主流程
+    }
 
     res.json({
       success: true,
@@ -893,7 +902,7 @@ exports.closeTicket = async (req, res) => {
       _id: currentUser._id,
       name: currentUser.full_name || currentUser.name,
       role: currentUser.role === 'Sales Manager' ? '销售经理' :
-            currentUser.role === 'Sales Engineer' ? '销售' : '管理员'
+            currentUser.role === 'Business Engineer' ? '销售' : '管理员'
     };
 
     ticket.closeTicket(closedByUser, close_reason || '问题已解决', customer_feedback);
@@ -978,7 +987,7 @@ exports.reopenTicket = async (req, res) => {
       id: currentUser._id,
       name: currentUser.full_name || currentUser.name,
       role: currentUser.role === 'Sales Manager' ? '销售经理' :
-            currentUser.role === 'Sales Engineer' ? '销售' : '管理员'
+            currentUser.role === 'Business Engineer' ? '销售' : '管理员'
     };
 
     // 记录旧状态

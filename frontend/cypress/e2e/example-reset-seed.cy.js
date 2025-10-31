@@ -60,8 +60,8 @@ describe('示例：使用 Reset-and-Seed 的 E2E 测试', () => {
       cy.contains('用户管理').should('be.visible');
     });
 
-    it('销售工程师不应该能访问用户管理页面', () => {
-      cy.loginAsRole('Sales Engineer');
+    it('商务工程师不应该能访问用户管理页面', () => {
+      cy.loginAsRole('Business Engineer');
       
       cy.visit('/admin/users');
       

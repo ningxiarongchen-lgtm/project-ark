@@ -1,16 +1,14 @@
+/* Import rules must be at the top */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import './styles/global.css';
+@import './styles/animations.css';
+
 /**
  * Main Index CSS - Attio Style Integration
  * 
  * This file imports the Attio global styles and provides
  * base configuration for the entire application.
  */
-
-/* Import Inter Font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* Import Attio Global Styles */
-@import './styles/global.css';
-@import './styles/animations.css';
 
 /* Additional base styles specific to our app */
 * {

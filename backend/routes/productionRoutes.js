@@ -11,9 +11,9 @@ router.use(protect);
 /**
  * @route   POST /api/production/from-project/:projectId
  * @desc    从项目创建销售订单和生产订单（确认收款后）
- * @access  Private (Sales Engineer only)
+ * @access  Private (Business Engineer only)
  */
-router.post('/from-project/:projectId', authorize('Sales Engineer', 'Administrator'), productionController.createProductionOrderFromProject);
+router.post('/from-project/:projectId', authorize('Business Engineer', 'Administrator'), productionController.createProductionOrderFromProject);
 
 /**
  * @route   POST /api/production/from-order/:salesOrderId

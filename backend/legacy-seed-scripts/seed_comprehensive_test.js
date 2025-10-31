@@ -77,7 +77,7 @@ const testUsers = [
     full_name: '商务-王五',
     phone: '18800000003',
     password: 'Password123!',
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: '商务部',
     isActive: true,
     passwordChangeRequired: false
@@ -119,17 +119,8 @@ const testUsers = [
     passwordChangeRequired: false
   },
   {
-    full_name: '售后-郑十',
+    full_name: '工人-陈九',
     phone: '18800000008',
-    password: 'Password123!',
-    role: 'After-sales Engineer',
-    department: '售后服务部',
-    isActive: true,
-    passwordChangeRequired: false
-  },
-  {
-    full_name: '工人-陈十一',
-    phone: '18800000009',
     password: 'Password123!',
     role: 'Shop Floor Worker',
     department: '生产车间',

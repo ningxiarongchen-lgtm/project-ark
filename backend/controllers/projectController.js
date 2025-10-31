@@ -15,8 +15,8 @@ exports.getProjects = async (req, res) => {
     if (req.user.role === 'Administrator') {
       // 管理员不添加过滤条件，可以看到所有项目
     }
-    // 销售经理和销售工程师只能看到自己创建的项目或被指派的项目
-    else if (req.user.role === 'Sales Manager' || req.user.role === 'Sales Engineer') {
+    // 销售经理和商务工程师只能看到自己创建的项目或被指派的项目
+    else if (req.user.role === 'Sales Manager' || req.user.role === 'Business Engineer') {
       query.$or = [
         { owner: req.user._id },           // 自己负责的项目
         { createdBy: req.user._id },       // 自己创建的项目
@@ -143,7 +143,7 @@ exports.createProject = async (req, res) => {
       ...req.body,
       projectNumber: projectNumber, // ✅ 显式设置项目编号
       createdBy: req.user._id,
-      // ✅ 自动设置 owner 为当前用户（销售经理/销售工程师）
+      // ✅ 自动设置 owner 为当前用户（销售经理/商务工程师）
       owner: req.user._id,
       // ✅ 自动设置 status 为"待指派技术"
       status: '待指派技术'
@@ -230,7 +230,7 @@ exports.updateProject = async (req, res) => {
         // 待商务报价 → 已报价-询价中（只有商务专员）
         '待商务报价': {
           '已报价-询价中': {
-            allowedRoles: ['Sales Engineer', 'Administrator'],
+            allowedRoles: ['Business Engineer', 'Administrator'],
             description: '完成商务报价'
           }
         },
@@ -255,7 +255,7 @@ exports.updateProject = async (req, res) => {
         // 待商务审核合同 → 待客户盖章（商务专员上传盖章合同后自动流转）
         '待商务审核合同': {
           '待客户盖章': {
-            allowedRoles: ['Sales Engineer', 'Administrator'],
+            allowedRoles: ['Business Engineer', 'Administrator'],
             description: '审核并上传公司盖章合同'
           }
         },
@@ -273,13 +273,13 @@ exports.updateProject = async (req, res) => {
         // 待预付款/合同已签订-赢单 → 生产准备中（商务专员确认预付款）
         '待预付款': {
           '生产准备中': {
-            allowedRoles: ['Sales Engineer', 'Administrator'],
+            allowedRoles: ['Business Engineer', 'Administrator'],
             description: '确认预付款到账'
           }
         },
         '合同已签订-赢单': {
           '生产准备中': {
-            allowedRoles: ['Sales Engineer', 'Administrator'],
+            allowedRoles: ['Business Engineer', 'Administrator'],
             description: '确认预付款到账'
           }
         },
@@ -653,7 +653,7 @@ exports.getProjectStats = async (req, res) => {
 
 // @desc    Get sales engineer dashboard stats
 // @route   GET /api/projects/stats/sales-engineer
-// @access  Private (Sales Engineer only)
+// @access  Private (Business Engineer only)
 exports.getSalesEngineerStats = async (req, res) => {
   try {
     const userId = req.user._id;

@@ -15,7 +15,7 @@ const testUsers = [
   { phone: '13800138000', password: 'admin123', role: 'Administrator', name: 'Admin User' },
   { phone: '13800138001', password: 'tech123', role: 'Technical Engineer', name: 'John Engineer' },
   { phone: '13800138002', password: 'manager123', role: 'Sales Manager', name: 'Sarah Sales' },
-  { phone: '13800138003', password: 'sales123', role: 'Sales Engineer', name: 'Mike Commerce' }
+  { phone: '13800138003', password: 'sales123', role: 'Business Engineer', name: 'Mike Commerce' }
 ];
 
 // 测试结果

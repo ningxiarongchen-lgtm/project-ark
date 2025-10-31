@@ -978,6 +978,32 @@ exports.confirmReceiving = async (req, res) => {
     // 填充用户信息
     await purchaseOrder.populate('receiving_info.received_by', 'full_name');
     
+    // 🔗 自动创建IQC质检任务
+    const { createQualityCheck } = require('./qualityCheckController');
+    try {
+      const itemsToCheck = received_items?.map(item => ({
+        item: item.item_id,
+        itemType: item.item_type || 'Accessory',
+        model: item.item_name || item.model,
+        quantity: item.received_quantity || item.quantity
+      })) || [];
+      
+      await createQualityCheck(
+        'IQC',
+        {
+          id: purchaseOrder._id,
+          type: 'PurchaseOrder',
+          number: purchaseOrder.order_number
+        },
+        itemsToCheck
+      );
+      
+      console.log(`✅ 自动创建IQC检验任务: 采购订单 ${purchaseOrder.order_number}`);
+    } catch (error) {
+      console.error('创建IQC检验任务失败:', error);
+      // 不影响主流程，继续执行
+    }
+    
     // 🔗 与生产系统关联：记录物料入库信息
     // 如果质检状态为合格，触发生产系统通知
     if (quality_check_status === '合格' || quality_check_status === '部分合格') {

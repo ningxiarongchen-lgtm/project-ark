@@ -12,7 +12,7 @@ const auth = require('../middleware/auth');
 router.use(auth.protect);
 
 // 获取BOM优化建议
-router.post('/optimize-bom', auth.authorize('Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'), aiController.optimizeBOM);
+router.post('/optimize-bom', auth.authorize('Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'), aiController.optimizeBOM);
 
 // 获取AI服务状态
 router.get('/status', aiController.getStatus);

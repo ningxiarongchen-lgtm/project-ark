@@ -13,7 +13,7 @@
  * 涉及角色：
  * 👔 Sales Manager (销售经理) - 项目发起、商机管理、合同签订
  * 🔧 Technical Engineer (技术工程师) - 技术选型、方案设计
- * 💼 Sales Engineer (商务工程师) - BOM管理、成本核算、报价
+ * 💼 Business Engineer (商务工程师) - BOM管理、成本核算、报价
  * 🏭 Production Planner (生产计划员) - 生产排期、进度管理
  * 📦 Procurement Specialist (采购专员) - 供应商管理
  * 🎫 After-sales Engineer (售后工程师) - 售后服务、工单处理
@@ -348,7 +348,7 @@ describe('🎭 Multi-Role Collaboration Workflow - The Complete Play', () => {
   // 这是一个需要商业敏感度和成本控制能力的关键环节。
   // ═════════════════════════════════════════════════════════════════════
   
-  context('🎬 Act 3: Sales Engineer Creates BOM and Quote', () => {
+  context('🎬 Act 3: Business Engineer Creates BOM and Quote', () => {
     
     it('Scene 3.1 - 商务工程师登录系统', () => {
       cy.log('💼 角色登场: 商务工程师')

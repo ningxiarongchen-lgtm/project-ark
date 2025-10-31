@@ -2,6 +2,7 @@ const ProductionOrder = require('../models/ProductionOrder');
 const SalesOrder = require('../models/SalesOrder');
 const Project = require('../models/Project');
 const User = require('../models/User'); // 🔒 用于通知功能
+const notificationService = require('../services/notificationService'); // 🔔 引入通知服务
 
 /**
  * 从销售订单创建生产订单
@@ -403,6 +404,14 @@ exports.updateProductionProgress = async (req, res) => {
         'All production items completed',
         req.user.id
       );
+
+      // 🔔 发送通知：生产完成 → 通知质检员
+      try {
+        await notificationService.notifyProductionCompleted(productionOrder);
+      } catch (notifyError) {
+        console.error('⚠️ 发送生产完成通知失败:', notifyError);
+        // 不中断主流程
+      }
     }
 
     // 添加进度更新日志
@@ -606,6 +615,32 @@ exports.markAsAwaitingQC = async (req, res) => {
     );
 
     await productionOrder.save();
+
+    // 🔗 自动创建FQC质检任务
+    const { createQualityCheck } = require('./qualityCheckController');
+    try {
+      const itemsToCheck = productionOrder.items?.map(item => ({
+        item: item.product,
+        itemType: 'Actuator',
+        model: item.model || item.productName,
+        quantity: item.quantity
+      })) || [];
+      
+      await createQualityCheck(
+        'FQC',
+        {
+          id: productionOrder._id,
+          type: 'ProductionOrder',
+          number: productionOrder.orderNumber
+        },
+        itemsToCheck
+      );
+      
+      console.log(`✅ 自动创建FQC检验任务: 生产订单 ${productionOrder.orderNumber}`);
+    } catch (error) {
+      console.error('创建FQC检验任务失败:', error);
+      // 不影响主流程，继续执行
+    }
 
     // 同时更新销售订单状态
     if (productionOrder.salesOrder) {
@@ -835,7 +870,7 @@ function getProgressColor(status) {
 /**
  * 从项目创建销售订单和生产订单（确认收款后）
  * @route POST /api/production/from-project/:projectId
- * @access Private (Sales Engineer only)
+ * @access Private (Business Engineer only)
  */
 exports.createProductionOrderFromProject = async (req, res) => {
   try {

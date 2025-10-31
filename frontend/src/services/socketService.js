@@ -68,11 +68,19 @@ export const subscribeToNotifications = (callback) => {
     return () => {};
   }
 
-  socket.on('notification', callback);
+  const handleNotification = (notification) => {
+    console.log('📬 Received notification:', notification);
+    callback(notification);
+  };
+
+  // Listen for both 'notification' and 'new_notification' events
+  socket.on('notification', handleNotification);
+  socket.on('new_notification', handleNotification);
 
   // Return unsubscribe function
   return () => {
-    socket.off('notification', callback);
+    socket.off('notification', handleNotification);
+    socket.off('new_notification', handleNotification);
   };
 };
 
@@ -83,5 +91,12 @@ export const ping = () => {
   if (socket) {
     socket.emit('ping');
   }
+};
+
+/**
+ * Check if socket is connected
+ */
+export const isConnected = () => {
+  return socket?.connected || false;
 };
 

@@ -66,7 +66,7 @@ router.post('/register', protect, authorize('Administrator'), userRegistrationVa
 router.get('/users', protect, authorize('Administrator'), getUsers);
 router.delete('/users/:id', protect, authorize('Administrator'), deleteUser);
 router.put('/users/:id/role', protect, authorize('Administrator'), [
-  body('role').notEmpty().withMessage('角色不能为空').isIn(['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer', 'Administrator']).withMessage('无效的角色')
+  body('role').notEmpty().withMessage('角色不能为空').isIn(['Technical Engineer', 'Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'QA Inspector', 'Logistics Specialist', 'Shop Floor Worker', 'Administrator']).withMessage('无效的角色')
 ], validate, updateUserRole);
 
 module.exports = router;

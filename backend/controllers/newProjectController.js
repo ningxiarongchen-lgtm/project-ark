@@ -587,7 +587,7 @@ exports.submitTechnicalList = async (req, res) => {
 
 // @desc    商务工程师驳回技术清单并提出修改建议
 // @route   POST /api/new-projects/:id/reject-technical-list
-// @access  Private (Sales Engineer only)
+// @access  Private (Business Engineer only)
 exports.rejectTechnicalList = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -600,7 +600,7 @@ exports.rejectTechnicalList = async (req, res) => {
     }
     
     // 权限检查：只有商务工程师可以驳回
-    if (req.user.role !== 'Sales Engineer' && req.user.role !== 'administrator') {
+    if (req.user.role !== 'Business Engineer' && req.user.role !== 'administrator') {
       return res.status(403).json({
         success: false,
         message: '只有商务工程师可以驳回技术清单'
@@ -697,7 +697,7 @@ exports.respondToModification = async (req, res) => {
 
 // @desc    商务工程师确认技术清单版本
 // @route   POST /api/new-projects/:id/confirm-technical-version
-// @access  Private (Sales Engineer only)
+// @access  Private (Business Engineer only)
 exports.confirmTechnicalVersion = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -710,7 +710,7 @@ exports.confirmTechnicalVersion = async (req, res) => {
     }
     
     // 权限检查
-    if (req.user.role !== 'Sales Engineer' && req.user.role !== 'administrator') {
+    if (req.user.role !== 'Business Engineer' && req.user.role !== 'administrator') {
       return res.status(403).json({
         success: false,
         message: '只有商务工程师可以确认技术清单版本'
@@ -809,7 +809,7 @@ exports.getModificationRequests = async (req, res) => {
 
 // @desc    商务工程师从技术清单生成报价BOM
 // @route   POST /api/new-projects/:id/generate-quotation-bom
-// @access  Private (Sales Engineer, Sales Manager, Administrator)
+// @access  Private (Business Engineer, Sales Manager, Administrator)
 exports.generateQuotationBom = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -822,7 +822,7 @@ exports.generateQuotationBom = async (req, res) => {
     }
     
     // 权限检查：只有商务工程师、销售经理和管理员可以生成报价BOM
-    if (req.user.role !== 'Sales Engineer' && 
+    if (req.user.role !== 'Business Engineer' && 
         req.user.role !== 'Sales Manager' && 
         req.user.role !== 'administrator') {
       return res.status(403).json({
@@ -905,7 +905,7 @@ exports.getQuotationBom = async (req, res) => {
 
 // @desc    更新报价BOM中的某个项目
 // @route   PUT /api/new-projects/:id/quotation-bom/:itemId
-// @access  Private (Sales Engineer, Sales Manager, Administrator)
+// @access  Private (Business Engineer, Sales Manager, Administrator)
 exports.updateQuotationBomItem = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -918,7 +918,7 @@ exports.updateQuotationBomItem = async (req, res) => {
     }
     
     // 权限检查
-    if (req.user.role !== 'Sales Engineer' && 
+    if (req.user.role !== 'Business Engineer' && 
         req.user.role !== 'Sales Manager' && 
         req.user.role !== 'administrator') {
       return res.status(403).json({
@@ -962,7 +962,7 @@ exports.updateQuotationBomItem = async (req, res) => {
 
 // @desc    向报价BOM添加新项目
 // @route   POST /api/new-projects/:id/quotation-bom
-// @access  Private (Sales Engineer, Sales Manager, Administrator)
+// @access  Private (Business Engineer, Sales Manager, Administrator)
 exports.addQuotationBomItem = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -975,7 +975,7 @@ exports.addQuotationBomItem = async (req, res) => {
     }
     
     // 权限检查
-    if (req.user.role !== 'Sales Engineer' && 
+    if (req.user.role !== 'Business Engineer' && 
         req.user.role !== 'Sales Manager' && 
         req.user.role !== 'administrator') {
       return res.status(403).json({
@@ -1013,7 +1013,7 @@ exports.addQuotationBomItem = async (req, res) => {
 
 // @desc    删除报价BOM中的某个项目
 // @route   DELETE /api/new-projects/:id/quotation-bom/:itemId
-// @access  Private (Sales Engineer, Sales Manager, Administrator)
+// @access  Private (Business Engineer, Sales Manager, Administrator)
 exports.deleteQuotationBomItem = async (req, res) => {
   try {
     const project = await NewProject.findById(req.params.id);
@@ -1026,7 +1026,7 @@ exports.deleteQuotationBomItem = async (req, res) => {
     }
     
     // 权限检查
-    if (req.user.role !== 'Sales Engineer' && 
+    if (req.user.role !== 'Business Engineer' && 
         req.user.role !== 'Sales Manager' && 
         req.user.role !== 'administrator') {
       return res.status(403).json({
@@ -1047,6 +1047,163 @@ exports.deleteQuotationBomItem = async (req, res) => {
     res.status(500).json({
       success: false,
       message: '删除报价BOM项目失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    确认尾款已到账（核心功能 - 款到发货流程）
+// @route   POST /api/new-projects/:id/confirm-final-payment
+// @access  Private (Business Engineer, Admin)
+exports.confirmFinalPayment = async (req, res) => {
+  try {
+    const { notes } = req.body;
+    
+    const project = await NewProject.findById(req.params.id)
+      .populate('created_by', 'name email');
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查：只有商务工程师和管理员可以确认尾款
+    if (req.user.role !== 'Business Engineer' && 
+        req.user.role !== 'Admin' &&
+        req.user.role !== 'administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有商务工程师可以确认尾款'
+      });
+    }
+    
+    // 检查当前状态
+    if (!project.contract) {
+      return res.status(400).json({
+        success: false,
+        message: '项目合同信息不完整'
+      });
+    }
+    
+    if (project.contract.finalPaymentStatus === 'Confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: '尾款已经确认过了'
+      });
+    }
+    
+    // 更新项目的尾款状态
+    project.contract.finalPaymentStatus = 'Confirmed';
+    project.contract.finalPaymentConfirmedDate = new Date();
+    project.contract.finalPaymentConfirmedBy = req.user._id;
+    project.contract.deliveryStatus = 'Ready to Ship';
+    if (notes) {
+      project.contract.paymentNotes = notes;
+    }
+    
+    await project.save();
+    
+    // 查找关联的生产订单并更新状态
+    const ProductionOrder = require('../models/ProductionOrder');
+    const productionOrders = await ProductionOrder.find({
+      salesOrder: project._id,
+      status: 'QC Passed, Awaiting Payment'
+    });
+    
+    // 将所有符合条件的生产订单状态更新为 Ready to Ship
+    const updatePromises = productionOrders.map(order => {
+      order.status = 'Ready to Ship';
+      return order.save();
+    });
+    
+    await Promise.all(updatePromises);
+    
+    // 通知生产计划员和车间主管
+    const { createNotification } = require('../services/notificationService');
+    const User = require('../models/User');
+    
+    // 查找所有生产计划员和车间主管
+    const notifyRoles = ['Production Planner', 'Workshop Supervisor'];
+    const usersToNotify = await User.find({
+      role: { $in: notifyRoles }
+    });
+    
+    // 为每个用户创建通知
+    const notificationPromises = usersToNotify.map(user => 
+      createNotification({
+        recipient: user._id,
+        type: 'payment_confirmed',
+        title: '尾款已到账，可以安排发货',
+        message: `项目 ${project.project_name}（${project.project_number}）的尾款已到账，请安排发货。`,
+        relatedModel: 'NewProject',
+        relatedId: project._id,
+        priority: 'high'
+      })
+    );
+    
+    await Promise.all(notificationPromises);
+    
+    // 返回更新后的项目信息
+    const updatedProject = await NewProject.findById(project._id)
+      .populate('contract.finalPaymentConfirmedBy', 'name email');
+    
+    res.json({
+      success: true,
+      message: '尾款确认成功，已通知生产部门安排发货',
+      data: {
+        project: updatedProject,
+        updatedProductionOrders: productionOrders.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('确认尾款失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '确认尾款失败',
+      error: error.message
+    });
+  }
+};
+
+// @desc    获取待确认尾款的项目列表（商务工程师专用）
+// @route   GET /api/new-projects/pending-final-payment
+// @access  Private (Business Engineer, Admin)
+exports.getPendingFinalPaymentProjects = async (req, res) => {
+  try {
+    // 查询条件：尾款状态为 Pending 且有关联的生产订单处于"质检合格，等待付款"状态
+    const ProductionOrder = require('../models/ProductionOrder');
+    
+    // 先找到所有状态为 'QC Passed, Awaiting Payment' 的生产订单
+    const awaitingPaymentOrders = await ProductionOrder.find({
+      status: 'QC Passed, Awaiting Payment'
+    }).select('salesOrder');
+    
+    // 提取项目ID
+    const projectIds = awaitingPaymentOrders.map(order => order.salesOrder);
+    
+    // 查询这些项目，并且尾款状态为 Pending
+    const projects = await NewProject.find({
+      _id: { $in: projectIds },
+      'contract.finalPaymentStatus': 'Pending'
+    })
+    .populate('created_by', 'name email')
+    .select('project_name project_number client_name contract createdAt')
+    .sort({ createdAt: -1 });
+    
+    res.json({
+      success: true,
+      data: projects,
+      count: projects.length
+    });
+    
+  } catch (error) {
+    console.error('获取待确认尾款项目列表失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取待确认尾款项目列表失败',
       error: error.message
     });
   }

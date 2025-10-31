@@ -2,6 +2,7 @@ const Project = require('../models/Project');
 const Contract = require('../models/Contract');
 const AV = require('leancloud-storage');
 const { calculateFileHashFromUrl } = require('../utils/fileHash'); // 🔒 引入哈希计算工具
+const notificationService = require('../services/notificationService'); // 🔔 引入通知服务
 
 /**
  * 合同管理控制器
@@ -60,7 +61,7 @@ exports.getContracts = async (req, res) => {
     }
 
     // 权限控制 - 非管理员只能看到自己相关的合同
-    if (!['Admin', 'Sales Engineer'].includes(req.user.role)) {
+    if (!['Admin', 'Business Engineer'].includes(req.user.role)) {
       query.createdBy = req.user._id;
     }
 
@@ -148,7 +149,7 @@ exports.getContractById = async (req, res) => {
     // 权限检查
     const hasAccess =
       req.user.role === 'Admin' ||
-      req.user.role === 'Sales Engineer' ||
+      req.user.role === 'Business Engineer' ||
       contract.createdBy._id.toString() === req.user._id.toString();
 
     if (!hasAccess) {
@@ -225,6 +226,10 @@ exports.createContract = async (req, res) => {
     await contract.populate('project', 'projectName projectNumber');
     await contract.populate('createdBy', 'name email phone role');
 
+    // 🔔 如果合同状态是待审批，发送通知给商务工程师
+    // 注意：Draft状态不发送通知，只有提交审批时才发送
+    // 这里留作示例，实际通知会在状态更新为 'Under Review' 时发送
+
     res.status(201).json({
       success: true,
       message: 'Contract created successfully',
@@ -260,7 +265,7 @@ exports.updateContract = async (req, res) => {
     // 权限检查
     const canEdit =
       req.user.role === 'Admin' ||
-      req.user.role === 'Sales Engineer' ||
+      req.user.role === 'Business Engineer' ||
       contract.createdBy.toString() === req.user._id.toString();
 
     if (!canEdit) {
@@ -269,6 +274,10 @@ exports.updateContract = async (req, res) => {
         message: 'Access denied'
       });
     }
+
+    // 检查状态变化
+    const oldStatus = contract.status;
+    const newStatus = updateData.status;
 
     // 更新字段
     Object.keys(updateData).forEach(key => {
@@ -283,6 +292,21 @@ exports.updateContract = async (req, res) => {
     await contract.populate('project', 'projectName projectNumber');
     await contract.populate('createdBy', 'name email phone role');
     await contract.populate('updatedBy', 'name email phone role');
+
+    // 🔔 发送通知：合同状态变化
+    try {
+      if (oldStatus !== newStatus && newStatus === 'Under Review') {
+        // 合同提交审批 → 通知商务工程师
+        if (contract.contractType === 'Procurement') {
+          await notificationService.notifyPurchaseContractSubmitted(contract);
+        } else if (contract.contractType === 'Sales') {
+          await notificationService.notifySalesContractSubmitted(contract);
+        }
+      }
+    } catch (notifyError) {
+      console.error('⚠️ 发送合同审批通知失败:', notifyError);
+      // 不中断主流程
+    }
 
     res.status(200).json({
       success: true,
@@ -368,7 +392,7 @@ exports.getContractStats = async (req, res) => {
     }
 
     // 如果不是管理员或商务工程师，只能看自己的
-    if (!['Admin', 'Sales Engineer'].includes(req.user.role)) {
+    if (!['Admin', 'Business Engineer'].includes(req.user.role)) {
       matchQuery.createdBy = req.user._id;
     }
 
@@ -563,9 +587,9 @@ exports.reviewAndUploadSealedContract = async (req, res) => {
     }
 
     // 检查用户权限（商务工程师）
-    if (req.user.role !== 'Sales Engineer') {
+    if (req.user.role !== 'Business Engineer') {
       return res.status(403).json({ 
-        message: 'Only Sales Engineer can review and seal contract' 
+        message: 'Only Business Engineer can review and seal contract' 
       });
     }
 
@@ -826,6 +850,14 @@ exports.uploadFinalContract = async (req, res) => {
 
     await project.save();
 
+    // 🔔 发送通知：项目赢单 → 通知生产计划员创建生产订单
+    try {
+      await notificationService.notifyProjectWon(project);
+    } catch (notifyError) {
+      console.error('⚠️ 发送项目赢单通知失败:', notifyError);
+      // 不中断主流程
+    }
+
     // 填充用户信息
     await project.populate('contract_files.final_contract.uploadedBy', 'name email phone');
 
@@ -898,7 +930,7 @@ exports.getContractInfo = async (req, res) => {
     // 检查权限：只有项目相关人员可以查看
     const hasAccess = 
       project.createdBy.toString() === req.user._id.toString() ||
-      ['Sales Manager', 'Sales Engineer', 'Admin'].includes(req.user.role);
+      ['Sales Manager', 'Business Engineer', 'Admin'].includes(req.user.role);
 
     if (!hasAccess) {
       return res.status(403).json({ message: 'Access denied' });
@@ -920,7 +952,7 @@ exports.getContractInfo = async (req, res) => {
         step2_review: {
           status: project.contract_files?.company_sealed_contract ? 'completed' : 
                   project.status === 'Pending Contract Review' ? 'in_progress' : 'pending',
-          description: 'Sales Engineer reviews and uploads sealed contract',
+          description: 'Business Engineer reviews and uploads sealed contract',
           required_status: 'Pending Contract Review',
           file: project.contract_files?.company_sealed_contract
         },

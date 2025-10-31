@@ -15,7 +15,7 @@
  * 涉及角色：
  * 👔 销售经理 (Sales Manager)
  * 🔧 技术工程师 (Technical Engineer)
- * 💼 商务工程师 (Sales Engineer)
+ * 💼 商务工程师 (Business Engineer)
  * 
  * 数据来源：
  * cypress/fixtures/test_data.json

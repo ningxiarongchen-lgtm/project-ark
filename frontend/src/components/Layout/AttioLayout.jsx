@@ -23,6 +23,8 @@ import {
   DollarOutlined,
   FileTextOutlined,
   ToolOutlined,
+  SafetyOutlined,
+  CarOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
 import { colors } from '../../styles/theme'
@@ -39,7 +41,7 @@ const menuConfig = [
     key: '/dashboard',
     label: '仪表盘',
     icon: <DashboardOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
+    roles: ['Administrator', 'Technical Engineer', 'Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'QA Inspector', 'Logistics Specialist', 'Shop Floor Worker'],
   },
   // 👑 管理员专属菜单
   {
@@ -71,35 +73,35 @@ const menuConfig = [
     key: '/projects',
     label: '项目管理',
     icon: <ProjectOutlined />,
-    roles: ['Technical Engineer', 'Sales Engineer', 'Sales Manager'],  // 移除 Administrator
+    roles: ['Technical Engineer', 'Business Engineer', 'Sales Manager'],  // 移除 Administrator
   },
   {
     key: '/selection-engine',
     label: '智慧选型',
     icon: <ThunderboltOutlined />,
-    roles: ['Technical Engineer'],  // 只有技术工程师可用，移除 Sales Engineer
+    roles: ['Technical Engineer'],  // 只有技术工程师可用，移除 Business Engineer
   },
   // 💰 商务工程师专属菜单
   {
     key: '/finance',
     label: '款项管理',
     icon: <DollarOutlined />,
-    roles: ['Sales Engineer'],
+    roles: ['Business Engineer'],
     children: [
       {
         key: '/finance/down-payment',
         label: '待催预付款',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
       {
         key: '/finance/final-payment',
         label: '待催尾款',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
       {
         key: '/finance/records',
         label: '款项跟进记录',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
     ]
   },
@@ -107,23 +109,23 @@ const menuConfig = [
     key: '/contracts',
     label: '合同管理中心',
     icon: <FileTextOutlined />,
-    roles: ['Sales Engineer', 'Administrator'],
+    roles: ['Business Engineer', 'Administrator'],
   },
   {
     key: '/production-orders',
     label: '生产订单',
     icon: <ToolOutlined />,
-    roles: ['Sales Engineer'],
+    roles: ['Business Engineer'],
     children: [
       {
         key: '/production-orders/pending',
         label: '待下发订单',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
       {
         key: '/production-orders/issued',
         label: '已下发订单',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
     ]
   },
@@ -131,17 +133,17 @@ const menuConfig = [
     key: '/quotations',
     label: '报价管理',
     icon: <FileTextOutlined />,
-    roles: ['Sales Engineer'],
+    roles: ['Business Engineer'],
     children: [
       {
         key: '/quotations/pending',
         label: '待报价项目',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
       {
         key: '/quotations/completed',
         label: '已报价项目',
-        roles: ['Sales Engineer'],
+        roles: ['Business Engineer'],
       },
     ]
   },
@@ -167,13 +169,25 @@ const menuConfig = [
     key: '/purchase-orders',
     label: '采购管理',
     icon: <ShoppingCartOutlined />,
-    roles: ['Procurement Specialist', 'Sales Engineer'],
+    roles: ['Procurement Specialist'],
+  },
+  {
+    key: '/quality',
+    label: '质检管理',
+    icon: <SafetyOutlined />,
+    roles: ['QA Inspector', 'Production Planner', 'Administrator'],
+  },
+  {
+    key: '/my-delivery-tasks',
+    label: '物流配送',
+    icon: <CarOutlined />,
+    roles: ['Logistics Specialist', 'Production Planner', 'Administrator'],
   },
   {
     key: '/service-center',
     label: '售后服务',
     icon: <CustomerServiceOutlined />,
-    roles: ['After-sales Engineer', 'Sales Manager', 'Technical Engineer'],  // 移除 Administrator
+    roles: ['Technical Engineer', 'Sales Manager'],  // 技术工程师承担售后职责
   },
   {
     key: '/product-catalog',
@@ -185,18 +199,27 @@ const menuConfig = [
     key: '/products',
     label: '产品数据库',
     icon: <DatabaseOutlined />,
-    roles: ['Production Planner', 'After-sales Engineer'],
+    roles: ['Production Planner'],  // 只有生产计划员可以访问
+  },
+  // 👷 车间工人专属菜单
+  {
+    key: '/shop-floor',
+    label: '我的工单',
+    icon: <ToolOutlined />,
+    roles: ['Shop Floor Worker'],
   },
 ]
 
 // 角色中文翻译映射
 const roleTranslations = {
   'Technical Engineer': '技术工程师',
-  'Sales Engineer': '销售工程师',
+  'Business Engineer': '商务工程师',
   'Sales Manager': '销售经理',
   'Procurement Specialist': '采购专员',
   'Production Planner': '生产计划员',
-  'After-sales Engineer': '售后工程师',
+  'QA Inspector': '质检员',
+  'Logistics Specialist': '物流专员',
+  'Shop Floor Worker': '车间工人',
   'Administrator': '管理员',
 }
 

@@ -125,11 +125,13 @@ const UserForm = ({ visible, record, onSubmit, onCancel }) => {
           <Select placeholder="请选择用户角色" showSearch>
             <Option value="Administrator">管理员 (Administrator)</Option>
             <Option value="Sales Manager">销售经理 (Sales Manager)</Option>
-            <Option value="Technical Engineer">技术工程师 (Technical Engineer)</Option>
-            <Option value="Sales Engineer">销售工程师 (Sales Engineer)</Option>
+            <Option value="Technical Engineer">技术工程师 (Technical Engineer) - 含售后职责</Option>
+            <Option value="Business Engineer">商务工程师 (Business Engineer)</Option>
             <Option value="Procurement Specialist">采购专员 (Procurement Specialist)</Option>
             <Option value="Production Planner">生产计划员 (Production Planner)</Option>
-            <Option value="After-sales Engineer">售后工程师 (After-sales Engineer)</Option>
+            <Option value="QA Inspector">质检员 (QA Inspector)</Option>
+            <Option value="Logistics Specialist">物流专员 (Logistics Specialist)</Option>
+            <Option value="Shop Floor Worker">车间工人 (Shop Floor Worker)</Option>
           </Select>
         </Form.Item>
         

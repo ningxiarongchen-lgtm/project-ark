@@ -53,7 +53,7 @@ Cypress.Commands.add('loginAsRole', (role) => {
   const credentials = {
     'Administrator': { phone: '18800000001', password: 'Test123456!' },
     'Sales Manager': { phone: '18800000002', password: 'Test123456!' },
-    'Sales Engineer': { phone: '18800000003', password: 'Test123456!' },
+    'Business Engineer': { phone: '18800000003', password: 'Test123456!' },
     'Technical Engineer': { phone: '18800000004', password: 'Test123456!' },
     'Procurement Specialist': { phone: '18800000005', password: 'Test123456!' },
     'Production Planner': { phone: '18800000006', password: 'Test123456!' },

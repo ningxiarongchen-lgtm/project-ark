@@ -31,10 +31,10 @@ const TicketDetails = () => {
   const [loading, setLoading] = useState(true)
   
   // 权限检查
-  const canAssign = hasAnyRole(['Administrator', 'After-sales Engineer']) // 🔒 销售经理不能指派工程师
-  const canUpdateStatus = hasAnyRole(['Administrator', 'After-sales Engineer', 'Technical Engineer'])
-  const canAddFollowUp = hasAnyRole(['Administrator', 'After-sales Engineer', 'Technical Engineer', 'Sales Manager']) // 🔒 销售经理可以添加跟进记录（给客户回复）
-  const canSubmitFeedback = hasAnyRole(['Administrator', 'After-sales Engineer', 'Sales Engineer', 'Sales Manager']) // 🔒 销售经理可以提交反馈
+  const canAssign = hasAnyRole(['Administrator', 'Technical Engineer', 'Sales Manager']) // 🔒 技术工程师和销售经理可以指派工程师
+  const canUpdateStatus = hasAnyRole(['Administrator', 'Technical Engineer'])
+  const canAddFollowUp = hasAnyRole(['Administrator', 'Technical Engineer', 'Sales Manager']) // 🔒 销售经理可以添加跟进记录（给客户回复）
+  const canSubmitFeedback = hasAnyRole(['Administrator', 'Technical Engineer', 'Sales Manager']) // 🔒 销售经理可以提交反馈
 
   // Modal状态
   const [statusModalVisible, setStatusModalVisible] = useState(false)
@@ -684,8 +684,8 @@ const TicketDetails = () => {
     return <div>工单不存在</div>
   }
 
-  // 检查售后工程师是否是此工单的负责人
-  const isAssignedEngineer = user?.role === 'After-sales Engineer' && 
+  // 检查技术工程师是否是此工单的负责人
+  const isAssignedEngineer = user?.role === 'Technical Engineer' && 
     ticket?.service?.assignedEngineer?._id === (user?._id || user?.id)
 
   return (
@@ -708,8 +708,8 @@ const TicketDetails = () => {
         </Space>
       </div>
 
-      {/* 售后工程师权限提示 */}
-      {user?.role === 'After-sales Engineer' && !isAssignedEngineer && (
+      {/* 技术工程师权限提示 */}
+      {user?.role === 'Technical Engineer' && !isAssignedEngineer && (
         <Alert
           message="只读模式"
           description="您只能操作分配给您的工单。此工单已分配给其他工程师或尚未分配。"
@@ -779,8 +779,8 @@ const TicketDetails = () => {
           </>
         )}
         
-        {/* 更新状态 - 售后工程师只能更新自己负责的工单 */}
-        {canUpdateStatus && (user?.role !== 'After-sales Engineer' || isAssignedEngineer) && (
+        {/* 更新状态 - 技术工程师只能更新自己负责的工单 */}
+        {canUpdateStatus && (user?.role !== 'Technical Engineer' || isAssignedEngineer) && (
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -800,8 +800,8 @@ const TicketDetails = () => {
           </Button>
         </RoleBasedAccess>
         
-        {/* 添加跟进 - 售后工程师只能为自己的工单添加跟进 */}
-        {canAddFollowUp && (user?.role !== 'After-sales Engineer' || isAssignedEngineer) && (
+        {/* 添加跟进 - 技术工程师只能为自己的工单添加跟进 */}
+        {canAddFollowUp && (user?.role !== 'Technical Engineer' || isAssignedEngineer) && (
           <Button
             icon={<PlusOutlined />}
             onClick={() => setFollowUpModalVisible(true)}
@@ -813,7 +813,7 @@ const TicketDetails = () => {
         {/* 生成售后解决报告 */}
         {(ticket.status === 'Resolved' || ticket.status === 'Closed' || 
           ticket.status === '问题已解决-待确认' || ticket.status === '已关闭') && 
-         (canAddFollowUp && (user?.role !== 'After-sales Engineer' || isAssignedEngineer)) && (
+         (canAddFollowUp && (user?.role !== 'Technical Engineer' || isAssignedEngineer)) && (
           <Button
             type="primary"
             icon={<FilePdfOutlined />}

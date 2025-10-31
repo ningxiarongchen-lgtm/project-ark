@@ -30,8 +30,8 @@ const ProjectDetails = () => {
   const [quoteForm] = Form.useForm()
   
   // 权限检查
-  const canEdit = user && ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager'].includes(user.role)
-  const canSeeCost = user && ['Administrator', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist'].includes(user.role)
+  const canEdit = user && ['Administrator', 'Technical Engineer', 'Business Engineer', 'Sales Manager'].includes(user.role)
+  const canSeeCost = user && ['Administrator', 'Business Engineer', 'Sales Manager', 'Procurement Specialist'].includes(user.role)
   const canDelete = user && user.role === 'Administrator'
   const canApprove = user && ['Sales Manager', 'Administrator'].includes(user.role)
   const canCreateOrder = user && ['Sales Manager', 'Administrator'].includes(user.role)
@@ -40,7 +40,7 @@ const ProjectDetails = () => {
   const isSalesManager = user?.role === 'Sales Manager'
   
   // 🔒 技术编辑权限：销售经理不可编辑选型和BOM
-  const canEditTechnical = user && ['Administrator', 'Technical Engineer', 'Sales Engineer'].includes(user.role)
+  const canEditTechnical = user && ['Administrator', 'Technical Engineer', 'Business Engineer'].includes(user.role)
   
   // 判断项目是否处于技术选型阶段（销售经理不可见技术清单）
   const isInTechnicalPhase = ['草稿', '进行中', '选型进行中', '已提交审核', '选型修正中'].includes(project?.project_status)
@@ -2679,7 +2679,7 @@ const ProjectDetails = () => {
     // ========== 1. 待指派技术 ==========
     if (status === '待指派技术') {
       // 销售经理/商务专员：指派技术工程师（由AssignTechnicalSupport组件处理）
-      if (['Sales Manager', 'Sales Engineer'].includes(user?.role)) {
+      if (['Sales Manager', 'Business Engineer'].includes(user?.role)) {
         buttons.push(
           <Alert
             key="assign-hint"
@@ -2782,7 +2782,7 @@ const ProjectDetails = () => {
     // ========== 3. 待商务报价 ==========
     if (status === '待商务报价') {
       // 商务专员：进行报价
-      if (user?.role === 'Sales Engineer') {
+      if (user?.role === 'Business Engineer') {
         buttons.push(
           <Button
             key="goto-quotation"
@@ -2840,7 +2840,7 @@ const ProjectDetails = () => {
       }
       
       // 其他角色：等待提示
-      if (user?.role !== 'Sales Engineer') {
+      if (user?.role !== 'Business Engineer') {
         buttons.push(
           <Alert
             key="waiting-quotation"
@@ -2947,7 +2947,7 @@ const ProjectDetails = () => {
       }
       
       // 商务专员：可查看，可微调报价
-      if (user?.role === 'Sales Engineer') {
+      if (user?.role === 'Business Engineer') {
         buttons.push(
           <Alert
             key="quotation-sent"
@@ -2979,7 +2979,7 @@ const ProjectDetails = () => {
     // ========== 6. 待商务审核合同 ==========
     if (status === '待商务审核合同') {
       // 商务专员：审核并上传盖章合同
-      if (user?.role === 'Sales Engineer') {
+      if (user?.role === 'Business Engineer') {
         buttons.push(
           <Alert
             key="review-contract"
@@ -3021,7 +3021,7 @@ const ProjectDetails = () => {
       }
       
       // 商务专员：等待
-      if (user?.role === 'Sales Engineer') {
+      if (user?.role === 'Business Engineer') {
         buttons.push(
           <Alert
             key="waiting-client"
@@ -3049,7 +3049,7 @@ const ProjectDetails = () => {
       )
       
       // 商务专员：确认预付款
-      if (user?.role === 'Sales Engineer') {
+      if (user?.role === 'Business Engineer') {
         buttons.push(
           <Button
             key="confirm-prepay"
@@ -3194,7 +3194,7 @@ const ProjectDetails = () => {
         title="Project Information" 
         style={{ marginBottom: 16 }}
         extra={
-          project.status === '待指派技术' && (user?.role === 'Sales Manager' || user?.role === 'Sales Engineer' || user?.role === 'Administrator') ? (
+          project.status === '待指派技术' && (user?.role === 'Sales Manager' || user?.role === 'Business Engineer' || user?.role === 'Administrator') ? (
             <AssignTechnicalSupport project={project} onSuccess={fetchProject} />
           ) : null
         }
@@ -3321,7 +3321,7 @@ const ProjectDetails = () => {
           defaultActiveKey={user?.role === 'Technical Engineer' ? 'technical-items' : 'selections'}
           items={[
             // Tab 0: 技术清单 - 技术工程师、商务工程师和销售经理（受限）可见
-            ...((user?.role === 'Technical Engineer' || user?.role === 'Sales Engineer' || (isSalesManager && isReadyForQuotation)) ? [{
+            ...((user?.role === 'Technical Engineer' || user?.role === 'Business Engineer' || (isSalesManager && isReadyForQuotation)) ? [{
               key: 'technical-items',
               label: (
                 <span>
@@ -3491,7 +3491,7 @@ const ProjectDetails = () => {
                         </Col>
                       </Row>
                     </div>
-                  ) : user?.role === 'Sales Engineer' ? (
+                  ) : user?.role === 'Business Engineer' ? (
                     <div>
                       {/* 商务工程师：只读视图（可驳回/确认）*/}
                       {/* 🔒 显示当前版本和锁定状态 */}
@@ -3825,7 +3825,7 @@ const ProjectDetails = () => {
                   </div>
 
                   {/* 优化按钮 - 仅管理员和商务工程师可见（排除销售经理）*/}
-                  {['Administrator', 'Sales Engineer'].includes(user?.role) && 
+                  {['Administrator', 'Business Engineer'].includes(user?.role) && 
                    project.selections && project.selections.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
                       <Alert
@@ -3872,7 +3872,7 @@ const ProjectDetails = () => {
             }] : []),
             
             // Tab 2: BOM清单 - 仅特定角色可见（排除技术工程师和销售经理）
-            ...(['Administrator', 'Sales Engineer', 'Procurement Specialist'].includes(user?.role) ? [{
+            ...(['Administrator', 'Business Engineer', 'Procurement Specialist'].includes(user?.role) ? [{
               key: 'bom',
               label: (
                 <span>
@@ -3894,8 +3894,8 @@ const ProjectDetails = () => {
                     />
                     
                     <Space size="middle" wrap>
-                      {/* 生成BOM按钮 - 技术工程师和销售工程师可用（销售经理不可用）*/}
-                      <RoleBasedAccess allowedRoles={['Administrator', 'Technical Engineer', 'Sales Engineer']}>
+                      {/* 生成BOM按钮 - 技术工程师和商务工程师可用（销售经理不可用）*/}
+                      <RoleBasedAccess allowedRoles={['Administrator', 'Technical Engineer', 'Business Engineer']}>
                         <Button
                           type="primary"
                           size="large"
@@ -3967,7 +3967,7 @@ const ProjectDetails = () => {
                       )}
                       
                       {/* 生成报价单PDF - 销售相关角色可用 */}
-                      <RoleBasedAccess allowedRoles={['Administrator', 'Sales Engineer', 'Sales Manager']}>
+                      <RoleBasedAccess allowedRoles={['Administrator', 'Business Engineer', 'Sales Manager']}>
                         <Button
                           icon={<FilePdfOutlined />}
                           onClick={handleGenerateQuotePDF}
@@ -3977,8 +3977,8 @@ const ProjectDetails = () => {
                         </Button>
                       </RoleBasedAccess>
                       
-                      {/* AI优化建议 - 技术和销售工程师可用 */}
-                      <RoleBasedAccess allowedRoles={['Administrator', 'Technical Engineer', 'Sales Engineer']}>
+                      {/* AI优化建议 - 技术和商务工程师可用 */}
+                      <RoleBasedAccess allowedRoles={['Administrator', 'Technical Engineer', 'Business Engineer']}>
                         <Button
                           type="primary"
                           icon={<BulbOutlined />}
@@ -4072,8 +4072,8 @@ const ProjectDetails = () => {
                 </div>
               ),
             }] : []),
-            // Tab 3: 报价工作台 - Sales Engineer和Administrator（可编辑），Sales Manager（只读，已报价后可见）
-            ...(['Sales Engineer', 'Administrator'].includes(user?.role) || (isSalesManager && isQuotationComplete) ? [{
+            // Tab 3: 报价工作台 - Business Engineer和Administrator（可编辑），Sales Manager（只读，已报价后可见）
+            ...(['Business Engineer', 'Administrator'].includes(user?.role) || (isSalesManager && isQuotationComplete) ? [{
               key: 'quotation',
               label: (
                 <span>
@@ -4545,7 +4545,7 @@ const ProjectDetails = () => {
               ),
             }] : []),
             // Tab 5: 合同处理 - 销售经理和商务工程师可见
-            ...(['Sales Manager', 'Sales Engineer', 'Administrator'].includes(user?.role) ? [{
+            ...(['Sales Manager', 'Business Engineer', 'Administrator'].includes(user?.role) ? [{
               key: 'contract',
               label: (
                 <span>
@@ -4697,7 +4697,7 @@ const ProjectDetails = () => {
                               </div>
                             </div>
                           ) : (
-                            user?.role === 'Sales Engineer' && project.status === 'Pending Contract Review' ? (
+                            user?.role === 'Business Engineer' && project.status === 'Pending Contract Review' ? (
                               <div>
                                 {project.contract_files?.draft_contract && (
                                   <div style={{ marginBottom: 16 }}>
@@ -4911,7 +4911,7 @@ const ProjectDetails = () => {
                   </Card>
                   
                   {/* 确认收款并创建生产订单 - 仅商务工程师可见，且项目状态为Contract Signed */}
-                  {user?.role === 'Sales Engineer' && project.status === 'Contract Signed' && (
+                  {user?.role === 'Business Engineer' && project.status === 'Contract Signed' && (
                     <Card 
                       title={
                         <Space>
@@ -6452,10 +6452,10 @@ const ProjectDetails = () => {
                           {op.operator_name}
                           {op.operator_role && (
                             <Space style={{ marginLeft: 8 }}>
-                              <Tag color={op.operator_role === 'Sales Engineer' ? 'blue' : 'default'}>
+                              <Tag color={op.operator_role === 'Business Engineer' ? 'blue' : 'default'}>
                                 {op.operator_role}
                               </Tag>
-                              {op.operator_role === 'Sales Engineer' && op.operation_type === 'payment_confirmed' && (
+                              {op.operator_role === 'Business Engineer' && op.operation_type === 'payment_confirmed' && (
                                 <Tag color="orange">兼财务负责人</Tag>
                               )}
                             </Space>

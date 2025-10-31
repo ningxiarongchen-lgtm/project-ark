@@ -49,7 +49,7 @@ const testUsers = [
     password: 'sales123',
     full_name: '李商务',
     email: 'saleseng@test.com',
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: 'Sales'
   },
   {
@@ -75,14 +75,6 @@ const testUsers = [
     email: 'proc@test.com',
     role: 'Procurement Specialist',
     department: 'Procurement'
-  },
-  {
-    phone: '13900000007',
-    password: 'after123',
-    full_name: '售后工程师',
-    email: 'aftersales@test.com',
-    role: 'After-sales Engineer',
-    department: 'Service'
   }
 ];
 

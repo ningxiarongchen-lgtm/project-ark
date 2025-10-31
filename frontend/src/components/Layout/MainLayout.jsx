@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout, Menu, Avatar, Dropdown, theme } from 'antd'
+import { Layout, Menu, Avatar, Dropdown, theme, Space } from 'antd'
 import {
   DashboardOutlined,
   ProjectOutlined,
@@ -15,8 +15,10 @@ import {
   MenuUnfoldOutlined,
   CustomerServiceOutlined,
   UploadOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../store/authStore'
+import NotificationBell from '../NotificationBell'
 
 const { Header, Sider, Content } = Layout
 
@@ -26,7 +28,7 @@ const menuConfig = [
     key: '/dashboard',
     label: '仪表盘',
     icon: <DashboardOutlined />,
-    roles: ['Administrator', 'Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer'],
+    roles: ['Administrator', 'Technical Engineer', 'Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'QA Inspector', 'Logistics Specialist', 'Shop Floor Worker'],
   },
   // 👑 管理员专属菜单
   {
@@ -58,37 +60,64 @@ const menuConfig = [
     key: '/projects',
     label: '项目管理',
     icon: <ProjectOutlined />,
-    roles: ['Technical Engineer', 'Sales Engineer', 'Sales Manager'],  // 移除 Administrator
+    roles: ['Technical Engineer', 'Business Engineer', 'Sales Manager'],
   },
   {
     key: '/orders',
     label: '订单管理',
     icon: <FileDoneOutlined />,
-    roles: ['Sales Manager', 'Production Planner'],  // 移除 Administrator
+    roles: ['Sales Manager', 'Production Planner'],
   },
   {
     key: '/production-schedule',
     label: '生产排期',
     icon: <ScheduleOutlined />,
-    roles: ['Production Planner'],  // 移除 Administrator
+    roles: ['Production Planner'],
   },
   {
     key: '/purchase-orders',
     label: '采购管理',
     icon: <ShoppingCartOutlined />,
-    roles: ['Procurement Specialist'],  // 移除 Administrator
+    roles: ['Procurement Specialist'],
+  },
+  {
+    key: '/quality',
+    label: '质检管理',
+    icon: <SafetyOutlined />,
+    roles: ['QA Inspector', 'Production Planner', 'Administrator'],
   },
   {
     key: '/service-center',
     label: '售后服务',
     icon: <CustomerServiceOutlined />,
-    roles: ['After-sales Engineer', 'Sales Manager', 'Technical Engineer'],  // 移除 Administrator
+    roles: ['Technical Engineer', 'Sales Manager'],
   },
   {
     key: '/product-catalog',
     label: '产品目录',
     icon: <DatabaseOutlined />,
     roles: ['Sales Manager'],
+  },
+  // 质检员专属菜单
+  {
+    key: '/quality-inspection',
+    label: '质检任务',
+    icon: <FileDoneOutlined />,
+    roles: ['QA Inspector'],
+  },
+  // 物流专员专属菜单
+  {
+    key: '/my-delivery-tasks',
+    label: '发货任务',
+    icon: <ScheduleOutlined />,
+    roles: ['Logistics Specialist'],
+  },
+  // 车间工人专属菜单
+  {
+    key: '/shop-floor',
+    label: '我的工单',
+    icon: <FileDoneOutlined />,
+    roles: ['Shop Floor Worker'],
   },
 ]
 
@@ -118,11 +147,13 @@ const MainLayout = () => {
   // 角色中文翻译映射
   const roleTranslations = {
     'Technical Engineer': '技术工程师',
-    'Sales Engineer': '销售工程师',
+    'Business Engineer': '商务工程师',
     'Sales Manager': '销售经理',
     'Procurement Specialist': '采购专员',
     'Production Planner': '生产计划员',
-    'After-sales Engineer': '售后工程师',
+    'QA Inspector': '质检员',
+    'Logistics Specialist': '物流专员',
+    'Shop Floor Worker': '车间工人',
     'Administrator': '管理员',
   }
 
@@ -209,17 +240,23 @@ const MainLayout = () => {
               智能制造综合管理系统
             </h2>
           </div>
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
-              <span style={{ marginLeft: 8, fontWeight: 500 }}>
-                {user?.full_name || user?.phone}
-              </span>
-              <span style={{ fontSize: '12px', color: '#999', marginLeft: 8 }}>
-                {roleTranslations[user?.role] || user?.role}
-              </span>
-            </div>
-          </Dropdown>
+          <Space size="middle">
+            {/* 实时通知铃铛 */}
+            <NotificationBell />
+            
+            {/* 用户菜单 */}
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <Avatar style={{ backgroundColor: '#1890ff' }} icon={<UserOutlined />} />
+                <span style={{ marginLeft: 8, fontWeight: 500 }}>
+                  {user?.full_name || user?.phone}
+                </span>
+                <span style={{ fontSize: '12px', color: '#999', marginLeft: 8 }}>
+                  {roleTranslations[user?.role] || user?.role}
+                </span>
+              </div>
+            </Dropdown>
+          </Space>
         </Header>
         <Content
           style={{

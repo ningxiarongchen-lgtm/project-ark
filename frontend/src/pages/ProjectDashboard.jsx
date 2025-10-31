@@ -294,7 +294,7 @@ const ProjectDashboard = () => {
     <div style={{ padding: '24px' }}>
       {/* 统计卡片 - 根据角色显示不同内容 */}
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        {user?.role === 'Sales Engineer' ? (
+        {user?.role === 'Business Engineer' ? (
           // 💼 商务工程师专属统计（4个卡片）
           <>
             <Col xs={24} sm={12} lg={6}>
@@ -429,7 +429,7 @@ const ProjectDashboard = () => {
               <Option value="Urgent">Urgent</Option>
             </Select>
             {/* 只有非商务工程师可以创建项目 */}
-            {user?.role !== 'Sales Engineer' && (
+            {user?.role !== 'Business Engineer' && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
