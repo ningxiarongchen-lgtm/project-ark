@@ -32,7 +32,7 @@ const users = [
     phone: '13800138003',
     full_name: '王销售',
     password: 'sales123',
-    role: 'Sales Engineer',
+    role: 'Business Engineer',
     department: 'Sales'
   },
   {
@@ -48,13 +48,6 @@ const users = [
     password: 'prod123',
     role: 'Production Planner',
     department: 'Production'
-  },
-  {
-    phone: '13800138006',
-    full_name: '陈售后',
-    password: 'after123',
-    role: 'After-sales Engineer',
-    department: 'After Sales'
   }
 ];
 
@@ -323,7 +316,7 @@ const seedDatabase = async () => {
     console.log('│   手机号: 13800138002                           │');
     console.log('│   密码: manager123                              │');
     console.log('├────────────────────────────────────────────────┤');
-    console.log('│ 销售工程师:                                     │');
+    console.log('│ 商务工程师:                                     │');
     console.log('│   手机号: 13800138003                           │');
     console.log('│   密码: sales123                                │');
     console.log('└────────────────────────────────────────────────┘\n');

@@ -320,7 +320,7 @@ const PlannerDashboard = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     );
   }
@@ -580,6 +580,61 @@ const PlannerDashboard = () => {
           </Row>
         </Card>
       )}
+
+      {/* 生产计划员工作流程 */}
+      <Card 
+        bordered={false}
+        style={{ 
+          marginTop: 24,
+          backgroundColor: '#fff'
+        }}
+      >
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={6}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#1890ff', marginBottom: 4 }}>
+                1. 接收生产订单
+              </div>
+              <div style={{ fontSize: 14, color: '#8c8c8c', lineHeight: '22px' }}>
+                商务下达生产计划，接收包含项目信息和产品型号明细的生产订单，了解生产需求。
+              </div>
+            </Space>
+          </Col>
+
+          <Col xs={24} md={6}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#52c41a', marginBottom: 4 }}>
+                2. 拆分BOM并检查库存
+              </div>
+              <div style={{ fontSize: 14, color: '#8c8c8c', lineHeight: '22px' }}>
+                展开生产BOM，检查物料齐套状态。有库存的安排生产排期，缺料的生成采购需求通知采购专员。
+              </div>
+            </Space>
+          </Col>
+
+          <Col xs={24} md={6}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#faad14', marginBottom: 4 }}>
+                3. 跟进物料到货
+              </div>
+              <div style={{ fontSize: 14, color: '#8c8c8c', lineHeight: '22px' }}>
+                关注采购进度，物料到货后更新齐套状态，继续排产未完成的生产任务，直到全部完成。
+              </div>
+            </Space>
+          </Col>
+
+          <Col xs={24} md={6}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <div style={{ fontSize: 18, fontWeight: 600, color: '#722ed1', marginBottom: 4 }}>
+                4. 送质检并通知发货
+              </div>
+              <div style={{ fontSize: 14, color: '#8c8c8c', lineHeight: '22px' }}>
+                生产完成后标记待质检，质检员检验通过后，系统自动通知商务可以安排发货。
+              </div>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
     </div>
   );
 };

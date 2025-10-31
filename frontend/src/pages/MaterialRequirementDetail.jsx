@@ -287,7 +287,7 @@ const MaterialRequirementDetail = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     );
   }
@@ -518,7 +518,7 @@ const MaterialRequirementDetail = () => {
         {canProcess && requirement.items.some(item => item.procurement_status === '待采购') && (
           <Alert
             message="提示"
-            description="请选择需要创建采购订单的物料项目，然后点击上方"创建采购订单"按钮"
+            description="请选择需要创建采购订单的物料项目，然后点击上方'创建采购订单'按钮"
             type="info"
             showIcon
             style={{ marginBottom: 16 }}

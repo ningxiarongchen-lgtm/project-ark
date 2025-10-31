@@ -33,6 +33,9 @@ const financeRoutes = require('./routes/financeRoutes');
 const erpStatsRoutes = require('./routes/erpStatsRoutes');
 const materialRequirementRoutes = require('./routes/materialRequirementRoutes');
 const reminderRoutes = require('./routes/reminderRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const qualityCheckRoutes = require('./routes/qualityCheckRoutes');
+const deliveryNoteRoutes = require('./routes/deliveryNoteRoutes');
 // 数据管理路由
 const actuatorManagementRoutes = require('./routes/actuatorManagementRoutes');
 const accessoryManagementRoutes = require('./routes/accessoryManagementRoutes');
@@ -135,6 +138,9 @@ app.use('/api/finance', financeRoutes);
 app.use('/api/erp', erpStatsRoutes);
 app.use('/api/material-requirements', materialRequirementRoutes);
 app.use('/api/reminders', reminderRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/quality-checks', qualityCheckRoutes);
+app.use('/api/delivery-notes', deliveryNoteRoutes);
 // 数据管理API路由
 app.use('/api/data-management/actuators', actuatorManagementRoutes);
 app.use('/api/data-management/accessories', accessoryManagementRoutes);

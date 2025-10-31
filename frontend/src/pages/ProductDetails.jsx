@@ -261,7 +261,7 @@ const ProductDetails = () => {
   if (loading || !product) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     )
   }

@@ -24,7 +24,7 @@ const testPasswordReset = async () => {
       username: 'testuser',
       name: '测试用户',
       password: 'test123', // 将被自动哈希
-      role: 'Sales Engineer',
+      role: 'Business Engineer',
       department: '销售部',
       isActive: true,
       passwordChangeRequired: true // 新用户需要修改密码

@@ -33,7 +33,7 @@ export default defineConfig({
         salesEngineer: {
           phone: '13800000003',
           password: 'test123456',
-          role: 'Sales Engineer'
+          role: 'Business Engineer'
         },
         technicalEngineer: {
           phone: '13800000004',

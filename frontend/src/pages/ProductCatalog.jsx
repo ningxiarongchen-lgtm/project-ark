@@ -75,7 +75,20 @@ const ProductCatalog = () => {
   const uniqueSeries = [...new Set(products.map(p => p.series))].filter(Boolean)
   const uniqueActionTypes = [...new Set(products.map(p => p.action_type))].filter(Boolean)
   const uniqueMechanisms = [...new Set(products.map(p => p.mechanism))].filter(Boolean)
-  const uniqueValveTypes = [...new Set(products.map(p => p.valve_type))].filter(Boolean)
+  
+  // 根据机构类型动态获取对应的阀门类型
+  const getValveTypesByMechanism = () => {
+    if (mechanismFilter === '齿轮齿条') {
+      return ['闸阀', '截止阀', '直行程调节阀']
+    } else if (mechanismFilter === '拨叉式') {
+      return ['球阀', '蝶阀']
+    } else {
+      // 未选择机构类型时，显示所有阀门类型
+      return [...new Set(products.map(p => p.valve_type))].filter(Boolean)
+    }
+  }
+  
+  const availableValveTypes = getValveTypesByMechanism()
 
   // 重置筛选
   const handleReset = () => {
@@ -132,10 +145,10 @@ const ProductCatalog = () => {
       width: 100,
       render: (text) => {
         if (!text) return '-'
-        const color = text === '球阀' ? 'gold' : 'geekblue'
+        const color = text === '球阀' ? 'gold' : text === '蝶阀' ? 'cyan' : 'geekblue'
         return <Tag color={color}>{text}</Tag>
       },
-      filters: uniqueValveTypes.map(v => ({ text: v, value: v })),
+      filters: availableValveTypes.map(v => ({ text: v, value: v })),
       onFilter: (value, record) => record.valve_type === value
     },
     {
@@ -279,7 +292,11 @@ const ProductCatalog = () => {
               style={{ width: 150 }}
               allowClear
               value={mechanismFilter}
-              onChange={setMechanismFilter}
+              onChange={(value) => {
+                setMechanismFilter(value)
+                // 切换机构类型时，清空阀门类型筛选（避免不匹配）
+                setValveTypeFilter(null)
+              }}
             >
               {uniqueMechanisms.map(mech => (
                 <Select.Option key={mech} value={mech}>
@@ -295,7 +312,7 @@ const ProductCatalog = () => {
               value={valveTypeFilter}
               onChange={setValveTypeFilter}
             >
-              {uniqueValveTypes.map(valve => (
+              {availableValveTypes.map(valve => (
                 <Select.Option key={valve} value={valve}>
                   {valve}
                 </Select.Option>

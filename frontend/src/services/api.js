@@ -190,12 +190,16 @@ export const projectsAPI = {
   assignTechnicalEngineer: (projectId, data) => api.post(`/projects/${projectId}/assign-technical`, data),
   
   // 🔒 技术清单版本管理
-  submitTechnicalList: (id, notes) => api.post(`/new-projects/${id}/submit-technical-list`, { notes }),
-  rejectTechnicalList: (id, suggestions, target_version) => api.post(`/new-projects/${id}/reject-technical-list`, { suggestions, target_version }),
-  respondToModification: (id, request_id, response, accept) => api.post(`/new-projects/${id}/respond-modification`, { request_id, response, accept }),
-  confirmTechnicalVersion: (id, version) => api.post(`/new-projects/${id}/confirm-technical-version`, { version }),
-  getTechnicalVersions: (id) => api.get(`/new-projects/${id}/technical-versions`),
-  getModificationRequests: (id) => api.get(`/new-projects/${id}/modification-requests`)
+  submitTechnicalList: (id, notes) => api.post(`/new-projects/${id}/submit-technical-list`, { notes }),                                                         
+  rejectTechnicalList: (id, suggestions, target_version) => api.post(`/new-projects/${id}/reject-technical-list`, { suggestions, target_version }),             
+  respondToModification: (id, request_id, response, accept) => api.post(`/new-projects/${id}/respond-modification`, { request_id, response, accept }),          
+  confirmTechnicalVersion: (id, version) => api.post(`/new-projects/${id}/confirm-technical-version`, { version }),                                             
+  getTechnicalVersions: (id) => api.get(`/new-projects/${id}/technical-versions`),                                                                              
+  getModificationRequests: (id) => api.get(`/new-projects/${id}/modification-requests`),
+  
+  // 💰 款到发货流程 - 尾款确认
+  getPendingFinalPayment: () => api.get('/new-projects/pending-final-payment'),
+  confirmFinalPayment: (id, data) => api.post(`/new-projects/${id}/confirm-final-payment`, data)
 }
 
 // ==================== 旧的 Products/Accessories API（向后兼容）====================
@@ -613,7 +617,34 @@ export const contractsAPI = {
   getByProject: (projectId) => api.get(`/contracts/project/${projectId}`),
   
   // 获取采购订单的所有合同
-  getByPurchaseOrder: (purchaseOrderId) => api.get(`/contracts/purchase-order/${purchaseOrderId}`)
+  getByPurchaseOrder: (purchaseOrderId) => api.get(`/contracts/purchase-order/${purchaseOrderId}`)                                                              
+}
+
+// ==================== 发货单管理 API ====================
+export const deliveryNotesAPI = {
+  // 获取所有发货单（支持筛选）
+  getAll: (params) => api.get('/delivery-notes', { params }),
+  
+  // 获取单个发货单详情
+  getById: (id) => api.get(`/delivery-notes/${id}`),
+  
+  // 创建发货通知单（生产计划员/车间主管）
+  create: (data) => api.post('/delivery-notes', data),
+  
+  // 更新发货单信息
+  update: (id, data) => api.put(`/delivery-notes/${id}`, data),
+  
+  // 确认发货（物流专员）
+  confirmShipment: (id, data) => api.post(`/delivery-notes/${id}/confirm-shipment`, data),
+  
+  // 取消发货单
+  cancel: (id, data) => api.post(`/delivery-notes/${id}/cancel`, data),
+  
+  // 获取我的发货任务（物流专员专用）
+  getMyTasks: (params) => api.get('/delivery-notes/my-tasks', { params }),
+  
+  // 获取待处理的发货单（生产计划员/管理员）
+  getPending: () => api.get('/delivery-notes/pending')
 }
 
 // ==================== 数据管理 API ====================

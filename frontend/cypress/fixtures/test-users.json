@@ -40,13 +40,6 @@
     "role": "Procurement Specialist",
     "displayName": "采购专员",
     "email": "procurement@company.com"
-  },
-  "aftersalesEngineer": {
-    "username": "aftersales",
-    "password": "after123",
-    "role": "After-sales Engineer",
-    "displayName": "售后工程师",
-    "email": "aftersales@company.com"
   }
 }
 

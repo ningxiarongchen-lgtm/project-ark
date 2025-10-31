@@ -8,7 +8,7 @@ const { Option } = Select
 
 /**
  * 指派技术工程师组件
- * 用于销售经理/销售工程师将项目指派给技术工程师进行选型
+ * 用于销售经理/商务工程师将项目指派给技术工程师进行选型
  */
 const AssignTechnicalSupport = ({ project, onSuccess }) => {
   const [modalVisible, setModalVisible] = useState(false)
@@ -162,7 +162,7 @@ const AssignTechnicalSupport = ({ project, onSuccess }) => {
 
         {loadingEngineers && (
           <div style={{ textAlign: 'center', padding: '20px' }}>
-            <Spin tip="加载技术工程师列表..." />
+            <Spin />
           </div>
         )}
       </Modal>

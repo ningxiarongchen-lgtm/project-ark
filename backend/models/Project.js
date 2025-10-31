@@ -683,7 +683,7 @@ const projectSchema = new mongoose.Schema({
       }
     },
     
-    // Company sealed contract uploaded by Sales Engineer
+    // Company sealed contract uploaded by Business Engineer
     company_sealed_contract: {
       file_name: String,
       file_url: String,

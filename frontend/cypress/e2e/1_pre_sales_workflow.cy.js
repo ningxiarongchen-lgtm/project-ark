@@ -39,7 +39,7 @@ describe('Pre-sales Collaboration Workflow', () => {
     cy.wait(1000) // 等待数据初始化完成
   })
 
-  it('should flow seamlessly from Sales, to Tech, to Sales Engineer', () => {
+  it('should flow seamlessly from Sales, to Tech, to Business Engineer', () => {
     // 确保测试数据已加载
     expect(testData).to.not.be.null
     

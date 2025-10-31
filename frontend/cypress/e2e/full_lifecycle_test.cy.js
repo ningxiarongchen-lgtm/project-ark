@@ -147,8 +147,8 @@ describe('C-MAX Platform Full Lifecycle Acceptance Test', () => {
       // 登出技术工程师
       cy.visit('/login');
       
-      // 商务工程师登录（使用销售工程师角色）
-      cy.get('input[name="phone"]').clear().type('18800000003');  // Sales Engineer
+      // 商务工程师登录（使用商务工程师角色）
+      cy.get('input[name="phone"]').clear().type('18800000003');  // Business Engineer
       cy.get('input[name="password"]').clear().type('Test123456!');
       cy.get('button[type="submit"]').click();
       cy.url().should('not.include', '/login', { timeout: 10000 });

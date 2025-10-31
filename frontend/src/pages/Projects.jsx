@@ -64,7 +64,8 @@ const Projects = () => {
     try {
       setLoading(true)
       const response = await projectsAPI.getAll()
-      const projectsData = response.data || []
+      // 修复：后端返回 { success: true, data: [...] }
+      const projectsData = response.data?.data || []
       setProjects(projectsData)
       setFilteredProjects(projectsData)
       
@@ -274,7 +275,7 @@ const Projects = () => {
   return (
     <div>
       {/* 🚨 测试标识：确认新代码已加载 */}
-      {user?.role === 'Sales Engineer' && (
+      {user?.role === 'Business Engineer' && (
         <div style={{
           background: '#52c41a',
           color: 'white',
@@ -290,7 +291,7 @@ const Projects = () => {
       
       {/* 统计卡片 - 根据角色显示不同内容 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-        {user?.role === 'Sales Engineer' ? (
+        {user?.role === 'Business Engineer' ? (
           // 💼 商务工程师专属统计
           <>
             <Col xs={24} sm={12} lg={6}>
@@ -401,7 +402,7 @@ const Projects = () => {
               刷新
             </Button>
             {/* 只有非商务工程师可以创建项目 */}
-            {user?.role !== 'Sales Engineer' && (
+            {user?.role !== 'Business Engineer' && (
               <Button
                 type="primary"
                 icon={<PlusOutlined />}

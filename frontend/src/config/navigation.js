@@ -19,7 +19,13 @@ export const menuConfig = [
     key: '/projects', 
     label: '项目管理', 
     icon: '<ProjectOutlined />', 
-    allowedRoles: ['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Administrator'] 
+    allowedRoles: ['Technical Engineer', 'Business Engineer', 'Sales Manager', 'Administrator'] 
+  },
+  { 
+    key: '/contracts', 
+    label: '合同管理中心', 
+    icon: '<FileTextOutlined />', 
+    allowedRoles: ['Business Engineer', 'Sales Manager', 'Administrator'] 
   },
   { 
     key: '/orders', 
@@ -49,13 +55,13 @@ export const menuConfig = [
     key: '/service', 
     label: '售后服务', 
     icon: '<CustomerServiceOutlined />', 
-    allowedRoles: ['After-sales Engineer', 'Sales Manager', 'Administrator'] 
+    allowedRoles: ['Technical Engineer', 'Sales Manager', 'Administrator'] 
   },
   { 
     key: '/database', 
     label: '产品数据库', 
     icon: '<DatabaseOutlined />', 
-    allowedRoles: ['Administrator', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']  // 🔒 移除技术工程师权限
+    allowedRoles: ['Administrator', 'Business Engineer', 'Procurement Specialist', 'Technical Engineer']
   },
   { 
     key: '/admin/users', 

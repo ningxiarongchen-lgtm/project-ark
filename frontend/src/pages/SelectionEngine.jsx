@@ -1246,6 +1246,26 @@ const SelectionEngine = () => {
         )
       },
       {
+        title: '执行器类型',
+        dataIndex: 'mechanism',
+        key: 'mechanism',
+        render: (text, record) => (
+          <Select 
+            value={text} 
+            onChange={(value) => {
+              handleBatchDataChange(record.key, 'mechanism', value)
+              // 切换执行器类型时，重置阀门类型为对应的默认值
+              const defaultValveType = value === 'Scotch Yoke' ? 'Ball Valve' : 'Gate Valve'
+              handleBatchDataChange(record.key, 'valve_type', defaultValveType)
+            }}
+            style={{ width: '140px' }}
+          >
+            <Select.Option value="Scotch Yoke">拨叉式(SF)</Select.Option>
+            <Select.Option value="Rack & Pinion">齿轮齿条(AT/GY)</Select.Option>
+          </Select>
+        )
+      },
+      {
         title: '阀门类型',
         dataIndex: 'valve_type',
         key: 'valve_type',
@@ -1253,10 +1273,20 @@ const SelectionEngine = () => {
           <Select 
             value={text} 
             onChange={(value) => handleBatchDataChange(record.key, 'valve_type', value)}
-            style={{ width: '100%' }}
+            style={{ width: '140px' }}
           >
-            <Select.Option value="Ball Valve">球阀</Select.Option>
-            <Select.Option value="Butterfly Valve">蝶阀</Select.Option>
+            {record.mechanism === 'Scotch Yoke' ? (
+              <>
+                <Select.Option value="Ball Valve">球阀</Select.Option>
+                <Select.Option value="Butterfly Valve">蝶阀</Select.Option>
+              </>
+            ) : (
+              <>
+                <Select.Option value="Gate Valve">闸阀</Select.Option>
+                <Select.Option value="Globe Valve">截止阀</Select.Option>
+                <Select.Option value="Control Valve">调节阀(直行程)</Select.Option>
+              </>
+            )}
           </Select>
         )
       },

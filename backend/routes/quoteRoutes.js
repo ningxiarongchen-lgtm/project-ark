@@ -20,15 +20,15 @@ router.get('/stats/summary', getQuoteStats);
 // CRUD operations
 router.route('/')
   .get(getQuotes)
-  .post(authorize('Sales Engineer', 'Sales Manager', 'Administrator'), createQuote);
+  .post(authorize('Business Engineer', 'Sales Manager', 'Administrator'), createQuote);
 
 router.route('/:id')
   .get(getQuoteById)
-  .put(authorize('Sales Engineer', 'Sales Manager', 'Administrator'), updateQuote)
+  .put(authorize('Business Engineer', 'Sales Manager', 'Administrator'), updateQuote)
   .delete(authorize('Administrator'), deleteQuote);
 
 // Create new version
-router.post('/:id/revise', authorize('Sales Engineer', 'Sales Manager', 'Administrator'), reviseQuote);
+router.post('/:id/revise', authorize('Business Engineer', 'Sales Manager', 'Administrator'), reviseQuote);
 
 module.exports = router;
 

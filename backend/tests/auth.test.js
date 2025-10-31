@@ -112,7 +112,7 @@ describe('认证 API 测试', () => {
         phone: '13800138001',
         full_name: '李四',
         password: 'test123',
-        role: 'Sales Engineer'
+        role: 'Business Engineer'
       };
       
       // 第一次注册应该成功
@@ -234,7 +234,7 @@ describe('认证 API 测试', () => {
         phone: '13800138020',
         full_name: '未激活用户',
         password: 'password123',
-        role: 'Sales Engineer',
+        role: 'Business Engineer',
         isActive: false
       });
       
@@ -300,7 +300,7 @@ describe('认证 API 测试', () => {
         phone: '13800138030',
         full_name: '新员工',
         password: 'temp123456',
-        role: 'Sales Engineer',
+        role: 'Business Engineer',
         passwordChangeRequired: true // 强制修改密码标志
       });
       
@@ -547,7 +547,7 @@ describe('认证 API 测试', () => {
         phone: '13800138050',
         full_name: '测试用户',
         password: 'password123',
-        role: 'Sales Engineer'
+        role: 'Business Engineer'
       });
       
       const loginResponse = await request(app)
@@ -637,7 +637,7 @@ describe('认证 API 测试', () => {
         phone: '13800138070',
         full_name: '特殊字符测试',
         password: specialPassword,
-        role: 'Sales Engineer'
+        role: 'Business Engineer'
       });
       
       const response = await request(app)

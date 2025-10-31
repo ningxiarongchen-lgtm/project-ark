@@ -1,0 +1,67 @@
+/* NotificationBell Styles */
+
+.notification-bell-dropdown {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 400px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-bell-header {
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 8px 8px 0 0;
+}
+
+.notification-bell-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.notification-bell-item {
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-bell-item:hover {
+  background-color: #f5f5f5;
+}
+
+.notification-bell-item.unread {
+  background-color: #e6f7ff;
+}
+
+.notification-bell-item.unread:hover {
+  background-color: #bae7ff;
+}
+
+.notification-unread-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: #1890ff;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* 自定义滚动条 */
+.notification-bell-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-bell-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.notification-bell-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.notification-bell-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+

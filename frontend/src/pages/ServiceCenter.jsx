@@ -25,12 +25,11 @@ const ServiceCenter = () => {
   const { user, hasAnyRole } = useAuth()
   
   // 权限检查
-  // 🔒 只有销售经理和管理员可以创建售后工单
+  // 🔒 只有销售经理和管理员可以创建售后工单，技术工程师可以处理工单
   const canCreate = hasAnyRole(['Administrator', 'Sales Manager'])
   const canDelete = hasAnyRole(['Administrator'])
-  const isAftersalesEngineer = user?.role === 'After-sales Engineer'
-  const isSalesManager = user?.role === 'Sales Manager'
   const isTechnicalEngineer = user?.role === 'Technical Engineer'
+  const isSalesManager = user?.role === 'Sales Manager'
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(false)
   const [statistics, setStatistics] = useState(null)
@@ -40,8 +39,7 @@ const ServiceCenter = () => {
     total: 0
   })
 
-  // 筛选条件 - 售后工程师默认只看自己的工单
-  const [showMyTicketsOnly, setShowMyTicketsOnly] = useState(isAftersalesEngineer)
+  // 筛选条件
   const [filters, setFilters] = useState({
     status: undefined,
     priority: undefined,
@@ -57,7 +55,7 @@ const ServiceCenter = () => {
   useEffect(() => {
     fetchTickets()
     fetchStatistics()
-  }, [pagination.current, pagination.pageSize, filters, showMyTicketsOnly])
+  }, [pagination.current, pagination.pageSize, filters])
 
   // 获取工单列表
   const fetchTickets = async () => {
@@ -74,11 +72,6 @@ const ServiceCenter = () => {
       if (filters.dateRange && filters.dateRange.length === 2) {
         params.startDate = filters.dateRange[0].format('YYYY-MM-DD')
         params.endDate = filters.dateRange[1].format('YYYY-MM-DD')
-      }
-      
-      // 如果启用"我的工单"筛选，只显示分配给当前用户的工单
-      if (showMyTicketsOnly && user) {
-        params.assignedEngineer = user._id || user.id
       }
 
       const response = await ticketsAPI.getAll(params)
@@ -409,25 +402,14 @@ const ServiceCenter = () => {
         </div>
         
         {/* 技术工程师的工作提示 */}
-        {(isTechnicalEngineer || isAftersalesEngineer) && (
+        {isTechnicalEngineer && (
           <Alert
-            message={isAftersalesEngineer && showMyTicketsOnly ? "当前显示：我的工单" : "技术工程师工作说明"}
-            description={
-              isAftersalesEngineer && showMyTicketsOnly 
-                ? "正在显示分配给您的工单。点击下方按钮可查看所有工单。"
-                : "您可以查看销售经理提交的售后工单，领取工单后进行处理。工单状态：未开始 → 进行中 → 已完成"
-            }
+            message="技术工程师工作说明"
+            description="您可以查看销售经理提交的售后工单，领取工单后进行处理。工单状态：待技术受理 → 技术处理中 → 问题已解决-待确认 → 已完成"
             type="info"
             showIcon
             closable
             style={{ marginBottom: 16 }}
-            action={
-              isAftersalesEngineer && showMyTicketsOnly ? (
-                <Button size="small" onClick={() => setShowMyTicketsOnly(false)}>
-                  查看所有工单
-                </Button>
-              ) : null
-            }
           />
         )}
 
@@ -580,20 +562,6 @@ const ServiceCenter = () => {
             >
               重置
             </Button>
-            
-            {/* 售后工程师可以切换"我的工单"/"所有工单" */}
-            {isAftersalesEngineer && (
-              <Button
-                type={showMyTicketsOnly ? 'primary' : 'default'}
-                icon={<FilterOutlined />}
-                onClick={() => {
-                  setShowMyTicketsOnly(!showMyTicketsOnly)
-                  setPagination({ ...pagination, current: 1 })
-                }}
-              >
-                {showMyTicketsOnly ? '我的工单' : '所有工单'}
-              </Button>
-            )}
           </Space>
         </Card>
       </div>

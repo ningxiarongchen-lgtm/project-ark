@@ -53,6 +53,9 @@ const MaterialRequirements = lazy(() => import('./pages/MaterialRequirements'))
 const MaterialRequirementDetail = lazy(() => import('./pages/MaterialRequirementDetail'))
 const ContractCenter = lazy(() => import('./pages/ContractCenter'))
 const ContractAnalytics = lazy(() => import('./pages/ContractAnalytics'))
+const QualityInspectorDashboard = lazy(() => import('./pages/quality/QualityInspectorDashboard'))
+const QualityInspectionPage = lazy(() => import('./pages/quality/QualityInspectionPage'))
+const MyDeliveryTasks = lazy(() => import('./pages/logistics/MyDeliveryTasks'))
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordCheck }) => {
@@ -105,7 +108,7 @@ function App() {
           {/* 产品路由重定向到产品数据管理，保持向后兼容 */}
           <Route path="products" element={<Navigate to="/data-management" replace />} />
           <Route path="products/:id" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Sales Engineer', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer']}>
+            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Business Engineer', 'Procurement Specialist', 'Production Planner']}>
               <ProductDetails />
             </ProtectedRoute>
           } />
@@ -118,8 +121,11 @@ function App() {
           <Route path="orders" element={<OrderManagement />} />
           <Route path="orders/:id" element={<OrderDetails />} />
           <Route path="production-schedule" element={<ProductionSchedule />} />
-          <Route path="shop-floor" element={<ShopFloorTerminal />} />
-          <Route path="quality" element={<QualityManagement />} />
+          <Route path="quality" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'QA Inspector', 'Production Planner']}>
+              <QualityManagement />
+            </ProtectedRoute>
+          } />
           <Route path="erp-dashboard" element={<ERPDashboard />} />
           <Route path="service-center" element={<ServiceCenter />} />
           <Route path="service-center/:id" element={<TicketDetails />} />
@@ -159,12 +165,12 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="purchase-orders" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Sales Engineer']}>
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
               <PurchaseOrderManagement />
             </ProtectedRoute>
           } />
           <Route path="purchase-orders/:id" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Sales Engineer']}>
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
               <PurchaseOrderDetails />
             </ProtectedRoute>
           } />
@@ -202,6 +208,39 @@ function App() {
           <Route path="contract-analytics" element={
             <ProtectedRoute requiredRoles={['Administrator', 'Business Engineer', 'Sales Manager']}>
               <ContractAnalytics />
+            </ProtectedRoute>
+          } />
+          
+          {/* Quality Inspector Routes - QA Inspector & Administrator */}
+          <Route path="quality-inspection" element={
+            <ProtectedRoute requiredRoles={['QA Inspector', 'Administrator']}>
+              <QualityInspectorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="quality/dashboard" element={
+            <ProtectedRoute requiredRoles={['QA Inspector', 'Administrator']}>
+              <QualityInspectorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="quality/inspect/:id" element={
+            <ProtectedRoute requiredRoles={['QA Inspector', 'Administrator']}>
+              <QualityInspectionPage />
+            </ProtectedRoute>
+          } />
+          
+          {/* Logistics Specialist Routes */}
+          <Route path="my-delivery-tasks" element={
+            <ProtectedRoute requiredRoles={['Logistics Specialist', 'Administrator']}>
+              <MyDeliveryTasks />
+            </ProtectedRoute>
+          } />
+          
+          {/* Shop Floor Worker Routes */}
+          <Route path="shop-floor" element={
+            <ProtectedRoute requiredRoles={['Shop Floor Worker', 'Production Planner', 'Administrator']}>
+              <AttioLayout>
+                <ShopFloorTerminal />
+              </AttioLayout>
             </ProtectedRoute>
           } />
         </Route>

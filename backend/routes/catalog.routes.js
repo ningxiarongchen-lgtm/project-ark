@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const catalogController = require('../controllers/catalogController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/auth');
 
 /**
  * 产品目录路由

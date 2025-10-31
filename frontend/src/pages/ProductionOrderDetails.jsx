@@ -536,7 +536,7 @@ const ProductionOrderDetails = () => {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     )
   }

@@ -203,7 +203,7 @@ exports.userRegistrationValidation = [
   
   body('role')
     .optional()
-    .isIn(['Technical Engineer', 'Sales Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'After-sales Engineer', 'Administrator'])
+    .isIn(['Technical Engineer', 'Business Engineer', 'Sales Manager', 'Procurement Specialist', 'Production Planner', 'QA Inspector', 'Logistics Specialist', 'Shop Floor Worker', 'Administrator'])
     .withMessage('无效的用户角色'),
   
   body('department')
