@@ -58,7 +58,7 @@ const menuConfig = [
     key: '/data-management',
     label: '数据管理',
     icon: <DatabaseOutlined />,
-    roles: ['Administrator', 'Procurement Specialist'],
+    roles: ['Administrator'],
   },
   {
     key: '/admin/reports',
@@ -105,26 +105,9 @@ const menuConfig = [
   },
   {
     key: '/contracts',
-    label: '合同管理',
+    label: '合同管理中心',
     icon: <FileTextOutlined />,
-    roles: ['Sales Engineer'],
-    children: [
-      {
-        key: '/contracts/pending-review',
-        label: '待审核合同',
-        roles: ['Sales Engineer'],
-      },
-      {
-        key: '/contracts/pending-seal',
-        label: '待盖章合同',
-        roles: ['Sales Engineer'],
-      },
-      {
-        key: '/contracts/signed',
-        label: '已签订合同',
-        roles: ['Sales Engineer'],
-      },
-    ]
+    roles: ['Sales Engineer', 'Administrator'],
   },
   {
     key: '/production-orders',
@@ -175,10 +158,16 @@ const menuConfig = [
     roles: ['Production Planner'],  // 移除 Administrator
   },
   {
+    key: '/material-requirements',
+    label: '物料需求',
+    icon: <FileTextOutlined />,
+    roles: ['Production Planner', 'Procurement Specialist'],
+  },
+  {
     key: '/purchase-orders',
     label: '采购管理',
     icon: <ShoppingCartOutlined />,
-    roles: ['Procurement Specialist'],  // 移除 Administrator
+    roles: ['Procurement Specialist', 'Sales Engineer'],
   },
   {
     key: '/service-center',
@@ -196,7 +185,7 @@ const menuConfig = [
     key: '/products',
     label: '产品数据库',
     icon: <DatabaseOutlined />,
-    roles: ['Procurement Specialist', 'Production Planner', 'After-sales Engineer'],  // 移除 Sales Engineer
+    roles: ['Production Planner', 'After-sales Engineer'],
   },
 ]
 

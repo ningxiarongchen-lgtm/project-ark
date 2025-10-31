@@ -60,7 +60,7 @@ const PurchaseOrderDetails = () => {
   
   // 权限检查
   const isProcurementSpecialist = hasAnyRole(['Administrator', 'Procurement Specialist']);
-  const isCommercialEngineer = hasAnyRole(['Administrator', 'Commercial Engineer']);
+  const isCommercialEngineer = hasAnyRole(['Administrator', 'Sales Engineer']); // 商务工程师就是 Sales Engineer
   const isAdministrator = hasAnyRole(['Administrator']);
   const canAccess = isProcurementSpecialist || isCommercialEngineer;
 
