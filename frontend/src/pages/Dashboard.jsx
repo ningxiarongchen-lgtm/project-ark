@@ -13,9 +13,12 @@ import {
   FileTextOutlined, BellOutlined, FileSearchOutlined, SendOutlined,
   SettingOutlined, DownloadOutlined, CloseOutlined, UploadOutlined
 } from '@ant-design/icons'
-import { projectsAPI, ticketsAPI } from '../services/api'
+import { projectsAPI, ticketsAPI, materialRequirementsAPI, purchaseOrdersAPI, productionAPI, contractsAPI } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import GreetingWidget from '../components/dashboards/GreetingWidget'
+import ProcurementDashboard from './ProcurementDashboard'
+import PlannerDashboard from './PlannerDashboard'
+import ContractReminders from '../components/ContractReminders'
 import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
@@ -29,7 +32,8 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
     pendingDownPayment: 0,      // 待催30%预付款
     pendingFinalPayment: 0,     // 待催70%尾款
     pendingProductionOrder: 0,  // 待下生产订单
-    monthlyRevenue: 0
+    monthlyRevenue: 0,
+    pendingContracts: 0         // 待盖章合同
   })
   const [recentProjects, setRecentProjects] = useState([])
 
@@ -41,13 +45,17 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
     try {
       setLoading(true)
       
-      // 获取商务工程师专属统计数据
-      const [statsRes, projectsRes] = await Promise.all([
+      // 获取商务工程师专属统计数据和合同统计
+      const [statsRes, projectsRes, contractStatsRes] = await Promise.all([
         projectsAPI.getSalesEngineerStats(),
-        projectsAPI.getProjects({ limit: 10 })
+        projectsAPI.getProjects({ limit: 10 }),
+        contractsAPI.getStats().catch(() => ({ data: { pending: 0 } }))
       ])
       
-      setStats(statsRes.data)
+      setStats({
+        ...statsRes.data,
+        pendingContracts: contractStatsRes.data?.pending || 0
+      })
       setRecentProjects(projectsRes.data || [])
     } catch (error) {
       console.error('获取商务工程师数据失败:', error)
@@ -80,7 +88,7 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
 
   return (
     <div>
-      {/* 🎯 顶部统计卡片区 - 6个核心指标 */}
+      {/* 🎯 顶部统计卡片区 - 7个核心指标 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
           <Card hoverable>
@@ -89,6 +97,17 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
               value={stats.totalProjects}
               prefix={<ProjectOutlined style={{ color: '#1890ff' }} />}
               suffix="个"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card hoverable onClick={() => navigate('/contracts?status=待盖章')} style={{ cursor: 'pointer' }}>
+            <Statistic
+              title="待盖章合同"
+              value={stats.pendingContracts}
+              prefix={<FileSearchOutlined style={{ color: '#fa541c' }} />}
+              suffix="个"
+              valueStyle={{ color: stats.pendingContracts > 0 ? '#fa541c' : undefined }}
             />
           </Card>
         </Col>
@@ -150,12 +169,23 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
         </Col>
       </Row>
 
+      {/* 🔔 合同提醒区 */}
+      <ContractReminders onNavigateToContract={(contractId) => navigate(`/contracts?id=${contractId}`)} />
+
       {/* ⚡ 快捷操作区 */}
       <Card 
         title={<><ThunderboltOutlined /> 快捷操作</>}
         style={{ marginBottom: 24 }}
       >
         <Space size="middle" wrap>
+          <Button 
+            type="primary" 
+            danger
+            icon={<FileSearchOutlined />}
+            onClick={() => navigate('/contracts')}
+          >
+            合同管理中心
+          </Button>
           <Button 
             type="primary" 
             icon={<FileTextOutlined />}
@@ -195,11 +225,17 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
       {/* 📋 任务提醒中心 */}
       <Card 
         title={<><BellOutlined /> 任务提醒中心</>}
-        extra={<Badge count={stats.pendingQuotation + stats.pendingDownPayment + stats.pendingFinalPayment + stats.pendingProductionOrder} />}
+        extra={<Badge count={stats.pendingContracts + stats.pendingQuotation + stats.pendingDownPayment + stats.pendingFinalPayment + stats.pendingProductionOrder} />}
         style={{ marginBottom: 24 }}
       >
         <List
           dataSource={[
+            stats.pendingContracts > 0 && {
+              icon: <FileSearchOutlined style={{ color: '#fa541c' }} />,
+              title: `待盖章合同`,
+              description: `您有 ${stats.pendingContracts} 个合同等待盖章处理`,
+              action: () => navigate('/contracts?status=待盖章')
+            },
             stats.pendingQuotation > 0 && {
               icon: <FileTextOutlined style={{ color: '#fa8c16' }} />,
               title: `待完成报价`,
@@ -297,95 +333,45 @@ const SalesEngineerDashboardV2 = ({ user, navigate }) => {
         style={{ marginTop: 24 }}
       >
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#e6f7ff', border: '1px solid #91d5ff' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#1890ff' }}>①</span> 接收项目并报价
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  技术选型完成后，接收项目进行商务报价。根据BOM清单设置价格策略，完成后销售可下载报价单给客户。
-                </Text>
-              </Space>
-            </Card>
+          <Col xs={24} md={6}>
+            <Space direction="vertical">
+              <Title level={5}>
+                <span style={{ color: '#1890ff' }}>1.</span> 接收项目并报价
+              </Title>
+              <Text type="secondary">
+                技术选型完成后，接收项目进行商务报价。根据BOM清单设置价格策略，完成后期销售可下载报价单给客户。
+              </Text>
+            </Space>
           </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#fff7e6', border: '1px solid #ffd591' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#fa8c16' }}>②</span> 审核销售合同
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  客户接受报价后，销售上传合同。审核合同内容和金额，确认无误后下载，提交公司盖章。
-                </Text>
-              </Space>
-            </Card>
+          <Col xs={24} md={6}>
+            <Space direction="vertical">
+              <Title level={5}>
+                <span style={{ color: '#fa8c16' }}>2.</span> 审核销售合同
+              </Title>
+              <Text type="secondary">
+                客户接受报价后，销售上传合同。审核合同内容和金额，确认无误后下载，提交公司盖章。
+              </Text>
+            </Space>
           </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#f6ffed', border: '1px solid #b7eb8f' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#52c41a' }}>③</span> 回传盖章合同
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  公司盖章完成后，上传盖章合同给销售。由销售转交客户签字盖章，完成后项目正式赢单。
-                </Text>
-              </Space>
-            </Card>
+          <Col xs={24} md={6}>
+            <Space direction="vertical">
+              <Title level={5}>
+                <span style={{ color: '#52c41a' }}>3.</span> 回传盖章合同
+              </Title>
+              <Text type="secondary">
+                公司盖章完成后，上传盖章合同给销售。由销售转交客户签字盖章，项目后正式赢单。
+              </Text>
+            </Space>
           </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#fff1f0', border: '1px solid #ffccc7' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#f5222d' }}>④</span> 催收30%预付款
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  合同签订后，催促销售尽快跟进客户收取30%预付款。这是启动生产的前提条件。
-                </Text>
-              </Space>
-            </Card>
-          </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#f9f0ff', border: '1px solid #d3adf7' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#722ed1' }}>⑤</span> 下发生产订单
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  确认预付款到账后，下发生产订单给生产部门。通知生产员开始BOM拆分和生产排期。
-                </Text>
-              </Space>
-            </Card>
-          </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#fff0f6', border: '1px solid #ffadd2' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#eb2f96' }}>⑥</span> 质检通过，催收尾款
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  等待生产完成和质检通过。质检合格后，立即催促销售收取70%尾款。
-                </Text>
-              </Space>
-            </Card>
-          </Col>
-          
-          <Col xs={24} sm={12} lg={8}>
-            <Card size="small" style={{ background: '#e6fffb', border: '1px solid #87e8de' }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <Title level={5} style={{ margin: 0 }}>
-                  <span style={{ color: '#13c2c2' }}>⑦</span> 确认尾款，通知发货
-                </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  确认70%尾款到账后，通知质检部门和物流可以装车发货。至此项目完成。
-                </Text>
-              </Space>
-            </Card>
+          <Col xs={24} md={6}>
+            <Space direction="vertical">
+              <Title level={5}>
+                <span style={{ color: '#722ed1' }}>4.</span> 跟进生产
+              </Title>
+              <Text type="secondary">
+                合同履行后，客户收到预付款到货情况，预付款到货后通知生产排期。
+              </Text>
+            </Space>
           </Col>
         </Row>
       </Card>
@@ -683,6 +669,16 @@ const Dashboard = () => {
   // 💼 商务工程师：直接返回专属Dashboard v2.0
   if (user?.role === 'Sales Engineer') {
     return <SalesEngineerDashboardV2 user={user} navigate={navigate} />
+  }
+
+  // 🛒 采购专员：直接返回专属Dashboard
+  if (user?.role === 'Procurement Specialist') {
+    return <ProcurementDashboard />
+  }
+
+  // 🏭 生产计划员：直接返回专属Dashboard
+  if (user?.role === 'Production Planner') {
+    return <PlannerDashboard />
   }
 
   return (
@@ -1277,71 +1273,38 @@ const Dashboard = () => {
                 </Row>
               </Card>
 
-              {/* 使用指南 - 工作流程卡片 */}
-              <Card title="📖 使用指南">
+              {/* 使用指南 - 工作流程 */}
+              <Card title="📖 技术工程师工作流程">
                 <Row gutter={[16, 16]}>
                   <Col xs={24} md={8}>
-                    <Card 
-                      hoverable
-                      style={{ 
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: 'white',
-                        border: 'none',
-                        height: '100%'
-                      }}
-                    >
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <FileSearchOutlined style={{ fontSize: 32 }} />
-                        <Title level={5} style={{ color: 'white', marginTop: 8 }}>
-                          步骤1：接收任务
-                        </Title>
-                        <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13 }}>
-                          查看销售指派的项目，下载客户技术文件，了解需求参数
-                        </Text>
-                      </Space>
-                    </Card>
+                    <Space direction="vertical">
+                      <Title level={5}>
+                        <span style={{ color: '#1890ff' }}>1.</span> 接收任务
+                      </Title>
+                      <Text type="secondary">
+                        查看销售指派的项目，下载客户技术文件，了解需求参数。
+                      </Text>
+                    </Space>
                   </Col>
                   <Col xs={24} md={8}>
-                    <Card 
-                      hoverable
-                      style={{ 
-                        background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                        color: 'white',
-                        border: 'none',
-                        height: '100%'
-                      }}
-                    >
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <ToolOutlined style={{ fontSize: 32 }} />
-                        <Title level={5} style={{ color: 'white', marginTop: 8 }}>
-                          步骤2：技术选型
-                        </Title>
-                        <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13 }}>
-                          根据技术要求选择执行器型号和配件，填写技术清单
-                        </Text>
-                      </Space>
-                    </Card>
+                    <Space direction="vertical">
+                      <Title level={5}>
+                        <span style={{ color: '#fa8c16' }}>2.</span> 技术选型
+                      </Title>
+                      <Text type="secondary">
+                        根据技术要求选择执行器型号和配件，填写技术清单。
+                      </Text>
+                    </Space>
                   </Col>
                   <Col xs={24} md={8}>
-                    <Card 
-                      hoverable
-                      style={{ 
-                        background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
-                        color: 'white',
-                        border: 'none',
-                        height: '100%'
-                      }}
-                    >
-                      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                        <SendOutlined style={{ fontSize: 32 }} />
-                        <Title level={5} style={{ color: 'white', marginTop: 8 }}>
-                          步骤3：提交商务
-                        </Title>
-                        <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13 }}>
-                          完成选型后提交给商务报价，您的工作结束
-                        </Text>
-                      </Space>
-                    </Card>
+                    <Space direction="vertical">
+                      <Title level={5}>
+                        <span style={{ color: '#52c41a' }}>3.</span> 提交商务
+                      </Title>
+                      <Text type="secondary">
+                        完成选型后提交给商务报价，您的工作结束。
+                      </Text>
+                    </Space>
                   </Col>
                 </Row>
               </Card>

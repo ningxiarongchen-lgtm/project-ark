@@ -290,6 +290,28 @@ export const purchaseOrdersAPI = {
   getBySupplier: (supplierId) => api.get(`/purchase-orders/supplier/${supplierId}`)
 }
 
+// ==================== 物料需求 API ====================
+export const materialRequirementsAPI = {
+  // CRUD
+  getAll: (params) => api.get('/material-requirements', { params }),
+  getById: (id) => api.get(`/material-requirements/${id}`),
+  create: (data) => api.post('/material-requirements', data),
+  update: (id, data) => api.put(`/material-requirements/${id}`, data),
+  delete: (id) => api.delete(`/material-requirements/${id}`),
+  
+  // 统计
+  getStats: () => api.get('/material-requirements/stats'),
+  
+  // 工作流操作
+  submit: (id) => api.post(`/material-requirements/${id}/submit`),
+  accept: (id) => api.post(`/material-requirements/${id}/accept`),
+  addFollowUp: (id, data) => api.post(`/material-requirements/${id}/follow-up`, data),
+  updateItemStatus: (id, data) => api.post(`/material-requirements/${id}/update-item-status`, data),
+  
+  // 创建采购订单
+  createPurchaseOrder: (id, data) => api.post(`/material-requirements/${id}/create-purchase-order`, data)
+}
+
 // ==================== ECO管理 API ====================
 export const ecoAPI = {
   // CRUD
@@ -554,25 +576,44 @@ export const ticketsAPI = {
 
 // ==================== 合同管理 API ====================
 export const contractsAPI = {
-  // 上传草签合同（销售经理，Won状态）
-  uploadDraft: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/draft`, data),
+  // 获取合同列表
+  getAll: (params) => api.get('/contracts', { params }),
   
-  // 商务工程师审核并上传盖章合同
-  reviewAndUploadSealed: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/review`, data),
+  // 获取合同统计
+  getStats: () => api.get('/contracts/stats'),
   
-  // 上传最终签署合同（销售经理，Pending Client Signature状态）
-  uploadFinal: (projectId, data) => api.post(`/contracts/projects/${projectId}/contract/final`, data),
+  // 获取单个合同详情
+  getById: (id) => api.get(`/contracts/${id}`),
   
-  // 获取项目合同信息
-  getContractInfo: (projectId) => api.get(`/contracts/projects/${projectId}/contract`),
+  // 创建销售合同（销售经理）
+  createSalesContract: (data) => api.post('/contracts/sales', data),
   
-  // 🔒 获取合同版本历史和哈希校验记录
-  getContractVersionHistory: (projectId) => api.get(`/contracts/projects/${projectId}/contract/version-history`),
+  // 创建采购合同（采购专员）
+  createPurchaseContract: (data) => api.post('/contracts/purchase', data),
   
-  // 删除合同文件
-  deleteContractFile: (projectId, contractType) => api.delete(`/contracts/projects/${projectId}/contract`, {
-    data: { contractType }
-  })
+  // 商务工程师接单
+  acceptContract: (id) => api.put(`/contracts/${id}/accept`),
+  
+  // 上传盖章版合同
+  sealContract: (id, data) => api.put(`/contracts/${id}/seal`, data),
+  
+  // 驳回合同
+  rejectContract: (id, data) => api.put(`/contracts/${id}/reject`, data),
+  
+  // 更新合同
+  update: (id, data) => api.put(`/contracts/${id}`, data),
+  
+  // 添加跟进记录
+  addFollowUp: (id, data) => api.post(`/contracts/${id}/follow-up`, data),
+  
+  // 删除合同
+  delete: (id) => api.delete(`/contracts/${id}`),
+  
+  // 获取项目的所有合同
+  getByProject: (projectId) => api.get(`/contracts/project/${projectId}`),
+  
+  // 获取采购订单的所有合同
+  getByPurchaseOrder: (purchaseOrderId) => api.get(`/contracts/purchase-order/${purchaseOrderId}`)
 }
 
 // ==================== 数据管理 API ====================
@@ -644,6 +685,24 @@ export const dataManagementAPI = {
     toggleStatus: (id) => api.patch(`/data-management/users/${id}/toggle-status`),
     resetPassword: (id, newPassword) => api.put(`/data-management/users/${id}/reset-password`, { newPassword })
   }
+}
+
+// ==================== 提醒管理 API ====================
+export const remindersAPI = {
+  // 获取当前用户的提醒
+  getMyReminders: () => api.get('/reminders'),
+  
+  // 获取所有提醒（管理员）
+  getAllReminders: () => api.get('/reminders/all'),
+  
+  // 获取提醒统计
+  getStats: () => api.get('/reminders/stats'),
+  
+  // 刷新提醒
+  refresh: () => api.post('/reminders/refresh'),
+  
+  // 关闭提醒
+  dismiss: (contractId, type) => api.delete(`/reminders/${contractId}/${type}`)
 }
 
 export default api
