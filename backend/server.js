@@ -31,13 +31,15 @@ const mesRoutes = require('./routes/mesRoutes');
 const qualityRoutes = require('./routes/qualityRoutes');
 const financeRoutes = require('./routes/financeRoutes');
 const erpStatsRoutes = require('./routes/erpStatsRoutes');
+const materialRequirementRoutes = require('./routes/materialRequirementRoutes');
+const reminderRoutes = require('./routes/reminderRoutes');
 // 数据管理路由
 const actuatorManagementRoutes = require('./routes/actuatorManagementRoutes');
 const accessoryManagementRoutes = require('./routes/accessoryManagementRoutes');
 const supplierManagementRoutes = require('./routes/supplierManagementRoutes');
 const userManagementRoutes = require('./routes/userManagementRoutes');
 // 合同管理路由
-const contractRoutes = require('./routes/contract');
+const contractRoutes = require('./routes/contractRoutes');
 // 产品目录路由（销售经理专用）
 const catalogRoutes = require('./routes/catalog.routes');
 
@@ -131,6 +133,8 @@ app.use('/api/mes', mesRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/erp', erpStatsRoutes);
+app.use('/api/material-requirements', materialRequirementRoutes);
+app.use('/api/reminders', reminderRoutes);
 // 数据管理API路由
 app.use('/api/data-management/actuators', actuatorManagementRoutes);
 app.use('/api/data-management/accessories', accessoryManagementRoutes);
@@ -203,6 +207,10 @@ if (process.env.SKIP_SERVER_START !== 'true') {
   // Initialize Socket.IO
   initializeSocket(httpServer);
 
+  // Start contract reminder service
+  const contractReminderService = require('./services/contractReminderService');
+  contractReminderService.start();
+
   httpServer.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════════════════════╗
@@ -211,6 +219,7 @@ if (process.env.SKIP_SERVER_START !== 'true') {
 ║   Server running on port ${PORT}                        ║
 ║   API: http://localhost:${PORT}                        ║
 ║   WebSocket: ws://localhost:${PORT}                    ║
+║   Contract Reminder: Active                            ║
 ╚════════════════════════════════════════════════════════╝
     `);
   });
