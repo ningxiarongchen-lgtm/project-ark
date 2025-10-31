@@ -17,22 +17,10 @@ export const initializeSocket = (token) => {
     return socket;
   }
 
-  // 🚀 智能环境检测：自动判断生产环境或本地开发环境
+  // 🚀 Socket.IO 服务器地址 - 简化版
   const getApiUrl = () => {
-    // 优先使用环境变量
-    if (import.meta.env.VITE_API_URL) {
-      return import.meta.env.VITE_API_URL.replace('/api', '')
-    }
-    
-    // 生产环境自动使用 Render 后端
-    if (import.meta.env.MODE === 'production') {
-      return 'https://project-ark-efy7.onrender.com'
-    }
-    
-    // 在 Vercel 生产环境自动使用 Render 后端
-    if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-      return 'https://project-ark-efy7.onrender.com'
-    }
+    // 生产环境固定使用 Render 后端
+    return 'https://project-ark-efy7.onrender.com'
     
     // 本地开发环境默认地址
     return 'http://localhost:5001'
