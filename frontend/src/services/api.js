@@ -3,34 +3,13 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { useAuthStore } from '../store/authStore'
 
-// 🚀 智能环境检测：自动判断生产环境或本地开发环境
-const getApiUrl = () => {
-  // 优先使用环境变量
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL
-  }
-  
-  // 在 Vercel 生产环境自动使用 Render 后端
-  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-    return 'https://project-ark-efy7.onrender.com/api'
-  }
-  
-  // 生产环境检测（基于 Vite 模式）
-  if (import.meta.env.MODE === 'production') {
-    return 'https://project-ark-efy7.onrender.com/api'
-  }
-  
-  // 本地开发环境默认地址
-  return 'http://localhost:5001/api'
-}
+// 🚀 API URL 配置 - 简化版，确保生产环境使用正确的后端
+const API_URL = 'https://project-ark-efy7.onrender.com/api'
 
-const API_URL = getApiUrl()
-
-// 调试信息（生产环境会被移除）
-console.log('🔧 API Configuration:', {
-  mode: import.meta.env.MODE,
+// 调试信息
+console.log('🔧 API Configuration - Fixed URL:', {
   apiUrl: API_URL,
-  envVar: import.meta.env.VITE_API_URL,
+  mode: import.meta.env.MODE,
   hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR'
 })
 
