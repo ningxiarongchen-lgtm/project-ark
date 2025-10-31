@@ -1,4 +1,5 @@
 const Project = require('../models/Project');
+const Contract = require('../models/Contract');
 const AV = require('leancloud-storage');
 const { calculateFileHashFromUrl } = require('../utils/fileHash'); // 🔒 引入哈希计算工具
 
@@ -6,6 +7,416 @@ const { calculateFileHashFromUrl } = require('../utils/fileHash'); // 🔒 引�
  * 合同管理控制器
  * 处理合同上传、审核和签署流程
  */
+
+// ============================================
+// 合同管理中心 API
+// ============================================
+
+/**
+ * 获取合同列表 - 支持多维度查询和筛选
+ * GET /api/contracts
+ * 查询参数:
+ * - project: 项目ID
+ * - contractType: Sales | Procurement
+ * - status: 合同状态
+ * - search: 全局文本搜索
+ * - page: 页码
+ * - limit: 每页数量
+ */
+exports.getContracts = async (req, res) => {
+  try {
+    const {
+      project,
+      contractType,
+      status,
+      search,
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // 构建查询条件
+    let query = {};
+
+    // 按项目筛选
+    if (project) {
+      query.project = project;
+    }
+
+    // 按合同类型筛选
+    if (contractType) {
+      query.contractType = contractType;
+    }
+
+    // 按状态筛选
+    if (status) {
+      query.status = status;
+    }
+
+    // 全局文本搜索
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    // 权限控制 - 非管理员只能看到自己相关的合同
+    if (!['Admin', 'Sales Engineer'].includes(req.user.role)) {
+      query.createdBy = req.user._id;
+    }
+
+    // 计算分页
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // 构建排序
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    // 执行查询
+    const [contracts, total] = await Promise.all([
+      Contract.find(query)
+        .populate('project', 'projectName projectNumber status')
+        .populate('createdBy', 'name email phone role')
+        .populate('updatedBy', 'name email phone role')
+        .populate('files.uploadedBy', 'name role')
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Contract.countDocuments(query)
+    ]);
+
+    // 为每个合同添加最新文件信息
+    const contractsWithLatestFile = contracts.map(contract => {
+      let latestFile = null;
+      if (contract.files && contract.files.length > 0) {
+        const final = contract.files.find(f => f.version === 'final');
+        const sealed = contract.files.find(f => f.version === 'sealed');
+        const draft = contract.files.find(f => f.version === 'draft');
+        latestFile = final || sealed || draft;
+      }
+      
+      return {
+        ...contract,
+        latestFile
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: contractsWithLatestFile,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Get contracts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 获取单个合同详情
+ * GET /api/contracts/:id
+ */
+exports.getContractById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const contract = await Contract.findById(id)
+      .populate('project', 'projectName projectNumber status customer')
+      .populate('createdBy', 'name email phone role')
+      .populate('updatedBy', 'name email phone role')
+      .populate('files.uploadedBy', 'name email phone role')
+      .populate('reviewHistory.reviewedBy', 'name email phone role');
+
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+
+    // 权限检查
+    const hasAccess =
+      req.user.role === 'Admin' ||
+      req.user.role === 'Sales Engineer' ||
+      contract.createdBy._id.toString() === req.user._id.toString();
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: contract
+    });
+  } catch (error) {
+    console.error('Get contract by ID error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 创建新合同
+ * POST /api/contracts
+ */
+exports.createContract = async (req, res) => {
+  try {
+    const {
+      title,
+      contractType,
+      project,
+      partyA,
+      partyB,
+      amount,
+      signDate,
+      effectiveDate,
+      expiryDate,
+      paymentTerms,
+      deliveryTerms,
+      warrantyTerms,
+      description,
+      tags
+    } = req.body;
+
+    // 生成合同编号
+    const contractNumber = await Contract.generateContractNumber(contractType);
+
+    // 创建合同
+    const contract = new Contract({
+      contractNumber,
+      title,
+      contractType,
+      project,
+      partyA,
+      partyB,
+      amount,
+      signDate,
+      effectiveDate,
+      expiryDate,
+      paymentTerms,
+      deliveryTerms,
+      warrantyTerms,
+      description,
+      tags,
+      status: 'Draft',
+      createdBy: req.user._id
+    });
+
+    await contract.save();
+
+    // 填充关联信息
+    await contract.populate('project', 'projectName projectNumber');
+    await contract.populate('createdBy', 'name email phone role');
+
+    res.status(201).json({
+      success: true,
+      message: 'Contract created successfully',
+      data: contract
+    });
+  } catch (error) {
+    console.error('Create contract error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 更新合同
+ * PUT /api/contracts/:id
+ */
+exports.updateContract = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const contract = await Contract.findById(id);
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+
+    // 权限检查
+    const canEdit =
+      req.user.role === 'Admin' ||
+      req.user.role === 'Sales Engineer' ||
+      contract.createdBy.toString() === req.user._id.toString();
+
+    if (!canEdit) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    // 更新字段
+    Object.keys(updateData).forEach(key => {
+      if (key !== '_id' && key !== 'createdBy' && key !== 'contractNumber') {
+        contract[key] = updateData[key];
+      }
+    });
+
+    contract.updatedBy = req.user._id;
+    await contract.save();
+
+    await contract.populate('project', 'projectName projectNumber');
+    await contract.populate('createdBy', 'name email phone role');
+    await contract.populate('updatedBy', 'name email phone role');
+
+    res.status(200).json({
+      success: true,
+      message: 'Contract updated successfully',
+      data: contract
+    });
+  } catch (error) {
+    console.error('Update contract error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 上传合同文件
+ * POST /api/contracts/:id/upload
+ */
+exports.uploadContractFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { version, file_name, file_url, objectId } = req.body;
+
+    const contract = await Contract.findById(id);
+    if (!contract) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contract not found'
+      });
+    }
+
+    // 计算文件哈希
+    let fileHash = null;
+    let fileSize = null;
+
+    try {
+      const hashResult = await calculateFileHashFromUrl(file_url);
+      fileHash = hashResult.hash;
+      fileSize = hashResult.size;
+      console.log('✅ 合同文件哈希值计算完成:', fileHash);
+    } catch (hashError) {
+      console.warn('⚠️ 哈希值计算失败:', hashError.message);
+    }
+
+    // 添加文件
+    await contract.addFile({
+      version,
+      file_name,
+      file_url,
+      objectId,
+      file_size: fileSize,
+      file_hash: fileHash
+    }, req.user._id);
+
+    res.status(200).json({
+      success: true,
+      message: 'File uploaded successfully',
+      data: contract
+    });
+  } catch (error) {
+    console.error('Upload contract file error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 获取合同统计信息
+ * GET /api/contracts/stats
+ */
+exports.getContractStats = async (req, res) => {
+  try {
+    const { project } = req.query;
+
+    let matchQuery = {};
+    if (project) {
+      matchQuery.project = mongoose.Types.ObjectId(project);
+    }
+
+    // 如果不是管理员或商务工程师，只能看自己的
+    if (!['Admin', 'Sales Engineer'].includes(req.user.role)) {
+      matchQuery.createdBy = req.user._id;
+    }
+
+    const stats = await Contract.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: {
+            type: '$contractType',
+            status: '$status'
+          },
+          count: { $sum: 1 },
+          totalAmount: { $sum: '$amount.total' }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.type',
+          statuses: {
+            $push: {
+              status: '$_id.status',
+              count: '$count',
+              totalAmount: '$totalAmount'
+            }
+          },
+          totalCount: { $sum: '$count' },
+          totalAmount: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get contract stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// ============================================
+// 原有的项目合同管理 API（保持向后兼容）
+// ============================================
 
 // 销售经理上传草签合同（Won状态后）
 exports.uploadDraftContract = async (req, res) => {

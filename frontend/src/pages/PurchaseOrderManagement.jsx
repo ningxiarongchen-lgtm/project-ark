@@ -46,8 +46,8 @@ const PurchaseOrderManagement = () => {
   const navigate = useNavigate();
   const { user, hasAnyRole } = useAuth();
 
-  // 权限检查 - 只有管理员和采购专员可以访问
-  const canAccess = hasAnyRole(['Administrator', 'Procurement Specialist']);
+  // 权限检查 - 管理员、采购专员、商务工程师可以访问
+  const canAccess = hasAnyRole(['Administrator', 'Procurement Specialist', 'Sales Engineer']);
 
   if (!canAccess) {
     return (

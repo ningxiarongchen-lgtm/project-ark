@@ -49,6 +49,10 @@ const DataManagement = lazy(() => import('./pages/DataManagement'))
 const ProductCatalog = lazy(() => import('./pages/ProductCatalog'))
 const ProductImport = lazy(() => import('./pages/ProductImport'))
 const AdminReports = lazy(() => import('./pages/AdminReports'))
+const MaterialRequirements = lazy(() => import('./pages/MaterialRequirements'))
+const MaterialRequirementDetail = lazy(() => import('./pages/MaterialRequirementDetail'))
+const ContractCenter = lazy(() => import('./pages/ContractCenter'))
+const ContractAnalytics = lazy(() => import('./pages/ContractAnalytics'))
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordCheck }) => {
@@ -155,12 +159,12 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="purchase-orders" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Commercial Engineer']}>
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Sales Engineer']}>
               <PurchaseOrderManagement />
             </ProtectedRoute>
           } />
           <Route path="purchase-orders/:id" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Commercial Engineer']}>
+            <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist', 'Sales Engineer']}>
               <PurchaseOrderDetails />
             </ProtectedRoute>
           } />
@@ -172,6 +176,32 @@ function App() {
           <Route path="purchase-orders/edit/:id" element={
             <ProtectedRoute requiredRoles={['Administrator', 'Procurement Specialist']}>
               <CreatePurchaseOrder />
+            </ProtectedRoute>
+          } />
+          
+          {/* Material Requirements Routes */}
+          <Route path="material-requirements" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Production Planner', 'Procurement Specialist']}>
+              <MaterialRequirements />
+            </ProtectedRoute>
+          } />
+          <Route path="material-requirements/:id" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Production Planner', 'Procurement Specialist']}>
+              <MaterialRequirementDetail />
+            </ProtectedRoute>
+          } />
+          
+          {/* Contract Management Center - Business Engineer & Administrator */}
+          <Route path="contracts" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Business Engineer']}>
+              <ContractCenter />
+            </ProtectedRoute>
+          } />
+          
+          {/* Contract Analytics - Business Engineer & Administrator */}
+          <Route path="contract-analytics" element={
+            <ProtectedRoute requiredRoles={['Administrator', 'Business Engineer', 'Sales Manager']}>
+              <ContractAnalytics />
             </ProtectedRoute>
           } />
         </Route>
