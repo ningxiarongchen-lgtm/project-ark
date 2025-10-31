@@ -15,11 +15,24 @@ const getApiUrl = () => {
     return 'https://project-ark-efy7.onrender.com/api'
   }
   
+  // 生产环境检测（基于 Vite 模式）
+  if (import.meta.env.MODE === 'production') {
+    return 'https://project-ark-efy7.onrender.com/api'
+  }
+  
   // 本地开发环境默认地址
   return 'http://localhost:5001/api'
 }
 
 const API_URL = getApiUrl()
+
+// 调试信息（生产环境会被移除）
+console.log('🔧 API Configuration:', {
+  mode: import.meta.env.MODE,
+  apiUrl: API_URL,
+  envVar: import.meta.env.VITE_API_URL,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR'
+})
 
 // Configure NProgress
 NProgress.configure({ 
