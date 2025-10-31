@@ -49,7 +49,10 @@ const { TabPane } = Tabs;
 const { Search } = Input;
 const { RangePicker } = DatePicker;
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const API_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? 'https://project-ark-efy7.onrender.com/api' 
+    : 'http://localhost:5001/api');
 
 const ContractCenter = () => {
   const [loading, setLoading] = useState(false);

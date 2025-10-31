@@ -24,6 +24,11 @@ export const initializeSocket = (token) => {
       return import.meta.env.VITE_API_URL.replace('/api', '')
     }
     
+    // 生产环境自动使用 Render 后端
+    if (import.meta.env.MODE === 'production') {
+      return 'https://project-ark-efy7.onrender.com'
+    }
+    
     // 在 Vercel 生产环境自动使用 Render 后端
     if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
       return 'https://project-ark-efy7.onrender.com'
