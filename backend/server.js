@@ -72,9 +72,26 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // 允许跨域资源嵌入（如图片）
 }));
 
-// CORS配置
+// CORS配置 - 支持多个前端来源
+const allowedOrigins = [
+  'http://localhost:5173',                    // 本地开发环境
+  'http://localhost:5174',                    // 备用本地端口
+  'https://project-ark-one.vercel.app',      // Vercel 生产环境
+  process.env.FRONTEND_URL                    // 自定义环境变量
+].filter(Boolean); // 过滤掉 undefined
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // 允许没有 origin 的请求（如移动应用、Postman等）
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`🚫 CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

@@ -19,9 +19,17 @@ let io = null;
 const initializeSocket = (httpServer) => {
   const { Server } = require('socket.io');
   
+  // 支持多个前端来源
+  const allowedOrigins = [
+    'http://localhost:5173',                    // 本地开发环境
+    'http://localhost:5174',                    // 备用本地端口
+    'https://project-ark-one.vercel.app',      // Vercel 生产环境
+    process.env.FRONTEND_URL                    // 自定义环境变量
+  ].filter(Boolean); // 过滤掉 undefined
+  
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      origin: allowedOrigins,
       credentials: true
     }
   });
