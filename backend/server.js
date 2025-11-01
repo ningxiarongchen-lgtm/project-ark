@@ -56,6 +56,10 @@ if (process.env.NODE_ENV === 'test') {
 // Initialize express app
 const app = express();
 
+// 信任代理服务器（Render, Vercel 等云平台需要）
+// 这样 Express 才能正确读取 X-Forwarded-* 请求头
+app.set('trust proxy', 1);
+
 // Connect to database
 connectDB();
 
@@ -115,7 +119,9 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // 跳过成功的健康检查请求
-  skip: (req) => req.path === '/api/health'
+  skip: (req) => req.path === '/api/health',
+  // 信任代理，正确识别客户端 IP
+  validate: { trustProxy: true }
 });
 
 // 应用到所有 /api 路由（生产环境启用，开发环境也启用但限制很宽松）
