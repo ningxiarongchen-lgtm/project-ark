@@ -207,10 +207,12 @@ exports.updateProfile = async (req, res) => {
 
     if (user) {
       // 使用 full_name 字段，与数据库模型一致
-      user.full_name = req.body.full_name || user.full_name;
-      user.email = req.body.email || user.email;
-      user.phone = req.body.phone || user.phone;
-      user.department = req.body.department || user.department;
+      if (req.body.full_name !== undefined) user.full_name = req.body.full_name;
+      if (req.body.email !== undefined) user.email = req.body.email;
+      if (req.body.phone !== undefined) user.phone = req.body.phone;
+      if (req.body.department !== undefined) user.department = req.body.department;
+      if (req.body.english_name !== undefined) user.english_name = req.body.english_name;
+      if (req.body.signature !== undefined) user.signature = req.body.signature;
 
       if (req.body.password) {
         user.password = req.body.password;
@@ -221,6 +223,8 @@ exports.updateProfile = async (req, res) => {
       res.json({
         _id: updatedUser._id,
         full_name: updatedUser.full_name,
+        english_name: updatedUser.english_name,
+        signature: updatedUser.signature,
         email: updatedUser.email,
         role: updatedUser.role,
         department: updatedUser.department,

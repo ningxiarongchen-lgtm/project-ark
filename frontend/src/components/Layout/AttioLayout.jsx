@@ -533,6 +533,7 @@ const AttioLayout = () => {
                     }}
                   >
                     {user?.full_name || user?.phone}
+                    {user?.english_name && <span style={{ marginLeft: 4 }}>({user.english_name})</span>}
                   </span>
                   <span
                     style={{
