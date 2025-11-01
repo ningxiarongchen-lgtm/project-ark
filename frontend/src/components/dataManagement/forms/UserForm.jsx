@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Select, Switch, Button, message } from 'antd';
 import { RedoOutlined } from '@ant-design/icons';
+import { ROLE_OPTIONS } from '../../utils/roleTranslations';
 
 const { Option } = Select;
 
@@ -123,15 +124,9 @@ const UserForm = ({ visible, record, onSubmit, onCancel }) => {
           extra="角色决定了用户在系统中的权限和可访问的功能"
         >
           <Select placeholder="请选择用户角色" showSearch>
-            <Option value="Administrator">管理员 (Administrator)</Option>
-            <Option value="Sales Manager">销售经理 (Sales Manager)</Option>
-            <Option value="Technical Engineer">技术工程师 (Technical Engineer) - 含售后职责</Option>
-            <Option value="Business Engineer">商务工程师 (Business Engineer)</Option>
-            <Option value="Procurement Specialist">采购专员 (Procurement Specialist)</Option>
-            <Option value="Production Planner">生产计划员 (Production Planner)</Option>
-            <Option value="QA Inspector">质检员 (QA Inspector)</Option>
-            <Option value="Logistics Specialist">物流专员 (Logistics Specialist)</Option>
-            <Option value="Shop Floor Worker">车间工人 (Shop Floor Worker)</Option>
+            {ROLE_OPTIONS.map(option => (
+              <Option key={option.value} value={option.value}>{option.label}</Option>
+            ))}
           </Select>
         </Form.Item>
         
