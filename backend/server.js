@@ -85,6 +85,11 @@ app.use(cors({
     // 允许没有 origin 的请求（如移动应用、Postman等）
     if (!origin) return callback(null, true);
     
+    // 允许所有 Vercel 预览部署域名 (*.vercel.app)
+    if (origin && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
