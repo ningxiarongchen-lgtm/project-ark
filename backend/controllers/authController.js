@@ -82,14 +82,14 @@ exports.register = async (req, res) => {
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 8 * 60 * 60 * 1000
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
       
@@ -159,7 +159,7 @@ exports.login = async (req, res) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,  // JavaScript 无法访问，防止 XSS
       secure: process.env.NODE_ENV === 'production',  // 生产环境使用 HTTPS
-      sameSite: 'strict',  // 防止 CSRF 攻击
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // 生产环境跨域需要 none
       maxAge: 8 * 60 * 60 * 1000  // 8 小时（与 JWT 过期时间一致）
     });
 
@@ -167,7 +167,7 @@ exports.login = async (req, res) => {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // 生产环境跨域需要 none
       maxAge: 7 * 24 * 60 * 60 * 1000  // 7 天
     });
 
@@ -356,14 +356,14 @@ exports.refreshToken = async (req, res) => {
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 8 * 60 * 60 * 1000
     });
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -433,13 +433,13 @@ exports.logout = async (req, res) => {
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     });
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
     });
 
     res.json({ 
