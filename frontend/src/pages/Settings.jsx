@@ -3,6 +3,7 @@ import { Card, Form, Input, Button, message, Divider, Typography, Space, Alert }
 import { UserOutlined, PhoneOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../store/authStore'
 import { authAPI } from '../services/api'
+import { getRoleNameCN } from '../utils/roleTranslations'
 
 const { Title, Text } = Typography
 
@@ -92,7 +93,7 @@ const Settings = () => {
           initialValues={{
             full_name: user?.full_name,
             phone: user?.phone,
-            role: user?.role,
+            role: getRoleNameCN(user?.role),
             department: user?.department
           }}
         >

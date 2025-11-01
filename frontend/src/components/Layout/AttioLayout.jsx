@@ -31,6 +31,7 @@ import { colors } from '../../styles/theme'
 import AttioCommandPalette from '../Attio/AttioCommandPalette'
 import NotificationPanel from '../Notifications/NotificationPanel'
 import useNotifications from '../../hooks/useNotifications'
+import { getRoleNameCN } from '../../utils/roleTranslations'
 import '../Attio/AttioSidebar.css'
 
 const { Header, Sider, Content } = Layout
@@ -209,19 +210,6 @@ const menuConfig = [
     roles: ['Shop Floor Worker'],
   },
 ]
-
-// 角色中文翻译映射
-const roleTranslations = {
-  'Technical Engineer': '技术工程师',
-  'Business Engineer': '商务工程师',
-  'Sales Manager': '销售经理',
-  'Procurement Specialist': '采购专员',
-  'Production Planner': '生产计划员',
-  'QA Inspector': '质检员',
-  'Logistics Specialist': '物流专员',
-  'Shop Floor Worker': '车间工人',
-  'Administrator': '管理员',
-}
 
 const AttioLayout = () => {
   const [collapsed, setCollapsed] = useState(false)
@@ -552,7 +540,7 @@ const AttioLayout = () => {
                       color: colors.text.secondary,
                     }}
                   >
-                    {roleTranslations[user?.role] || user?.role}
+                    {getRoleNameCN(user?.role)}
                   </span>
                 </div>
               </div>
