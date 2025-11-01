@@ -104,18 +104,20 @@ function cleanAndNormalizeData(rawData, fieldMapping = {}) {
       if (typeof value === 'string') {
         cleanedValue = value.trim();
         
-        // 转换布尔值
-        if (cleanedValue.toLowerCase() === 'true') cleanedValue = true;
-        if (cleanedValue.toLowerCase() === 'false') cleanedValue = false;
-        
-        // 转换数字
-        if (!isNaN(cleanedValue) && cleanedValue !== '') {
-          cleanedValue = Number(cleanedValue);
-        }
-        
-        // 清空明显的空值
+        // 清空明显的空值（在转换之前检查）
         if (cleanedValue === '' || cleanedValue.toLowerCase() === 'n/a' || cleanedValue.toLowerCase() === 'null') {
           cleanedValue = null;
+        }
+        // 转换布尔值
+        else if (cleanedValue.toLowerCase() === 'true') {
+          cleanedValue = true;
+        }
+        else if (cleanedValue.toLowerCase() === 'false') {
+          cleanedValue = false;
+        }
+        // 转换数字
+        else if (!isNaN(cleanedValue) && cleanedValue !== '') {
+          cleanedValue = Number(cleanedValue);
         }
       }
       
