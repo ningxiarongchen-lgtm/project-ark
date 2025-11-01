@@ -21,15 +21,16 @@ const Settings = () => {
         phone: values.phone
       })
       
-      // 更新本地用户信息
+      // 立即更新本地用户信息
       updateUser(response.data)
       
-      message.success('个人信息更新成功！页面将在2秒后刷新...')
+      // 显示成功消息
+      message.success('个人信息更新成功！', 1.5)
       
-      // 延迟刷新页面，让用户看到成功提示
+      // 短暂延迟后刷新页面，确保所有组件显示最新信息
       setTimeout(() => {
         window.location.reload()
-      }, 2000)
+      }, 1500)
     } catch (error) {
       console.error('Update profile error:', error)
       message.error(error.response?.data?.message || '更新失败，请重试')
