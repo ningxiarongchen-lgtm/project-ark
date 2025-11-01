@@ -19,6 +19,17 @@ const userSchema = new mongoose.Schema({
     required: [true, '请提供姓名'],
     trim: true
   },
+  english_name: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  signature: {
+    type: String,
+    trim: true,
+    maxlength: 200,
+    default: ''
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
