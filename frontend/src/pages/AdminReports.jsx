@@ -15,7 +15,7 @@ import {
   PieChartOutlined,
   TeamOutlined
 } from '@ant-design/icons'
-import { projectsAPI } from '../services/api'
+import { projectsAPI, adminAPI } from '../services/api'
 import dayjs from 'dayjs'
 
 const { Title, Text } = Typography
@@ -61,36 +61,50 @@ const AdminReports = () => {
     try {
       setLoading(true)
       
-      // 获取项目数据用于业务统计
-      const projectsRes = await projectsAPI.getAll()
+      // 🔄 从后端获取真实统计数据
+      const [statsRes, projectsRes] = await Promise.all([
+        adminAPI.getSystemStats(),
+        projectsAPI.getAll()
+      ])
+      
+      const systemStats = statsRes.data || {}
       const projects = Array.isArray(projectsRes.data?.data) 
         ? projectsRes.data.data 
         : []
+      
+      // 处理用户角色统计
+      const roleMapping = {
+        'Administrator': '系统管理员',
+        'Sales Manager': '销售经理',
+        'Technical Engineer': '技术工程师',
+        'Business Engineer': '商务工程师',
+        'Procurement Specialist': '采购专员',
+        'Production Planner': '生产计划员',
+        'QA Inspector': '质检员',
+        'Logistics Specialist': '物流专员',
+        'Shop Floor Worker': '车间工人'
+      }
+      
+      const totalUsers = systemStats.users?.total || 0
+      const usersByRole = (systemStats.users?.byRole || []).map(item => ({
+        role: roleMapping[item._id] || item._id,
+        count: item.count,
+        percentage: totalUsers > 0 ? `${((item.count / totalUsers) * 100).toFixed(1)}%` : '0%'
+      }))
 
       setStats({
-        // 用户统计（模拟数据，后续接入真实API）
-        totalUsers: 10,
-        activeUsers: 8,
-        usersByRole: [
-          { role: '系统管理员', count: 1, percentage: '10%' },
-          { role: '销售经理', count: 1, percentage: '10%' },
-          { role: '技术工程师', count: 1, percentage: '10%' },
-          { role: '商务工程师', count: 1, percentage: '10%' },
-          { role: '采购专员', count: 1, percentage: '10%' },
-          { role: '生产计划员', count: 1, percentage: '10%' },
-          { role: '质检员', count: 1, percentage: '10%' },
-          { role: '物流专员', count: 1, percentage: '10%' },
-          { role: '售后工程师', count: 1, percentage: '10%' },
-          { role: '车间工人', count: 1, percentage: '10%' },
-        ],
+        // 用户统计（真实数据）
+        totalUsers: systemStats.users?.total || 0,
+        activeUsers: systemStats.users?.active || 0,
+        usersByRole: usersByRole,
         
-        // 产品统计（模拟数据）
-        totalProducts: 365,
-        actuators: 337,
-        accessories: 10,
-        manualOverrides: 18,
+        // 产品统计（真实数据）
+        totalProducts: systemStats.products?.total || 0,
+        actuators: systemStats.products?.total || 0,  // TODO: 细分统计
+        accessories: systemStats.accessories?.total || 0,
+        manualOverrides: 0,  // TODO: 添加手动装置统计
         
-        // 供应商统计（模拟数据）
+        // 供应商统计（模拟数据，后续接入真实API）
         totalSuppliers: 5,
         qualifiedSuppliers: 4,
         suppliersByRating: [
