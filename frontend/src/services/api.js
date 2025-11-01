@@ -761,6 +761,35 @@ export const remindersAPI = {
   dismiss: (contractId, type) => api.delete(`/reminders/${contractId}/${type}`)
 }
 
+// ==================== 管理员 API ====================
+export const adminAPI = {
+  // 获取系统统计数据
+  getSystemStats: () => api.get('/admin/stats'),
+  
+  // 导入产品数据
+  importProducts: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/admin/products/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  
+  // 导入配件数据
+  importAccessories: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/admin/accessories/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  
+  // 下载模板
+  downloadTemplate: (type) => api.get(`/admin/${type}/template`, {
+    responseType: 'blob'
+  })
+}
+
 export default api
 
 
