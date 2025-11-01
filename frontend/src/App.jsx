@@ -56,6 +56,7 @@ const ContractAnalytics = lazy(() => import('./pages/ContractAnalytics'))
 const QualityInspectorDashboard = lazy(() => import('./pages/quality/QualityInspectorDashboard'))
 const QualityInspectionPage = lazy(() => import('./pages/quality/QualityInspectionPage'))
 const MyDeliveryTasks = lazy(() => import('./pages/logistics/MyDeliveryTasks'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole, requiredRoles, skipPasswordCheck }) => {
@@ -130,6 +131,7 @@ function App() {
           <Route path="service-center" element={<ServiceCenter />} />
           <Route path="service-center/:id" element={<TicketDetails />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
           
           {/* Product Catalog - Sales Manager Only */}
           <Route path="product-catalog" element={
