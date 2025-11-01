@@ -32,6 +32,7 @@ import AttioCommandPalette from '../Attio/AttioCommandPalette'
 import NotificationPanel from '../Notifications/NotificationPanel'
 import useNotifications from '../../hooks/useNotifications'
 import { getRoleNameCN } from '../../utils/roleTranslations'
+import SystemLogo from '../Logo/SystemLogo'
 import '../Attio/AttioSidebar.css'
 
 const { Header, Sider, Content } = Layout
@@ -336,19 +337,26 @@ const AttioLayout = () => {
             padding: collapsed ? '0' : '0 20px',
             borderBottom: `1px solid ${colors.border.light}`,
             transition: 'all 0.2s',
+            gap: collapsed ? 0 : 12,
           }}
         >
-          <div
-            style={{
-              color: colors.text.primary,
-              fontSize: collapsed ? '18px' : '20px',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              transition: 'all 0.2s',
-            }}
-          >
-            {collapsed ? '智造' : '智能制造系统'}
-          </div>
+          <SystemLogo 
+            size={collapsed ? 28 : 32} 
+            color={colors.primary.main || '#4F46E5'} 
+          />
+          {!collapsed && (
+            <div
+              style={{
+                color: colors.text.primary,
+                fontSize: '20px',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                transition: 'all 0.2s',
+              }}
+            >
+              智能制造系统
+            </div>
+          )}
         </div>
 
         {/* Navigation Menu - Attio Style */}
