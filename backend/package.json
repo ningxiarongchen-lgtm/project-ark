@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "start:test": "NODE_ENV=test nodemon server.js",
     "seed:final": "node seed_final_acceptance.js",
+    "init:production": "node seed_production_init.js",
     "verify:data": "node verify_data_completeness.js",
     "verify:mechanism": "node verify_mechanism_types.js",
     "verify:all": "npm run verify:data && npm run verify:mechanism",
