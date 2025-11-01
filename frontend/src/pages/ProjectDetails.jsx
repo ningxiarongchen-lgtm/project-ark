@@ -1195,10 +1195,6 @@ const ProjectDetails = () => {
     setGeneratingQuotation(true)
     
     try {
-        projectId: id, 
-        version: currentTechnicalVersion 
-      })
-      
       // 🔒 调用新的API接口，基于技术清单版本快照生成报价BOM
       const response = await axios.post(
         `/api/new-projects/${id}/generate-quotation-bom`,

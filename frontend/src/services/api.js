@@ -21,14 +21,6 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl()
 
-// 调试信息
-  apiUrl: API_URL,
-  mode: import.meta.env.MODE,
-  isProd: import.meta.env.PROD,
-  envVar: import.meta.env.VITE_API_URL,
-  hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR'
-})
-
 // Configure NProgress
 NProgress.configure({ 
   showSpinner: false,  // Hide spinner, only show bar

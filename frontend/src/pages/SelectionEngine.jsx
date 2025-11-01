@@ -74,17 +74,6 @@ const SelectionEngine = () => {
         mechanism: values.mechanism || 'Scotch Yoke', // 确保 mechanism 参数存在
       }
       
-      // 调试日志
-        mechanism: requestPayload.mechanism,
-        action_type_preference: requestPayload.action_type_preference,
-        failSafePosition: requestPayload.failSafePosition,
-        valve_type: requestPayload.valve_type,
-        required_torque: requestPayload.required_torque,
-        requiredOpeningTorque: requestPayload.requiredOpeningTorque,
-        requiredClosingTorque: requestPayload.requiredClosingTorque,
-        working_pressure: requestPayload.working_pressure,
-      })
-      
       // 3. 调用选型计算API
       const response = await selectionAPI.calculate(requestPayload)
       
@@ -215,15 +204,6 @@ const SelectionEngine = () => {
         selected_override: selectedOverride,
         selected_accessories: selectedAccessories // 添加配件数据
       }
-
-      // 调试日志：显示将要保存的数据
-        tag_number: selectionData.tag_number,
-        valve_size: formValues.valve_size,
-        flange_size: formValues.flange_size,
-        mechanism: formValues.mechanism,
-        valve_type: formValues.valve_type,
-        accessories_count: selectedAccessories.length
-      })
 
       await projectsAPI.autoSelect(currentProject._id, selectionData)
       message.success(`已保存到项目（包含 ${selectedAccessories.length} 个配件）`)
