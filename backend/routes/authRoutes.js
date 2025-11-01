@@ -28,7 +28,7 @@ const { body } = require('express-validator');
 // 在开发和测试环境中放宽限制
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15分钟窗口期
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 生产环境临时提高到100次便于测试
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // 开发/测试环境放宽到1000次
   message: {
     success: false,
     message: '尝试次数过多，请15分钟后再试'
