@@ -147,11 +147,13 @@ app.use('/api/products', productRoutes);
 app.use('/api/accessories', accessoryRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/quotes', quoteRoutes);
-app.use('/api/admin', adminRoutes);
 
 // 生产环境初始化端点（无需身份验证，使用密钥保护）
+// ⚠️ 必须在 adminRoutes 之前注册，否则会被认证中间件拦截
 const initProductionRoutes = require('./routes/admin/initProduction');
 app.use('/api/admin', initProductionRoutes);
+
+app.use('/api/admin', adminRoutes);
 // 新的API路由
 app.use('/api/actuators', actuatorRoutes);
 app.use('/api/manual-overrides', manualOverrideRoutes);
