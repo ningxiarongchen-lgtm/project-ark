@@ -65,7 +65,7 @@ const Settings = () => {
 
       <Alert
         message="管理员权限"
-        description="您可以修改账号的核心信息，包括中文姓名、手机号和密码。英文名字和个性签名请在"个人资料"中修改。"
+        description="您可以修改账号的核心信息，包括中文姓名、手机号和密码。英文名字和个性签名请在个人资料页面中修改。"
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
