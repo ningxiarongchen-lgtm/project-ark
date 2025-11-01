@@ -246,7 +246,6 @@ const TicketDetails = () => {
   const handleGenerateReport = async () => {
     setGeneratingReport(true)
     try {
-      console.log('🔧 正在生成售后解决报告...')
 
       // 创建报告内容
       const reportContent = generateReportHTML(ticket)

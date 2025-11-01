@@ -101,7 +101,6 @@ const TechnicalItemList = ({ project, onUpdate }) => {
         message.success('保存成功');
       }
     } catch (errInfo) {
-      console.log('验证失败:', errInfo);
     }
   };
 
@@ -141,7 +140,6 @@ const TechnicalItemList = ({ project, onUpdate }) => {
       await saveTechnicalListToServer(newData);
       message.success('添加成功');
     } catch (error) {
-      console.log('验证失败:', error);
     }
   };
 

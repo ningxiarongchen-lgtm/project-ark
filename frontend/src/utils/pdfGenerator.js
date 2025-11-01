@@ -555,10 +555,6 @@ export const generateSelectionQuotePDF = (selection, project) => {
   const useOptimizedBOM = project?.optimized_bill_of_materials && 
                           project.optimized_bill_of_materials.length > 0
   
-  console.log('📄 生成报价单 PDF')
-  console.log('  使用优化BOM:', useOptimizedBOM ? '是' : '否')
-  console.log('  项目名称:', project?.project_name)
-  
   // ==================== 页眉 ====================
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
@@ -669,7 +665,6 @@ export const generateSelectionQuotePDF = (selection, project) => {
   // ========== 分支逻辑：使用优化BOM 或 单个选型 ==========
   if (useOptimizedBOM) {
     // ===== 使用优化后的 BOM =====
-    console.log('  📊 使用优化BOM，包含', project.optimized_bill_of_materials.length, '个型号')
     
     project.optimized_bill_of_materials.forEach((bomItem) => {
       const modelName = bomItem.actuator_model
@@ -701,7 +696,6 @@ export const generateSelectionQuotePDF = (selection, project) => {
     
   } else if (selection) {
     // ===== 使用单个选型记录（原有逻辑）=====
-    console.log('  📄 使用单个选型记录:', selection.tag_number)
     
     // 添加执行器
     if (selection.selected_actuator) {
@@ -791,7 +785,6 @@ export const generateSelectionQuotePDF = (selection, project) => {
     { align: 'right' }
   )
   
-  console.log('  💰 总价:', `¥${totalPrice.toLocaleString()}`)
   
   // ==================== 条款 ====================
   const termsY = finalY + 15
@@ -844,7 +837,6 @@ export const generateSelectionQuotePDF = (selection, project) => {
   }
   
   doc.save(filename)
-  console.log('  ✅ PDF已生成:', filename)
   
   return filename
 }

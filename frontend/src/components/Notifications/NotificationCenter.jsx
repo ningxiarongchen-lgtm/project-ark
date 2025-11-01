@@ -136,7 +136,6 @@ const NotificationCenter = () => {
     // 实际项目中应该加载真实的音频文件
     // const audio = new Audio('/notification.mp3')
     // audio.play()
-    console.log('播放通知提示音')
   }
 
   const showBrowserNotification = (notification) => {

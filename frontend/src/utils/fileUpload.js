@@ -108,7 +108,6 @@ export const deleteFileFromLeanCloud = async (objectId) => {
       }
     );
 
-    console.log('文件删除成功:', objectId);
   } catch (error) {
     console.error('文件删除失败:', error);
     // 删除失败不抛出错误，避免影响主流程

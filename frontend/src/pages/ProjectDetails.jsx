@@ -295,7 +295,6 @@ const ProjectDetails = () => {
     }
 
     try {
-      console.log('🚀 开始优化项目选型...')
       const result = optimizeProjectSelection(project.selections)
       
       setOptimizationResult(result)
@@ -341,7 +340,6 @@ const ProjectDetails = () => {
   // 生成报价单PDF
   const handleGenerateQuotePDF = () => {
     try {
-      console.log('🎯 生成报价单PDF')
       
       // 使用项目数据生成PDF（函数内部会自动判断是否使用优化BOM）
       const filename = generateSelectionQuotePDF(null, project)
@@ -365,12 +363,10 @@ const ProjectDetails = () => {
     setGeneratingBOM(true)
     
     try {
-      console.log('🚀 从选型自动生成BOM清单...')
       
       // 调用优化算法
       const result = optimizeProjectSelection(project.selections)
       
-      console.log('✅ 优化结果:', result)
       
       // 将优化结果转换为可编辑的BOM数据
       const newBomData = result.optimized_bill_of_materials.map((item, index) => ({
@@ -680,11 +676,9 @@ const ProjectDetails = () => {
     setCreatingOrder(true)
     
     try {
-      console.log('🚀 正在从项目创建订单...')
       
       const response = await ordersAPI.createFromProject(id, values)
       
-      console.log('✅ 订单创建成功:', response.data)
       
       message.success(`订单创建成功！订单编号: ${response.data.data.orderNumber}`)
       
@@ -736,7 +730,6 @@ const ProjectDetails = () => {
     setAiSuggestion('正在分析您的BOM清单，请稍候...')
     
     try {
-      console.log('🤖 正在获取AI优化建议...')
       
       // 准备发送给后端的数据
       const bomDataToSend = bomData.map(({ key, ...rest }) => rest)
@@ -755,7 +748,6 @@ const ProjectDetails = () => {
       // 调用AI API
       const response = await aiAPI.optimizeBOM(requestData)
       
-      console.log('✅ AI建议获取成功')
       
       // 设置AI建议内容
       setAiSuggestion(response.data.data.suggestion)
@@ -796,7 +788,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📊 导出BOM为Excel...')
       
       // 准备Excel数据
       const excelData = bomData.map((item, index) => ({
@@ -849,7 +840,6 @@ const ProjectDetails = () => {
       XLSX.writeFile(wb, filename)
       
       message.success(`Excel文件已导出: ${filename}`)
-      console.log('✅ Excel导出成功')
     } catch (error) {
       console.error('导出Excel失败:', error)
       message.error('导出Excel失败: ' + error.message)
@@ -864,7 +854,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📄 导出BOM为PDF...')
       
       // 创建PDF文档
       const doc = new jsPDF()
@@ -970,7 +959,6 @@ const ProjectDetails = () => {
       doc.save(filename)
       
       message.success(`PDF文件已导出: ${filename}`)
-      console.log('✅ PDF导出成功')
     } catch (error) {
       console.error('导出PDF失败:', error)
       message.error('导出PDF失败: ' + error.message)
@@ -989,7 +977,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📊 导出技术清单为Excel（不含价格）...')
       
       // 准备Excel数据
       const excelData = selectionsData.map((selection, index) => ({
@@ -1037,7 +1024,6 @@ const ProjectDetails = () => {
       XLSX.writeFile(wb, filename)
       
       message.success(`Excel技术清单已导出: ${filename}`)
-      console.log('✅ Excel技术清单导出成功')
     } catch (error) {
       console.error('导出Excel技术清单失败:', error)
       message.error('导出Excel技术清单失败: ' + error.message)
@@ -1055,7 +1041,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📄 导出技术清单为PDF...')
       
       // 创建PDF文档
       const doc = new jsPDF('landscape') // 使用横向布局以容纳更多列
@@ -1154,7 +1139,6 @@ const ProjectDetails = () => {
       doc.save(filename)
       
       message.success(`PDF技术清单已导出: ${filename}`)
-      console.log('✅ PDF技术清单导出成功')
     } catch (error) {
       console.error('导出PDF技术清单失败:', error)
       message.error('导出PDF技术清单失败: ' + error.message)
@@ -1211,7 +1195,6 @@ const ProjectDetails = () => {
     setGeneratingQuotation(true)
     
     try {
-      console.log('🚀 从技术清单生成报价BOM...', { 
         projectId: id, 
         version: currentTechnicalVersion 
       })
@@ -1246,7 +1229,6 @@ const ProjectDetails = () => {
         await fetchProject()
         
         message.success(`成功从技术清单版本 ${response.data.data.based_on_version} 生成报价BOM，包含 ${quotationDataWithKeys.length} 个项目`)
-        console.log('✅ 报价BOM生成成功')
       } else {
         throw new Error(response.data.message || '生成失败')
       }
@@ -1492,7 +1474,6 @@ const ProjectDetails = () => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传销售合同...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1521,7 +1502,6 @@ const ProjectDetails = () => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传公司盖章合同...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1551,7 +1531,6 @@ const ProjectDetails = () => {
     setUploadingContract(true)
     
     try {
-      console.log('📄 上传客户盖章合同（最终合同）...')
       
       const contractData = {
         file_name: fileData.name,
@@ -1697,7 +1676,6 @@ const ProjectDetails = () => {
         setCreatingProduction(true)
         
         try {
-          console.log('💼 创建生产订单...')
           
           // 计算订单总金额
           const subtotal = project.quotation_bom.reduce((sum, item) => sum + (item.total_price || 0), 0)
@@ -1718,7 +1696,6 @@ const ProjectDetails = () => {
           const response = await productionAPI.createFromProject(id, orderData)
           
           message.success('生产订单创建成功！')
-          console.log('生产订单创建结果:', response.data)
           
           // 显示创建结果
           Modal.success({
@@ -2375,7 +2352,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📊 导出报价单为Excel...')
       
       // 准备Excel数据
       const excelData = quotationBomData.map((item, index) => ({
@@ -2435,7 +2411,6 @@ const ProjectDetails = () => {
       XLSX.writeFile(wb, filename)
       
       message.success(`Excel报价单已导出: ${filename}`)
-      console.log('✅ Excel报价单导出成功')
     } catch (error) {
       console.error('导出Excel报价单失败:', error)
       message.error('导出Excel报价单失败: ' + error.message)
@@ -2450,7 +2425,6 @@ const ProjectDetails = () => {
     }
     
     try {
-      console.log('📄 导出报价单为PDF...')
       
       // 创建PDF文档
       const doc = new jsPDF()
@@ -2587,7 +2561,6 @@ const ProjectDetails = () => {
       doc.save(filename)
       
       message.success(`PDF报价单已导出: ${filename}`)
-      console.log('✅ PDF报价单导出成功')
     } catch (error) {
       console.error('导出PDF报价单失败:', error)
       message.error('导出PDF报价单失败: ' + error.message)

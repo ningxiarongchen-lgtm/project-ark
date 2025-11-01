@@ -88,12 +88,10 @@ export const optimizeProjectSelection = (selections) => {
     requirements.push(requirement);
   });
 
-  console.log(`📊 收集到 ${requirements.length} 个选型需求`);
 
   // ==================== 步骤 3: 按需求扭矩从大到小排序 ====================
   requirements.sort((a, b) => b.required_torque - a.required_torque);
   
-  console.log(`🔽 按扭矩排序完成: 最大 ${requirements[0]?.required_torque} Nm → 最小 ${requirements[requirements.length - 1]?.required_torque} Nm`);
 
   // ==================== 步骤 4: 贪心算法分组 ====================
   const optimizedGroups = new Map(); // key: 型号, value: 分组数据
@@ -107,13 +105,11 @@ export const optimizeProjectSelection = (selections) => {
 
     const currentReq = requirements[i];
     
-    console.log(`\n🎯 处理需求 ${i + 1}: ${currentReq.tag_number} (扭矩: ${currentReq.required_torque} Nm)`);
 
     // 为当前需求选择型号
     const selectedModel = currentReq.actuator_model;
     const selectedPrice = currentReq.unit_price;
     
-    console.log(`  ✓ 选定型号: ${selectedModel} (价格: ¥${selectedPrice})`);
 
     // 收集能被此型号满足的所有需求
     const coveredRequirements = [currentReq];
@@ -139,12 +135,9 @@ export const optimizeProjectSelection = (selections) => {
           coveredTags.push(otherReq.tag_number);
           processedIndices.add(j);
           
-          console.log(`  ✓ 归并: ${otherReq.tag_number} (扭矩: ${otherReq.required_torque} Nm) → 使用 ${selectedModel}`);
         } else {
-          console.log(`  ✗ ${otherReq.tag_number}: 扭矩不足 (需要 ${otherReq.required_torque} Nm, 提供 ${currentReq.actual_torque} Nm)`);
         }
       } else {
-        console.log(`  ✗ ${otherReq.tag_number}: 参数不兼容`);
       }
     }
 
@@ -158,7 +151,6 @@ export const optimizeProjectSelection = (selections) => {
         existingGroup.total_price = existingGroup.unit_price * existingGroup.total_quantity;
         existingGroup.covered_tags.push(...coveredTags);
         
-        console.log(`  📦 合并到现有组: ${selectedModel} (新数量: ${existingGroup.total_quantity})`);
       } else {
         // 价格不同，可能是不同配置，创建新的条目（添加后缀区分）
         const uniqueKey = `${selectedModel}_${selectedPrice}`;
@@ -171,7 +163,6 @@ export const optimizeProjectSelection = (selections) => {
           notes: `价格: ¥${selectedPrice}`
         });
         
-        console.log(`  📦 创建新组 (价格不同): ${uniqueKey}`);
       }
     } else {
       // 创建新的分组
@@ -186,7 +177,6 @@ export const optimizeProjectSelection = (selections) => {
           : ''
       });
       
-      console.log(`  📦 创建新组: ${selectedModel} (数量: ${coveredRequirements.length})`);
     }
   }
 
@@ -218,8 +208,6 @@ export const optimizeProjectSelection = (selections) => {
     message: `成功优化：${requirements.length} 个选型 → ${optimized_bill_of_materials.length} 个型号`
   };
 
-  console.log('\n✅ 优化完成！');
-  console.log(`📊 统计信息:`, statistics);
 
   return {
     optimized_bill_of_materials,

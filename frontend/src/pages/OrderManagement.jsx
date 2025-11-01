@@ -190,7 +190,6 @@ const OrderManagement = () => {
   const handleCreateTicket = async (values) => {
     setCreatingTicket(true)
     try {
-      console.log('🎫 正在创建售后工单...', values)
       
       // 构建符合新模型的工单数据
       const ticketData = {
@@ -220,7 +219,6 @@ const OrderManagement = () => {
       
       const response = await ticketsAPI.create(ticketData)
       
-      console.log('✅ 售后工单创建成功:', response.data)
       
       message.success(`售后工单创建成功！工单号: ${response.data.data.ticket_number || response.data.data.ticketNumber}`)
       

@@ -103,11 +103,9 @@ const ServiceCenter = () => {
   const handleCreateTicket = async (values) => {
     setCreating(true)
     try {
-      console.log('🎫 正在创建服务工单...')
 
       const response = await ticketsAPI.create(values)
 
-      console.log('✅ 工单创建成功:', response.data)
 
       message.success(`工单创建成功！工单号: ${response.data.data.ticketNumber}`)
 
