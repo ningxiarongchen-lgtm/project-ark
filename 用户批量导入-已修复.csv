@@ -1,0 +1,9 @@
+phone,full_name,english_name,signature,role,department,is_active,password
+15589711666,张浩聪,Mr. Zhang,示例signature,Sales Manager,销售部,TRUE,Sales@2024Zhang
+18805375670,刘源,Mr. Liu,示例signature,Procurement Specialist,采购部,TRUE,Proc@2024Liu
+15589711103,张浩聪,Engineer Zhang,示例signature,Technical Engineer,技术部,TRUE,Tech@2024Eng
+18321408536,徐冬春,Mr. Xu,示例signature,Production Planner,生产部,TRUE,Prod@2024Xu
+13800000001,杨权,RIC,示例signature,Sales Manager,销售部,TRUE,Sales@2024Yang
+18322695661,何晓晓,Kay,事缓则圆,Business Engineer,商务部,TRUE,Biz@2024Kay
+13900000001,吴永志,Mr. Wu,示例signature,Sales Manager,销售部,TRUE,Sales@2024Wu
+
