@@ -6,12 +6,19 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-// 🚀 通知 API 地址 - 简化版
+// 🚀 通知 API 地址 - 使用环境变量
 const getApiBaseUrl = () => {
-  // 生产环境固定使用 Render 后端
-  return 'https://project-ark-efy7.onrender.com'
+  // 优先使用环境变量（去掉 /api 后缀）
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace('/api', '')
+  }
   
-  // 本地开发环境默认地址
+  // 生产环境默认值
+  if (import.meta.env.PROD) {
+    return 'https://project-ark-efy7.onrender.com'
+  }
+  
+  // 本地开发环境
   return 'http://localhost:5001'
 }
 

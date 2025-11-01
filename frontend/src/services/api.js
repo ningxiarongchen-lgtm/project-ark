@@ -3,13 +3,30 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { useAuthStore } from '../store/authStore'
 
-// 🚀 API URL 配置 - 简化版，确保生产环境使用正确的后端
-const API_URL = 'https://project-ark-efy7.onrender.com/api'
+// 🚀 API URL 配置 - 使用环境变量
+const getApiUrl = () => {
+  // 优先使用环境变量
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  
+  // 生产环境默认值（如果没有配置环境变量）
+  if (import.meta.env.PROD) {
+    return 'https://project-ark-efy7.onrender.com/api'
+  }
+  
+  // 本地开发环境
+  return 'http://localhost:5001/api'
+}
+
+const API_URL = getApiUrl()
 
 // 调试信息
-console.log('🔧 API Configuration - Fixed URL:', {
+console.log('🔧 API Configuration:', {
   apiUrl: API_URL,
   mode: import.meta.env.MODE,
+  isProd: import.meta.env.PROD,
+  envVar: import.meta.env.VITE_API_URL,
   hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR'
 })
 
