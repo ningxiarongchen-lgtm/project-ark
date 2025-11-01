@@ -131,7 +131,11 @@ function App() {
           <Route path="service-center" element={<ServiceCenter />} />
           <Route path="service-center/:id" element={<TicketDetails />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="settings" element={
+            <ProtectedRoute requiredRole="Administrator">
+              <Settings />
+            </ProtectedRoute>
+          } />
           
           {/* Product Catalog - Sales Manager Only */}
           <Route path="product-catalog" element={

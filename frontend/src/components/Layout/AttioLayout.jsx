@@ -257,33 +257,45 @@ const AttioLayout = () => {
       })
   }, [user])
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人资料',
-      onClick: () => navigate('/profile'),
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-      onClick: () => navigate('/settings'),
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: () => {
-        logout()
-        navigate('/login')
+  // 用户菜单项（根据角色动态生成）
+  const userMenuItems = useMemo(() => {
+    const items = [
+      {
+        key: 'profile',
+        icon: <UserOutlined />,
+        label: '个人资料',
+        onClick: () => navigate('/profile'),
+      }
+    ]
+    
+    // 只有管理员才显示"设置"菜单
+    if (user?.role === 'Administrator') {
+      items.push({
+        key: 'settings',
+        icon: <SettingOutlined />,
+        label: '设置',
+        onClick: () => navigate('/settings'),
+      })
+    }
+    
+    items.push(
+      {
+        type: 'divider',
       },
-      danger: true,
-    },
-  ]
+      {
+        key: 'logout',
+        icon: <LogoutOutlined />,
+        label: '退出登录',
+        onClick: () => {
+          logout()
+          navigate('/login')
+        },
+        danger: true,
+      }
+    )
+    
+    return items
+  }, [user?.role, navigate, logout])
 
   return (
     <>
