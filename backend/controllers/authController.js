@@ -206,7 +206,8 @@ exports.updateProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-      user.name = req.body.name || user.name;
+      // 使用 full_name 字段，与数据库模型一致
+      user.full_name = req.body.full_name || user.full_name;
       user.email = req.body.email || user.email;
       user.phone = req.body.phone || user.phone;
       user.department = req.body.department || user.department;
@@ -219,11 +220,13 @@ exports.updateProfile = async (req, res) => {
 
       res.json({
         _id: updatedUser._id,
-        name: updatedUser.name,
+        full_name: updatedUser.full_name,
         email: updatedUser.email,
         role: updatedUser.role,
         department: updatedUser.department,
-        phone: updatedUser.phone
+        phone: updatedUser.phone,
+        isActive: updatedUser.isActive,
+        passwordChangeRequired: updatedUser.passwordChangeRequired
       });
     } else {
       res.status(404).json({ message: 'User not found' });
