@@ -67,8 +67,8 @@ const Login = () => {
         <Form
           name="login"
           initialValues={{ 
-            phone: '13000000002',
-            password: 'password'
+            phone: '',
+            password: ''
           }}
           onFinish={onFinish}
           autoComplete="off"
@@ -117,15 +117,6 @@ const Login = () => {
             忘记密码？请联系您的系统管理员进行重置。
           </div>
         </Form>
-
-        <div style={{ marginTop: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-          <Text strong>测试账号：</Text>
-          <div style={{ marginTop: 8, fontSize: '12px' }}>
-            <div><strong>管理员：</strong> 13000000001 / password</div>
-            <div><strong>销售经理：</strong> 13000000002 / password</div>
-            <div style={{ marginTop: 4, color: '#999' }}>其他角色：13000000003 ~ 13000000010</div>
-          </div>
-        </div>
       </Card>
     </div>
   )

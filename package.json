@@ -4,7 +4,9 @@
   "description": "气动执行器智能选型与全生命周期管理系统",
   "private": true,
   "scripts": {
-    "docs:health-check": "node ./scripts/check_docs_freshness.js"
+    "docs:health-check": "node ./scripts/check_docs_freshness.js",
+    "init:production": "cd backend && npm run init:production",
+    "seed:final": "cd backend && npm run seed:final"
   },
   "keywords": [
     "actuators",
