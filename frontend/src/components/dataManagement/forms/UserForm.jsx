@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Select, Switch, Button, message } from 'antd';
 import { RedoOutlined } from '@ant-design/icons';
-import { ROLE_OPTIONS } from '../../utils/roleTranslations';
+import { ROLE_OPTIONS } from '../../../utils/roleTranslations';
 
 const { Option } = Select;
 
