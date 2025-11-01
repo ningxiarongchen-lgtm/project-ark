@@ -536,13 +536,17 @@ const AttioLayout = () => {
                   }}
                   icon={<UserOutlined />}
                 />
-                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.3 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4, maxWidth: 180 }}>
                   <span
                     style={{
                       fontSize: 14,
                       fontWeight: 500,
                       color: colors.text.primary,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
+                    title={user?.english_name ? `${user.full_name} (${user.english_name})` : user?.full_name}
                   >
                     {user?.full_name || user?.phone}
                     {user?.english_name && <span style={{ marginLeft: 4 }}>({user.english_name})</span>}
@@ -555,6 +559,22 @@ const AttioLayout = () => {
                   >
                     {getRoleNameCN(user?.role)}
                   </span>
+                  {user?.signature && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: colors.text.tertiary,
+                        fontStyle: 'italic',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        marginTop: 2,
+                      }}
+                      title={user.signature}
+                    >
+                      {user.signature}
+                    </span>
+                  )}
                 </div>
               </div>
             </Dropdown>
