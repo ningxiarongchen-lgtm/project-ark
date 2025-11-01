@@ -176,8 +176,11 @@ exports.login = async (req, res) => {
       _id: user._id,
       phone: user.phone,
       full_name: user.full_name,
+      english_name: user.english_name,
+      signature: user.signature,
       role: user.role,
       department: user.department,
+      isActive: user.isActive,
       passwordChangeRequired: user.passwordChangeRequired,
       message: 'Login successful'
     });
