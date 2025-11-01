@@ -161,11 +161,9 @@ const OrderDetails = () => {
     setCreatingProduction(true)
 
     try {
-      console.log('🚀 正在创建生产任务...')
 
       const response = await productionAPI.createFromOrder(id, values)
 
-      console.log('✅ 生产任务创建成功:', response.data)
 
       message.success(`生产任务创建成功！生产订单号: ${response.data.data.productionOrderNumber}`)
 
@@ -232,7 +230,6 @@ const OrderDetails = () => {
   const handleCreateTicket = async (values) => {
     setCreatingTicket(true)
     try {
-      console.log('🎫 正在创建售后工单...', values)
 
       // 构建符合新模型的工单数据
       const ticketData = {
@@ -262,7 +259,6 @@ const OrderDetails = () => {
 
       const response = await ticketsAPI.create(ticketData)
 
-      console.log('✅ 售后工单创建成功:', response.data)
 
       message.success(`售后工单创建成功！工单号: ${response.data.data.ticket_number || response.data.data.ticketNumber}`)
 
@@ -319,7 +315,6 @@ const OrderDetails = () => {
   const handleCreateShipment = async (values) => {
     setCreatingShipment(true)
     try {
-      console.log('📦 正在创建发货记录...')
 
       // 构建发货数据
       const shipmentData = {
@@ -335,7 +330,6 @@ const OrderDetails = () => {
 
       const response = await ordersAPI.update(id, updatedOrder)
 
-      console.log('✅ 发货记录创建成功:', response.data)
 
       message.success('发货记录创建成功！')
 

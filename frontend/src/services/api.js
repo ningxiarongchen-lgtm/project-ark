@@ -22,7 +22,6 @@ const getApiUrl = () => {
 const API_URL = getApiUrl()
 
 // 调试信息
-console.log('🔧 API Configuration:', {
   apiUrl: API_URL,
   mode: import.meta.env.MODE,
   isProd: import.meta.env.PROD,

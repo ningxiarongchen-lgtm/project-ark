@@ -44,11 +44,9 @@ export const initializeSocket = (token) => {
   });
 
   socket.on('connect', () => {
-    console.log('✅ WebSocket connected');
   });
 
   socket.on('disconnect', () => {
-    console.log('❌ WebSocket disconnected');
   });
 
   socket.on('connect_error', (error) => {
@@ -85,7 +83,6 @@ export const subscribeToNotifications = (callback) => {
   }
 
   const handleNotification = (notification) => {
-    console.log('📬 Received notification:', notification);
     callback(notification);
   };
 

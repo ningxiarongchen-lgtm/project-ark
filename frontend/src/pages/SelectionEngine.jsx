@@ -75,7 +75,6 @@ const SelectionEngine = () => {
       }
       
       // 调试日志
-      console.log('选型请求参数:', {
         mechanism: requestPayload.mechanism,
         action_type_preference: requestPayload.action_type_preference,
         failSafePosition: requestPayload.failSafePosition,
@@ -218,7 +217,6 @@ const SelectionEngine = () => {
       }
 
       // 调试日志：显示将要保存的数据
-      console.log('保存选型记录:', {
         tag_number: selectionData.tag_number,
         valve_size: formValues.valve_size,
         flange_size: formValues.flange_size,
