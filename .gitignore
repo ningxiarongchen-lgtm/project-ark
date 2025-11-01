@@ -47,3 +47,5 @@ JWT*.txt
 # 部署相关的敏感文件
 backend/.env.production
 .env.production
+frontend/cypress/videos/
+*.mp4
