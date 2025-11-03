@@ -9,6 +9,8 @@ exports.getProjects = async (req, res) => {
     const { status, priority, industry, page = 1, limit = 10 } = req.query;
     
     let query = {};
+    const mongoose = require('mongoose');
+    const userId = mongoose.Types.ObjectId(req.user._id);
     
     // 🔒 基于角色的数据过滤
     // 管理员可以看到所有项目
@@ -18,23 +20,22 @@ exports.getProjects = async (req, res) => {
     // 销售经理和商务工程师只能看到自己创建的项目或被指派的项目
     else if (req.user.role === 'Sales Manager' || req.user.role === 'Business Engineer') {
       query.$or = [
-        { owner: req.user._id },           // 自己负责的项目
-        { createdBy: req.user._id },       // 自己创建的项目
-        { assignedTo: req.user._id }       // 被指派的项目
+        { owner: userId },           // 自己负责的项目
+        { createdBy: userId },       // 自己创建的项目
+        { assignedTo: userId }       // 被指派的项目
       ];
     }
-    // 技术工程师可以看到指派给自己的项目
+    // 技术工程师只能看到指派给自己的项目
     else if (req.user.role === 'Technical Engineer') {
-      query.$or = [
-        { technical_support: req.user._id }, // 指派给自己的技术支持项目
-        { assignedTo: req.user._id }         // 被指派的项目
-      ];
+      // 🔒 严格权限控制：技术工程师只能看到 technical_support 字段等于自己ID的项目
+      query.technical_support = userId;
+      console.log(`🔒 技术工程师权限过滤: ${req.user.full_name || req.user.phone} (${userId})`);
     }
     // 其他角色根据创建者或被指派来过滤
     else {
       query.$or = [
-        { createdBy: req.user._id },
-        { assignedTo: req.user._id }
+        { createdBy: userId },
+        { assignedTo: userId }
       ];
     }
     
@@ -524,6 +525,31 @@ exports.assignTechnicalEngineer = async (req, res) => {
     });
     
     await project.save();
+    
+    // 🔔 创建通知给被指派的技术工程师
+    try {
+      const notificationService = require('../services/notificationService');
+      await notificationService.notifySingleUser(technicalEngineerId, {
+        title: '📋 新项目选型任务',
+        message: `${req.user.full_name || req.user.phone}（${req.user.role}）指派您进行技术选型 - 项目：${project.project_name}（${project.projectNumber}）`,
+        link: `/projects/${project._id}`,
+        type: 'task',
+        priority: 'high',
+        relatedEntity: {
+          entityType: 'Project',
+          entityId: project._id,
+          metadata: {
+            projectNumber: project.projectNumber,
+            projectName: project.project_name,
+            assignedBy: req.user.full_name || req.user.phone,
+            assignedByRole: req.user.role
+          }
+        }
+      });
+      console.log(`✅ 已向技术工程师 ${technicalEngineer.full_name || technicalEngineer.phone} 发送通知`);
+    } catch (notifyError) {
+      console.error('⚠️ 创建通知失败（不影响主流程）:', notifyError);
+    }
     
     // Populate and return updated project
     const updatedProject = await Project.findById(project._id)
