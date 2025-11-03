@@ -20,10 +20,10 @@
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@ant-design/plots": "^2.6.6",
-    "@mui/material": "^5.14.20",
-    "@mui/icons-material": "^5.14.19",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.14.19",
+    "@mui/material": "^5.14.20",
     "antd": "^5.11.0",
     "axios": "^1.6.0",
     "cmdk": "^0.2.0",
@@ -53,6 +53,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "start-server-and-test": "^2.1.2",
+    "terser": "^5.44.0",
     "vite": "^5.0.0"
   },
   "browserslist": {
