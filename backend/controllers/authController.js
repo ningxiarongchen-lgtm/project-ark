@@ -81,15 +81,17 @@ exports.register = async (req, res) => {
       // 🔒 安全改进：使用 HttpOnly Cookie 存储 Token
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
+        path: '/',
         maxAge: 8 * 60 * 60 * 1000
       });
 
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
+        path: '/',
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
       
@@ -158,16 +160,18 @@ exports.login = async (req, res) => {
     // 设置 accessToken cookie
     res.cookie('accessToken', accessToken, {
       httpOnly: true,  // JavaScript 无法访问，防止 XSS
-      secure: process.env.NODE_ENV === 'production',  // 生产环境使用 HTTPS
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // 生产环境跨域需要 none
+      secure: true,  // 始终使用 HTTPS（Render和Cloudflare都是HTTPS）
+      sameSite: 'none',  // 跨域Cookie必须设置为none
+      path: '/',  // 明确指定路径
       maxAge: 8 * 60 * 60 * 1000  // 8 小时（与 JWT 过期时间一致）
     });
 
     // 设置 refreshToken cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',  // 生产环境跨域需要 none
+      secure: true,  // 始终使用 HTTPS
+      sameSite: 'none',  // 跨域Cookie必须设置为none
+      path: '/',  // 明确指定路径
       maxAge: 7 * 24 * 60 * 60 * 1000  // 7 天
     });
 
@@ -365,15 +369,17 @@ exports.refreshToken = async (req, res) => {
     // 🔒 安全改进：将新 token 写入 Cookie
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: true,
+      sameSite: 'none',
+      path: '/',
       maxAge: 8 * 60 * 60 * 1000
     });
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      secure: true,
+      sameSite: 'none',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -442,14 +448,16 @@ exports.logout = async (req, res) => {
     // 🔒 安全改进：清除 Cookie 中的 token
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      secure: true,
+      sameSite: 'none',
+      path: '/'
     });
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      secure: true,
+      sameSite: 'none',
+      path: '/'
     });
 
     res.json({ 
