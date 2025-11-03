@@ -3160,7 +3160,7 @@ const ProjectDetails = () => {
       </Space>
 
       <Card 
-        title="Project Information" 
+        title="项目信息" 
         style={{ marginBottom: 16 }}
         extra={
           project.status === '待指派技术' && (user?.role === 'Sales Manager' || user?.role === 'Business Engineer' || user?.role === 'Administrator') ? (
@@ -3169,37 +3169,37 @@ const ProjectDetails = () => {
         }
       >
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="Project Number">{project.projectNumber}</Descriptions.Item>
-          <Descriptions.Item label="Status">
+          <Descriptions.Item label="项目编号">{project.projectNumber}</Descriptions.Item>
+          <Descriptions.Item label="状态">
             <Tag color={project.status === 'Completed' ? 'success' : 'processing'}>
               {project.status}
             </Tag>
           </Descriptions.Item>
           {project.owner && (
-            <Descriptions.Item label="Project Owner">{project.owner?.full_name || project.owner?.phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="项目负责人">{project.owner?.full_name || project.owner?.phone || '-'}</Descriptions.Item>
           )}
           {project.technical_support && (
-            <Descriptions.Item label="Technical Support">
+            <Descriptions.Item label="技术支持">
               <Tag color="blue" icon={<UserAddOutlined />}>
                 {project.technical_support?.full_name || project.technical_support?.phone || '-'}
               </Tag>
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Project Name">{project.projectName}</Descriptions.Item>
-          <Descriptions.Item label="Priority">
+          <Descriptions.Item label="项目名称">{project.projectName}</Descriptions.Item>
+          <Descriptions.Item label="优先级">
             <Tag color={project.priority === 'High' ? 'red' : 'default'}>{project.priority}</Tag>
           </Descriptions.Item>
           {project.budget && (
-            <Descriptions.Item label="Budget">
+            <Descriptions.Item label="预算">
               ¥{project.budget.toLocaleString()}
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Client Name">{project.client?.name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Client Company">{project.client?.company || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Client Email">{project.client?.email || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Client Phone">{project.client?.phone || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Industry">{project.industry || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Application">{project.application || '-'}</Descriptions.Item>
+          <Descriptions.Item label="客户名称">{project.client?.name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="客户公司">{project.client?.company || '-'}</Descriptions.Item>
+          <Descriptions.Item label="客户邮件">{project.client?.email || '-'}</Descriptions.Item>
+          <Descriptions.Item label="客户电话">{project.client?.phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="行业">{project.industry || '-'}</Descriptions.Item>
+          <Descriptions.Item label="应用">{project.application || '-'}</Descriptions.Item>
           {project.technical_requirements && (
             <Descriptions.Item label="客户技术需求 / Technical Requirements" span={2}>
               <Card 
