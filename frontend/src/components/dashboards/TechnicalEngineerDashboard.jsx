@@ -46,10 +46,18 @@ const TechnicalEngineerDashboard = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
-      await Promise.all([
+      const [projectStats, ticketStats] = await Promise.all([
         fetchMyProjects(),
         fetchMyTickets()
       ])
+      
+      // 合并统计数据
+      setStats({
+        pendingProjects: projectStats?.pendingProjects || 0,
+        completedProjects: projectStats?.completedProjects || 0,
+        pendingTickets: ticketStats?.pendingTickets || 0,
+        completedTickets: ticketStats?.completedTickets || 0
+      })
     } catch (error) {
       console.error('获取数据失败:', error)
     } finally {
@@ -118,18 +126,14 @@ const TechnicalEngineerDashboard = () => {
       // 已完成：问题已解决-待确认、已关闭
       const completedStatuses = ['问题已解决-待确认', '已关闭', 'Resolved', 'Closed']
 
-      const projectStats = await fetchMyProjects()
-
-      setStats({
-        pendingProjects: projectStats.pendingProjects,
-        completedProjects: projectStats.completedProjects,
+      return {
         pendingTickets: tickets.filter(t => pendingStatuses.includes(t.status)).length,
         completedTickets: tickets.filter(t => completedStatuses.includes(t.status)).length
-      })
-
+      }
     } catch (error) {
       console.error('获取售后工单失败:', error)
       message.error('获取售后工单失败')
+      return { pendingTickets: 0, completedTickets: 0 }
     }
   }
 
