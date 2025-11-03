@@ -18,6 +18,11 @@ const CloudUpload = ({
 
   const customRequest = async ({ file, onProgress, onSuccess: antOnSuccess, onError }) => {
     try {
+      // Validate file before upload
+      if (!file) {
+        throw new Error('无效的文件对象');
+      }
+
       const leanFile = new AV.File(file.name, file);
       
       const savedFile = await leanFile.save({
@@ -27,6 +32,11 @@ const CloudUpload = ({
           }
         },
       });
+
+      // Validate saved file has required properties
+      if (!savedFile || !savedFile.id || !savedFile.url() || !savedFile.name()) {
+        throw new Error('文件上传返回数据不完整');
+      }
 
       const fileData = {
         uid: savedFile.id,
@@ -47,8 +57,8 @@ const CloudUpload = ({
       message.success(`${file.name} 上传成功`);
 
     } catch (error) {
-      console.error('Upload failed:', error);
-      message.error(`${file.name} 上传失败`);
+      console.error('❌ 文件上传失败:', error);
+      message.error(`${file.name} 上传失败: ${error.message || '未知错误'}`);
       onError(error);
     }
   };

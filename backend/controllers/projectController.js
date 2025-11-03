@@ -149,13 +149,36 @@ exports.createProject = async (req, res) => {
       status: '待指派技术'
     };
 
-    // If project_files are included, add uploadedBy to each file
+    // If project_files are included, validate and add uploadedBy to each file
     if (projectData.project_files && Array.isArray(projectData.project_files)) {
-      projectData.project_files = projectData.project_files.map(file => ({
-        ...file,
-        uploadedBy: req.user._id,
-        uploadedAt: new Date()
-      }));
+      // Filter out incomplete file objects (missing required fields)
+      const validFiles = projectData.project_files.filter(file => 
+        file && 
+        file.file_name && 
+        file.file_url && 
+        typeof file.file_name === 'string' && 
+        typeof file.file_url === 'string' &&
+        file.file_name.trim() !== '' &&
+        file.file_url.trim() !== ''
+      );
+      
+      if (validFiles.length > 0) {
+        projectData.project_files = validFiles.map(file => ({
+          file_name: file.file_name.trim(),
+          file_url: file.file_url.trim(),
+          objectId: file.objectId,
+          uploadedBy: req.user._id,
+          uploadedAt: new Date()
+        }));
+      } else {
+        // No valid files, remove the field
+        delete projectData.project_files;
+      }
+      
+      // Log if some files were filtered out
+      if (projectData.project_files && validFiles.length < req.body.project_files.length) {
+        console.warn(`⚠️ 过滤掉了 ${req.body.project_files.length - validFiles.length} 个不完整的文件`);
+      }
     }
 
     console.log('📦 准备创建的项目数据:', JSON.stringify(projectData, null, 2));

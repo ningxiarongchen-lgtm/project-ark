@@ -142,13 +142,25 @@ const Projects = () => {
     try {
       const values = await form.validateFields()
       
-      // Add uploaded files to project data
+      // Add uploaded files to project data - ONLY include files with valid url and name
       if (uploadedFiles.length > 0) {
-        values.project_files = uploadedFiles.map(file => ({
-          file_name: file.name,
-          file_url: file.url,
-          objectId: file.objectId
-        }))
+        // Filter out incomplete file objects
+        const validFiles = uploadedFiles.filter(file => 
+          file && file.url && file.name && file.objectId
+        )
+        
+        if (validFiles.length > 0) {
+          values.project_files = validFiles.map(file => ({
+            file_name: file.name,
+            file_url: file.url,
+            objectId: file.objectId
+          }))
+        }
+        
+        // Warn user if some files were not uploaded successfully
+        if (validFiles.length < uploadedFiles.length) {
+          message.warning(`有 ${uploadedFiles.length - validFiles.length} 个文件未成功上传，已自动跳过`)
+        }
       }
       
       if (editingProject) {
@@ -171,7 +183,8 @@ const Projects = () => {
         // 表单验证错误
         return
       }
-      message.error(editingProject ? '更新失败' : '创建失败')
+      console.error('项目操作失败:', error)
+      message.error(editingProject ? '更新失败' : '创建失败: ' + (error.response?.data?.message || error.message))
     }
   }
 
@@ -184,11 +197,21 @@ const Projects = () => {
   }
 
   const handleFileUploadSuccess = (fileData) => {
-    setUploadedFiles(prev => [...prev, fileData])
+    // Only add file if it has all required fields
+    if (fileData && fileData.url && fileData.name && fileData.objectId) {
+      setUploadedFiles(prev => [...prev, fileData])
+    } else {
+      console.error('文件数据不完整:', fileData)
+      message.error('文件上传失败: 数据不完整')
+    }
   }
 
   const handleFileRemove = (file) => {
-    setUploadedFiles(prev => prev.filter(f => f.objectId !== file.response?.objectId))
+    // Remove file from uploadedFiles list
+    const objectId = file.objectId || file.response?.objectId || file.uid
+    setUploadedFiles(prev => prev.filter(f => 
+      f.objectId !== objectId && f.uid !== objectId
+    ))
   }
 
   const handleViewProject = (record) => {

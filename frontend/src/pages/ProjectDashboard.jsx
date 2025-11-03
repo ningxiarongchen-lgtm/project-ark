@@ -118,12 +118,21 @@ const ProjectDashboard = () => {
 
   // 处理文件上传成功
   const handleFileUploadSuccess = (fileInfo) => {
-    setUploadedFiles(prev => [...prev, fileInfo]);
+    // Only add file if it has all required fields
+    if (fileInfo && fileInfo.url && fileInfo.name && fileInfo.objectId) {
+      setUploadedFiles(prev => [...prev, fileInfo]);
+    } else {
+      console.error('文件数据不完整:', fileInfo);
+      message.error('文件上传失败: 数据不完整');
+    }
   };
 
   // 处理文件删除
   const handleFileRemove = (fileToRemove) => {
-    setUploadedFiles(prev => prev.filter(f => f.uid !== fileToRemove.uid));
+    const objectId = fileToRemove.objectId || fileToRemove.response?.objectId || fileToRemove.uid;
+    setUploadedFiles(prev => prev.filter(f => 
+      f.objectId !== objectId && f.uid !== objectId
+    ));
   };
 
   // 创建新项目
@@ -145,14 +154,28 @@ const ProjectDashboard = () => {
         industry: values.industry,
         budget: values.budget,
         priority: values.priority || 'Medium',
-        estimatedValue: values.estimatedValue || 0,
-        // 添加上传的文件
-        project_files: uploadedFiles.map(file => ({
-          file_name: file.file_name,
-          file_url: file.file_url,
-          objectId: file.objectId
-        }))
+        estimatedValue: values.estimatedValue || 0
       };
+
+      // Add uploaded files - ONLY include files with valid url and name
+      if (uploadedFiles.length > 0) {
+        const validFiles = uploadedFiles.filter(file => 
+          file && file.url && file.name && file.objectId
+        );
+        
+        if (validFiles.length > 0) {
+          projectData.project_files = validFiles.map(file => ({
+            file_name: file.name,
+            file_url: file.url,
+            objectId: file.objectId
+          }));
+        }
+        
+        // Warn user if some files were not uploaded successfully
+        if (validFiles.length < uploadedFiles.length) {
+          message.warning(`有 ${uploadedFiles.length - validFiles.length} 个文件未成功上传，已自动跳过`);
+        }
+      }
 
       const response = await projectsAPI.create(projectData);
       
