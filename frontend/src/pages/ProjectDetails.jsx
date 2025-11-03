@@ -20,6 +20,30 @@ import axios from 'axios'
 
 const { TextArea } = Input
 
+// 优先级映射（英文转中文）
+const priorityMap = {
+  'Low': '低',
+  'Medium': '中等',
+  'High': '高',
+  'Urgent': '紧急'
+}
+
+// 行业映射（英文转中文）
+const industryMap = {
+  'Oil & Gas': '石油天然气',
+  'Water Treatment': '水处理',
+  'Chemical': '化工',
+  'Power Generation': '发电',
+  'Manufacturing': '制造业',
+  'Food & Beverage': '食品饮料',
+  'Other': '其他'
+}
+
+// 获取中文显示值
+const getChineseValue = (value, map) => {
+  return map[value] || value
+}
+
 const ProjectDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -3187,7 +3211,7 @@ const ProjectDetails = () => {
           )}
           <Descriptions.Item label="项目名称">{project.projectName}</Descriptions.Item>
           <Descriptions.Item label="优先级">
-            <Tag color={project.priority === 'High' ? 'red' : 'default'}>{project.priority}</Tag>
+            <Tag color={project.priority === 'High' ? 'red' : 'default'}>{getChineseValue(project.priority, priorityMap)}</Tag>
           </Descriptions.Item>
           {project.budget && (
             <Descriptions.Item label="预算">
@@ -3198,10 +3222,10 @@ const ProjectDetails = () => {
           <Descriptions.Item label="客户公司">{project.client?.company || '-'}</Descriptions.Item>
           <Descriptions.Item label="客户邮件">{project.client?.email || '-'}</Descriptions.Item>
           <Descriptions.Item label="客户电话">{project.client?.phone || '-'}</Descriptions.Item>
-          <Descriptions.Item label="行业">{project.industry || '-'}</Descriptions.Item>
+          <Descriptions.Item label="行业">{getChineseValue(project.industry, industryMap) || '-'}</Descriptions.Item>
           <Descriptions.Item label="应用">{project.application || '-'}</Descriptions.Item>
           {project.technical_requirements && (
-            <Descriptions.Item label="客户技术需求 / Technical Requirements" span={2}>
+            <Descriptions.Item label="客户技术需求" span={2}>
               <Card 
                 size="small"
                 style={{ 
@@ -3238,16 +3262,16 @@ const ProjectDetails = () => {
               </Card>
             </Descriptions.Item>
           )}
-          <Descriptions.Item label="Created By">{project.createdBy?.name}</Descriptions.Item>
-          <Descriptions.Item label="Created At">
+          <Descriptions.Item label="创建者">{project.createdBy?.full_name || project.createdBy?.phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="创建时间">
             {dayjs(project.createdAt).format('YYYY-MM-DD HH:mm')}
           </Descriptions.Item>
           {project.description && (
-            <Descriptions.Item label="Description" span={2}>{project.description}</Descriptions.Item>
+            <Descriptions.Item label="项目描述" span={2}>{project.description}</Descriptions.Item>
           )}
           {/* 显示销售上传的项目文件 */}
           {project.project_files && project.project_files.length > 0 && (
-            <Descriptions.Item label="项目附件 / Project Files" span={2}>
+            <Descriptions.Item label="项目附件" span={2}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 {project.project_files.map((file, index) => (
                   <Space key={index}>
