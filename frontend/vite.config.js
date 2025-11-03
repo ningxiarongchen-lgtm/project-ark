@@ -20,21 +20,36 @@ export default defineConfig({
     // 强制失效所有缓存
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        // 代码分割优化 - 减少初始加载大小
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
+          'utils': ['axios', 'dayjs', 'zustand']
+        },
         // 添加时间戳到文件名，强制失效缓存
-        entryFileNames: `assets/[name]-${Date.now()}.js`,
-        chunkFileNames: `assets/[name]-${Date.now()}.js`,
-        assetFileNames: `assets/[name]-${Date.now()}.[ext]`
+        entryFileNames: `assets/[name]-[hash].js`,
+        chunkFileNames: `assets/[name]-[hash].js`,
+        assetFileNames: `assets/[name]-[hash].[ext]`
       }
     },
     // 清除输出目录
     emptyOutDir: true,
-    // 禁用 CSS 代码分割
+    // CSS 代码分割
     cssCodeSplit: true,
     // 生成源映射
     sourcemap: false,
     // CSS 兼容性
-    cssTarget: 'safari11'
+    cssTarget: 'safari11',
+    // 压缩选项
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // 移除console
+        drop_debugger: true
+      }
+    },
+    // 设置chunk大小警告限制
+    chunkSizeWarningLimit: 1000
   },
   // 优化依赖预构建
   optimizeDeps: {
