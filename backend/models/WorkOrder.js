@@ -514,7 +514,7 @@ workOrderSchema.statics.findByOperator = async function(operatorId, status) {
 // 静态方法：获取工单统计
 workOrderSchema.statics.getStatistics = async function(filters = {}) {
   const matchStage = {};
-  if (filters.work_center) matchStage.work_center = mongoose.Types.ObjectId(filters.work_center);
+  if (filters.work_center) matchStage.work_center = new mongoose.Types.ObjectId(filters.work_center);
   if (filters.status) matchStage.status = filters.status;
   if (filters.start_date) {
     matchStage['plan.planned_start_time'] = { 

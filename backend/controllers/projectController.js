@@ -10,7 +10,7 @@ exports.getProjects = async (req, res) => {
     
     let query = {};
     const mongoose = require('mongoose');
-    const userId = mongoose.Types.ObjectId(req.user._id);
+    const userId = new mongoose.Types.ObjectId(req.user._id);
     
     // 🔒 基于角色的数据过滤
     // 管理员可以看到所有项目

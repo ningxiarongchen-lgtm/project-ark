@@ -412,7 +412,7 @@ invoiceSchema.statics.getStatistics = async function(filters = {}) {
     };
   }
   if (filters.customer_id) {
-    matchStage['customer.customer_id'] = mongoose.Types.ObjectId(filters.customer_id);
+    matchStage['customer.customer_id'] = new mongoose.Types.ObjectId(filters.customer_id);
   }
   
   const stats = await this.aggregate([

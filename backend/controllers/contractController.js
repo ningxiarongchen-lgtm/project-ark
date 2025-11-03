@@ -388,7 +388,7 @@ exports.getContractStats = async (req, res) => {
 
     let matchQuery = {};
     if (project) {
-      matchQuery.project = mongoose.Types.ObjectId(project);
+      matchQuery.project = new mongoose.Types.ObjectId(project);
     }
 
     // 如果不是管理员或商务工程师，只能看自己的

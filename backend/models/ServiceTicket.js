@@ -919,7 +919,7 @@ serviceTicketSchema.statics.getStatusStatistics = async function() {
 serviceTicketSchema.statics.getEngineerStatistics = async function(engineerId) {
   return await this.aggregate([
     {
-      $match: { 'assigned_to.id': mongoose.Types.ObjectId(engineerId) }
+      $match: { 'assigned_to.id': new mongoose.Types.ObjectId(engineerId) }
     },
     {
       $group: {

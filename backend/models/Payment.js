@@ -295,7 +295,7 @@ paymentSchema.statics.getStatistics = async function(filters = {}) {
     };
   }
   if (filters.customer_id) {
-    matchStage['customer.customer_id'] = mongoose.Types.ObjectId(filters.customer_id);
+    matchStage['customer.customer_id'] = new mongoose.Types.ObjectId(filters.customer_id);
   }
   if (filters.payment_type) {
     matchStage.payment_type = filters.payment_type;
