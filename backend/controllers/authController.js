@@ -157,22 +157,29 @@ exports.login = async (req, res) => {
     await cleanupOldTokens(user._id);
 
     // 🔒 安全改进：使用 HttpOnly Cookie 存储 Token，防止 XSS 攻击
-    // 设置 accessToken cookie
-    res.cookie('accessToken', accessToken, {
+    const cookieOptions = {
       httpOnly: true,  // JavaScript 无法访问，防止 XSS
       secure: true,  // 始终使用 HTTPS（Render和Cloudflare都是HTTPS）
       sameSite: 'none',  // 跨域Cookie必须设置为none
       path: '/',  // 明确指定路径
+    };
+
+    // 设置 accessToken cookie
+    res.cookie('accessToken', accessToken, {
+      ...cookieOptions,
       maxAge: 8 * 60 * 60 * 1000  // 8 小时（与 JWT 过期时间一致）
     });
 
     // 设置 refreshToken cookie
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: true,  // 始终使用 HTTPS
-      sameSite: 'none',  // 跨域Cookie必须设置为none
-      path: '/',  // 明确指定路径
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000  // 7 天
+    });
+
+    // 🔍 调试日志
+    console.log('🍪 Cookies set for user:', user.phone, {
+      origin: req.headers.origin,
+      cookieOptions
     });
 
     // 只返回用户信息，不返回 token（token 已经在 cookie 中）

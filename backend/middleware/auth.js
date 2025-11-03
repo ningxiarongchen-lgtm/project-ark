@@ -5,17 +5,29 @@ const User = require('../models/User');
 exports.protect = async (req, res, next) => {
   let token;
 
+  // 🔍 调试日志：检查Cookie和Headers
+  console.log('🔍 Auth Debug:', {
+    hasCookies: !!req.cookies,
+    cookies: req.cookies ? Object.keys(req.cookies) : [],
+    hasAuthHeader: !!req.headers.authorization,
+    origin: req.headers.origin,
+    referer: req.headers.referer
+  });
+
   // 🔒 安全改进：优先从 HttpOnly Cookie 中读取 token，向后兼容 Bearer Token
   // 1. 首先尝试从 Cookie 中读取（更安全）
   if (req.cookies && req.cookies.accessToken) {
     token = req.cookies.accessToken;
+    console.log('✅ Token found in Cookie');
   }
   // 2. 如果 Cookie 中没有，尝试从 Authorization header 读取（向后兼容）
   else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+    console.log('✅ Token found in Authorization header');
   }
 
   if (!token) {
+    console.log('❌ No token found in Cookie or Authorization header');
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 
