@@ -1,0 +1,23 @@
+phone,full_name,english_name,signature,role,department,is_active,password
+13800000001,张三,Mr. Zhang,管理一切,Administrator,管理部,TRUE,Admin@2024
+13800000002,李四,Mr. Li,销售第一,Sales Manager,销售部,TRUE,Sales@2024
+13800000003,王五,Mr. Wang,销售能手,Sales Manager,销售部,TRUE,Sales@2024Wang
+13800000004,赵六,Mr. Zhao,技术专家,Technical Engineer,技术部,TRUE,Tech@2024
+13800000005,钱七,Mr. Qian,技术骨干,Technical Engineer,技术部,TRUE,Tech@2024Qian
+13800000006,孙八,Mr. Sun,商务精英,Business Engineer,商务部,TRUE,Biz@2024
+13800000007,周九,Mr. Zhou,商务代表,Business Engineer,商务部,TRUE,Biz@2024Zhou
+13800000008,吴十,Mr. Wu,采购专家,Procurement Specialist,采购部,TRUE,Proc@2024
+13800000009,郑一,Mr. Zheng,采购助理,Procurement Specialist,采购部,TRUE,Proc@2024Z
+13800000010,冯二,Mr. Feng,生产计划,Production Planner,生产部,TRUE,Plan@2024
+13800000011,陈三,Mr. Chen,计划专员,Production Planner,生产部,TRUE,Plan@2024C
+13800000012,褚四,Mr. Chu,质检主管,QA Inspector,质检部,TRUE,QA@2024
+13800000013,卫五,Mr. Wei,质检员,QA Inspector,质检部,TRUE,QA@2024Wei
+13800000014,蒋六,Mr. Jiang,物流专员,Logistics Specialist,物流部,TRUE,Log@2024
+13800000015,沈七,Mr. Shen,物流助理,Logistics Specialist,物流部,TRUE,Log@2024S
+13800000016,韩八,Mr. Han,车间班长,Shop Floor Worker,生产车间,TRUE,Work@2024
+13800000017,杨九,Mr. Yang,生产工人,Shop Floor Worker,生产车间,TRUE,Work@2024Y
+13800000018,朱十,Mr. Zhu,生产工人,Shop Floor Worker,生产车间,TRUE,Work@2024Z
+13800000019,秦一,Mr. Qin,生产工人,Shop Floor Worker,生产车间,TRUE,Work@2024Q
+13800000020,尤二,Mr. You,生产工人,Shop Floor Worker,生产车间,TRUE,Work@2024U
+
+
