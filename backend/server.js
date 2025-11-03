@@ -94,6 +94,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // 允许所有 Cloudflare Pages 部署域名 (*.pages.dev)
+    if (origin && origin.endsWith('.pages.dev')) {
+      return callback(null, true);
+    }
+    
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
