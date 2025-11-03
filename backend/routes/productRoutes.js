@@ -7,7 +7,8 @@ const {
   updateProduct,
   deleteProduct,
   searchProducts,
-  bulkImportProducts
+  bulkImportProducts,
+  getProductTemplate
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 const { dataUpload } = require('../middleware/upload');
@@ -18,11 +19,18 @@ router.use(protect);
 // Search products (selection engine)
 router.post('/search', searchProducts);
 
-// Bulk import products
+// Get product import template
+router.get(
+  '/template',
+  authorize('Administrator', 'Technical Engineer'),
+  getProductTemplate
+);
+
+// Bulk import products (支持多文件上传)
 router.post(
   '/import',
   authorize('Administrator', 'Technical Engineer'),
-  dataUpload.single('productFile'),
+  dataUpload.array('productFiles', 10), // 允许最多10个文件
   bulkImportProducts
 );
 

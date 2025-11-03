@@ -1,0 +1,7 @@
+modelNumber,series,description,category,torqueValue,torqueMin,torqueMax,operatingPressure,pressureMin,pressureMax,rotation,tempMin,tempMax,length,width,height,weight,portSize,mountingType,materialBody,materialPiston,materialSeal,cycleLife,basePrice,currency,inStock,leadTime,tags,notes
+SF-TEST-001,SF-Series,测试产品1-标准气动执行器,Standard,100,80,120,6,4,8,90°,-20,80,150,100,120,2.5,G1/4,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,450,USD,true,14,"standard,compact",测试数据请勿用于生产
+SF-TEST-002,SF-Series,测试产品2-高扭矩执行器,High Torque,200,160,240,6,4,8,90°,-20,80,180,120,140,3.8,G3/8,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,680,USD,true,14,"high-torque,heavy-duty",测试数据请勿用于生产
+SF-TEST-003,SF-Series,测试产品3-紧凑型执行器,Compact,50,40,60,6,4,8,90°,-20,80,120,80,100,1.8,G1/8,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,320,USD,true,14,"compact,lightweight",测试数据请勿用于生产
+SF-TEST-004,SF-Series,测试产品4-高温执行器,High Temperature,150,120,180,6,4,8,90°,-40,150,160,110,130,3.2,G1/4,ISO5211,Stainless Steel,Stainless Steel,Viton,1000000,850,USD,true,21,"high-temp,special",测试数据请勿用于生产
+SF-TEST-005,SF-Series,测试产品5-180度旋转,Special,120,100,140,6,4,8,180°,-20,80,155,105,125,2.8,G1/4,ISO5211,Aluminum Alloy,Aluminum Alloy,NBR,1000000,520,USD,true,14,"180-degree,special",测试数据请勿用于生产
+

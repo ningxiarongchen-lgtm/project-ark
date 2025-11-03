@@ -240,12 +240,106 @@ exports.searchProducts = async (req, res) => {
   }
 };
 
+// @desc    Get product import template
+// @route   GET /api/products/template
+// @access  Private/Admin/Technical Engineer
+exports.getProductTemplate = async (req, res) => {
+  try {
+    const XLSX = require('xlsx');
+    
+    // Create template with headers and sample data
+    const template = [
+      {
+        'modelNumber': 'SF-100',
+        'series': 'SF-Series',
+        'description': '标准气动执行器示例',
+        'category': 'Standard',
+        'torqueValue': 100,
+        'torqueMin': 80,
+        'torqueMax': 120,
+        'operatingPressure': 6,
+        'pressureMin': 4,
+        'pressureMax': 8,
+        'rotation': '90°',
+        'tempMin': -20,
+        'tempMax': 80,
+        'length': 150,
+        'width': 100,
+        'height': 120,
+        'weight': 2.5,
+        'portSize': 'G1/4',
+        'mountingType': 'ISO5211',
+        'materialBody': 'Aluminum Alloy',
+        'materialPiston': 'Aluminum Alloy',
+        'materialSeal': 'NBR',
+        'cycleLife': 1000000,
+        'basePrice': 450.00,
+        'currency': 'USD',
+        'inStock': true,
+        'leadTime': 14,
+        'tags': 'standard,compact',
+        'notes': '示例产品数据'
+      },
+      {
+        'modelNumber': 'SF-200',
+        'series': 'SF-Series',
+        'description': '高扭矩气动执行器示例',
+        'category': 'High Torque',
+        'torqueValue': 200,
+        'torqueMin': 160,
+        'torqueMax': 240,
+        'operatingPressure': 6,
+        'pressureMin': 4,
+        'pressureMax': 8,
+        'rotation': '90°',
+        'tempMin': -20,
+        'tempMax': 80,
+        'length': 180,
+        'width': 120,
+        'height': 140,
+        'weight': 3.8,
+        'portSize': 'G3/8',
+        'mountingType': 'ISO5211',
+        'materialBody': 'Aluminum Alloy',
+        'materialPiston': 'Aluminum Alloy',
+        'materialSeal': 'NBR',
+        'cycleLife': 1000000,
+        'basePrice': 680.00,
+        'currency': 'USD',
+        'inStock': true,
+        'leadTime': 14,
+        'tags': 'high-torque,heavy-duty',
+        'notes': '示例产品数据'
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(template);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '产品导入模板');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=product_import_template.xlsx');
+    res.send(buffer);
+  } catch (error) {
+    console.error('Template generation error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: '模板生成失败: ' + error.message 
+    });
+  }
+};
+
 // @desc    Bulk import products from Excel file
 // @route   POST /api/products/import
 // @access  Private/Admin/Technical Engineer
 exports.bulkImportProducts = async (req, res) => {
   try {
-    if (!req.file) {
+    // 支持单文件或多文件上传
+    const files = req.files || (req.file ? [req.file] : []);
+    
+    if (files.length === 0) {
       return res.status(400).json({ 
         success: false,
         message: '请上传Excel文件' 
@@ -254,108 +348,138 @@ exports.bulkImportProducts = async (req, res) => {
 
     const XLSX = require('xlsx');
     
-    // Parse Excel file from buffer
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    
-    // Convert to JSON
-    const rows = XLSX.utils.sheet_to_json(worksheet);
-
-    if (rows.length === 0) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Excel文件中没有数据' 
-      });
-    }
-
     const results = {
       successCount: 0,
       errorCount: 0,
+      skippedCount: 0,
       errors: [],
       skipped: []
     };
 
-    // Process each row
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const rowNumber = i + 2; // Excel row number (accounting for header)
-
+    // Process each file
+    for (const file of files) {
       try {
-        // Validate required fields
-        if (!row.modelNumber || !row.description || !row.torqueValue || !row.operatingPressure || !row.basePrice) {
-          results.errors.push(`第${rowNumber}行: 缺少必填字段（型号、描述、扭矩、压力或价格）`);
+        // Parse Excel file from buffer
+        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert to JSON
+        const rows = XLSX.utils.sheet_to_json(worksheet);
+
+        if (rows.length === 0) {
+          results.errors.push(`文件 ${file.originalname}: 没有数据`);
           results.errorCount++;
           continue;
         }
 
-        // Check if product already exists
-        const existingProduct = await Product.findOne({ 
-          modelNumber: row.modelNumber.toString().trim().toUpperCase() 
-        });
+        // Process each row
+        for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const rowNumber = i + 2; // Excel row number (accounting for header)
 
-        if (existingProduct) {
-          results.skipped.push(`第${rowNumber}行: 产品 ${row.modelNumber} 已存在，已跳过`);
-          continue;
+          try {
+            // Validate required fields - 只有型号是必填的
+            if (!row.modelNumber && !row['Model Number'] && !row['型号']) {
+              results.errors.push(`${file.originalname} 第${rowNumber}行: 缺少必填字段（型号、modelNumber、描述、扭矩或价格）`);
+              results.errorCount++;
+              continue;
+            }
+
+            // 获取型号（支持多种列名）
+            const modelNumber = (row.modelNumber || row['Model Number'] || row['型号']).toString().trim().toUpperCase();
+
+            // Check if product already exists
+            const existingProduct = await Product.findOne({ 
+              modelNumber: modelNumber
+            });
+
+            if (existingProduct) {
+              results.skipped.push(`${file.originalname} 第${rowNumber}行: 产品 ${modelNumber} 已存在，已跳过`);
+              results.skippedCount++;
+              continue;
+            }
+
+            // Build product object - 所有字段都是可选的（除了型号）
+            const productData = {
+              modelNumber: modelNumber,
+              series: row.series || row['Series'] || row['系列'] || 'SF-Series',
+              description: row.description || row['Description'] || row['描述'] || `产品 ${modelNumber}`,
+              specifications: {
+                torque: {
+                  value: row.torqueValue || row['Torque (Nm)'] || row['torqueValue'] || row['扭矩值'] ? 
+                         parseFloat(row.torqueValue || row['Torque (Nm)'] || row['扭矩值']) : undefined,
+                  min: row.torqueMin || row['Torque Min'] || row['扭矩最小值'] ? 
+                       parseFloat(row.torqueMin || row['Torque Min'] || row['扭矩最小值']) : undefined,
+                  max: row.torqueMax || row['Torque Max'] || row['扭矩最大值'] ? 
+                       parseFloat(row.torqueMax || row['Torque Max'] || row['扭矩最大值']) : undefined
+                },
+                pressure: {
+                  operating: row.operatingPressure || row['Pressure (bar)'] || row['工作压力'] ? 
+                            parseFloat(row.operatingPressure || row['Pressure (bar)'] || row['工作压力']) : undefined,
+                  min: row.pressureMin || row['Pressure Min'] || row['压力最小值'] ? 
+                       parseFloat(row.pressureMin || row['Pressure Min'] || row['压力最小值']) : 4,
+                  max: row.pressureMax || row['Pressure Max'] || row['压力最大值'] ? 
+                       parseFloat(row.pressureMax || row['Pressure Max'] || row['压力最大值']) : 8
+                },
+                rotation: row.rotation || row['Rotation'] || row['旋转角度'] || '90°',
+                temperature: {
+                  min: row.tempMin || row['Temp Min'] || row['温度最小值'] ? 
+                       parseFloat(row.tempMin || row['Temp Min'] || row['温度最小值']) : -20,
+                  max: row.tempMax || row['Temp Max'] || row['温度最大值'] ? 
+                       parseFloat(row.tempMax || row['Temp Max'] || row['温度最大值']) : 80
+                },
+                dimensions: {
+                  length: row.length || row['Length (mm)'] || row['长度'] ? 
+                         parseFloat(row.length || row['Length (mm)'] || row['长度']) : undefined,
+                  width: row.width || row['Width (mm)'] || row['宽度'] ? 
+                        parseFloat(row.width || row['Width (mm)'] || row['宽度']) : undefined,
+                  height: row.height || row['Height (mm)'] || row['高度'] ? 
+                         parseFloat(row.height || row['Height (mm)'] || row['高度']) : undefined,
+                  weight: row.weight || row['Weight (kg)'] || row['重量'] ? 
+                         parseFloat(row.weight || row['Weight (kg)'] || row['重量']) : undefined
+                },
+                portSize: row.portSize || row['Port Size'] || row['接口尺寸'] || undefined,
+                mountingType: row.mountingType || row['Mounting Type'] || row['安装类型'] || undefined,
+                materials: {
+                  body: row.materialBody || row['Body Material'] || row['本体材料'] || 'Aluminum Alloy',
+                  piston: row.materialPiston || row['Piston Material'] || row['活塞材料'] || 'Aluminum Alloy',
+                  seal: row.materialSeal || row['Seal Material'] || row['密封材料'] || 'NBR'
+                },
+                cycleLife: row.cycleLife || row['Cycle Life'] || row['循环寿命'] ? 
+                          parseInt(row.cycleLife || row['Cycle Life'] || row['循环寿命']) : 1000000,
+                features: row.features || row['Features'] || row['特性'] ? 
+                         (row.features || row['Features'] || row['特性']).toString().split(',').map(f => f.trim()) : []
+              },
+              pricing: {
+                basePrice: row.basePrice || row['Base Price'] || row['Price'] || row['价格'] || row['基础价格'] ? 
+                          parseFloat(row.basePrice || row['Base Price'] || row['Price'] || row['价格'] || row['基础价格']) : undefined,
+                currency: row.currency || row['Currency'] || row['货币'] || 'USD'
+              },
+              availability: {
+                inStock: row.inStock !== undefined ? row.inStock : 
+                        (row['In Stock'] === 'Yes' || row['In Stock'] === true || row['有货'] === '是'),
+                leadTime: row.leadTime || row['Lead Time (days)'] || row['交货周期'] ? 
+                         parseInt(row.leadTime || row['Lead Time (days)'] || row['交货周期']) : 14
+              },
+              category: row.category || row['Category'] || row['类别'] || 'Standard',
+              tags: row.tags || row['Tags'] || row['标签'] ? 
+                   (row.tags || row['Tags'] || row['标签']).toString().split(',').map(t => t.trim()) : [],
+              isActive: row.isActive !== undefined ? row.isActive : true,
+              notes: row.notes || row['Notes'] || row['备注'] || ''
+            };
+
+            // Create product
+            await Product.create(productData);
+            results.successCount++;
+
+          } catch (error) {
+            results.errors.push(`${file.originalname} 第${rowNumber}行: ${error.message}`);
+            results.errorCount++;
+          }
         }
-
-        // Build product object
-        const productData = {
-          modelNumber: row.modelNumber.toString().trim().toUpperCase(),
-          series: row.series || 'SF-Series',
-          description: row.description,
-          specifications: {
-            torque: {
-              value: parseFloat(row.torqueValue),
-              min: row.torqueMin ? parseFloat(row.torqueMin) : undefined,
-              max: row.torqueMax ? parseFloat(row.torqueMax) : undefined
-            },
-            pressure: {
-              operating: parseFloat(row.operatingPressure),
-              min: row.pressureMin ? parseFloat(row.pressureMin) : 4,
-              max: row.pressureMax ? parseFloat(row.pressureMax) : 8
-            },
-            rotation: row.rotation || '90°',
-            temperature: {
-              min: row.tempMin ? parseFloat(row.tempMin) : -20,
-              max: row.tempMax ? parseFloat(row.tempMax) : 80
-            },
-            dimensions: {
-              length: row.length ? parseFloat(row.length) : undefined,
-              width: row.width ? parseFloat(row.width) : undefined,
-              height: row.height ? parseFloat(row.height) : undefined,
-              weight: row.weight ? parseFloat(row.weight) : undefined
-            },
-            portSize: row.portSize || undefined,
-            mountingType: row.mountingType || undefined,
-            materials: {
-              body: row.materialBody || 'Aluminum Alloy',
-              piston: row.materialPiston || 'Aluminum Alloy',
-              seal: row.materialSeal || 'NBR'
-            },
-            cycleLife: row.cycleLife ? parseInt(row.cycleLife) : 1000000,
-            features: row.features ? row.features.split(',').map(f => f.trim()) : []
-          },
-          pricing: {
-            basePrice: parseFloat(row.basePrice),
-            currency: row.currency || 'USD'
-          },
-          availability: {
-            inStock: row.inStock !== undefined ? row.inStock : true,
-            leadTime: row.leadTime ? parseInt(row.leadTime) : 14
-          },
-          category: row.category || 'Standard',
-          tags: row.tags ? row.tags.split(',').map(t => t.trim()) : [],
-          isActive: row.isActive !== undefined ? row.isActive : true,
-          notes: row.notes || ''
-        };
-
-        // Create product
-        await Product.create(productData);
-        results.successCount++;
-
       } catch (error) {
-        results.errors.push(`第${rowNumber}行: ${error.message}`);
+        results.errors.push(`文件 ${file.originalname}: ${error.message}`);
         results.errorCount++;
       }
     }
@@ -366,7 +490,7 @@ exports.bulkImportProducts = async (req, res) => {
       data: {
         successCount: results.successCount,
         errorCount: results.errorCount,
-        skippedCount: results.skipped.length,
+        skippedCount: results.skippedCount,
         errors: results.errors,
         skipped: results.skipped
       }
