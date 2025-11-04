@@ -102,25 +102,30 @@ const TechnicalEngineerDashboard = () => {
       setMyProjects(myProjects)
 
       // 计算项目统计
-      // 待选型：选型中、待选型、待指派技术等状态
-      const pendingStatuses = ['选型中', '待选型', '待指派技术', '选型进行中']
-      // 已完成：待商务报价、已报价、已确认等后续状态
-      const completedStatuses = ['待商务报价', '已报价', '已确认', '已完成', 'Won', 'Lost']
+      // 待选型：选型中、待指派技术
+      const pendingStatuses = ['选型中', '待指派技术']
+      // 已完成：待商务报价及之后的状态（说明技术选型已完成）
+      const completedStatuses = [
+        '待商务报价', '已报价-询价中', '失单',
+        '待上传合同', '待商务审核合同', '待客户盖章', '合同已签订-赢单',
+        '待预付款', '生产准备中', '采购中', '生产中', '已完成',
+        '赢单', 'Won', 'Lost'
+      ]
 
       const pendingCount = myProjects.filter(p => {
-        const isPending = pendingStatuses.includes(p.project_status) || pendingStatuses.includes(p.status)
+        const isPending = pendingStatuses.includes(p.status)
+        console.log('检查项目:', {
+          name: p.projectName || p.project_name,
+          status: p.status,
+          isPending: isPending
+        })
         if (isPending) {
-          console.log('待选型项目:', {
-            name: p.project_name,
-            project_status: p.project_status,
-            status: p.status
-          })
+          console.log('✅ 这是待选型项目!')
         }
         return isPending
       }).length
       
       const completedCount = myProjects.filter(p => 
-        completedStatuses.includes(p.project_status) || 
         completedStatuses.includes(p.status)
       ).length
 
