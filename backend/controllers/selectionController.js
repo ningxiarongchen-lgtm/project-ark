@@ -37,6 +37,7 @@ exports.calculateSelection = async (req, res) => {
       
       // AT/GY 系列特有参数
       temperature_type = 'normal', // 使用温度：'normal', 'low', 'high'
+      material_type, // 材质类型：'Aluminum Alloy'(铝合金/AT) 或 'Stainless Steel'(不锈钢/GY)
       
       // 温度代码（用于所有系列）
       temperature_code = 'No code' // 温度代码：'No code', 'T1', 'T2', 'T3', 'M'
@@ -164,6 +165,17 @@ exports.calculateSelection = async (req, res) => {
     
     if (body_size_preference) {
       query.body_size = body_size_preference.toUpperCase();
+    }
+
+    // AT/GY系列材质筛选（仅对Rack & Pinion有效）
+    if (mechanism === 'Rack & Pinion' && material_type) {
+      // 将英文材质名映射为中文（数据库中使用中文）
+      const materialMapping = {
+        'Aluminum Alloy': '铝合金',
+        'Stainless Steel': '不锈钢'
+      };
+      query['materials.body'] = materialMapping[material_type] || material_type;
+      console.log(`🔧 材质筛选: ${material_type} (${query['materials.body']}) - ${material_type === 'Aluminum Alloy' ? 'AT系列' : 'GY系列'}`);
     }
 
     console.log('🔍 查询条件:', query);

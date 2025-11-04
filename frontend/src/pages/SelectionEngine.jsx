@@ -512,6 +512,19 @@ const SelectionEngine = () => {
                     {({ getFieldValue }) =>
                       getFieldValue('mechanism') === 'Rack & Pinion' ? (
                         <>
+                          {/* 材质选择 - AT(铝合金) vs GY(不锈钢) */}
+                          <Form.Item
+                            label="执行器材质"
+                            name="material_type"
+                            rules={[{ required: true, message: '请选择执行器材质' }]}
+                            tooltip="AT系列：铝合金，轻量化，成本较低；GY系列：不锈钢，耐腐蚀性更强，适用于化工等恶劣环境"
+                          >
+                            <Radio.Group buttonStyle="solid">
+                              <Radio.Button value="Aluminum Alloy">铝合金 (AT系列) - 标准</Radio.Button>
+                              <Radio.Button value="Stainless Steel">不锈钢 (GY系列) - 耐腐蚀</Radio.Button>
+                            </Radio.Group>
+                          </Form.Item>
+
                           {/* 使用温度 */}
                           <Form.Item
                             label="使用温度"
