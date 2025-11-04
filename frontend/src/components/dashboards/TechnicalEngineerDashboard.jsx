@@ -46,18 +46,28 @@ const TechnicalEngineerDashboard = () => {
   const fetchData = async () => {
     setLoading(true)
     try {
+      console.log('=== fetchData开始 ===')
+      
       const [projectStats, ticketStats] = await Promise.all([
         fetchMyProjects(),
         fetchMyTickets()
       ])
       
+      console.log('Promise.all结果:', {
+        projectStats,
+        ticketStats
+      })
+      
       // 合并统计数据
-      setStats({
+      const combinedStats = {
         pendingProjects: projectStats?.pendingProjects || 0,
         completedProjects: projectStats?.completedProjects || 0,
         pendingTickets: ticketStats?.pendingTickets || 0,
         completedTickets: ticketStats?.completedTickets || 0
-      })
+      }
+      
+      console.log('合并后的统计数据:', combinedStats)
+      setStats(combinedStats)
     } catch (error) {
       console.error('获取数据失败:', error)
     } finally {
@@ -68,6 +78,13 @@ const TechnicalEngineerDashboard = () => {
   // 获取分配给我的技术选型项目
   const fetchMyProjects = async () => {
     try {
+      console.log('=== 开始获取技术工程师项目 ===')
+      console.log('用户信息:', {
+        id: user._id,
+        name: user.full_name || user.phone,
+        role: user.role
+      })
+      
       const response = await axios.get('/api/projects', {
         params: {
           sortBy: '-createdAt',
@@ -75,8 +92,13 @@ const TechnicalEngineerDashboard = () => {
         }
       })
 
+      console.log('API响应:', response.data)
+      
       // 后端已经根据用户角色自动过滤了项目，不需要前端再过滤
       const myProjects = response.data.data || []
+      console.log('获取到的项目数量:', myProjects.length)
+      console.log('项目列表:', myProjects)
+      
       setMyProjects(myProjects)
 
       // 计算项目统计
@@ -85,15 +107,28 @@ const TechnicalEngineerDashboard = () => {
       // 已完成：待商务报价、已报价、已确认等后续状态
       const completedStatuses = ['待商务报价', '已报价', '已确认', '已完成', 'Won', 'Lost']
 
-      const pendingCount = myProjects.filter(p => 
-        pendingStatuses.includes(p.project_status) || 
-        pendingStatuses.includes(p.status)
-      ).length
+      const pendingCount = myProjects.filter(p => {
+        const isPending = pendingStatuses.includes(p.project_status) || pendingStatuses.includes(p.status)
+        if (isPending) {
+          console.log('待选型项目:', {
+            name: p.project_name,
+            project_status: p.project_status,
+            status: p.status
+          })
+        }
+        return isPending
+      }).length
       
       const completedCount = myProjects.filter(p => 
         completedStatuses.includes(p.project_status) || 
         completedStatuses.includes(p.status)
       ).length
+
+      console.log('项目统计结果:', {
+        总数: myProjects.length,
+        待选型: pendingCount,
+        已完成: completedCount
+      })
 
       return {
         pendingProjects: pendingCount,
@@ -109,6 +144,12 @@ const TechnicalEngineerDashboard = () => {
   // 获取我的售后工单
   const fetchMyTickets = async () => {
     try {
+      console.log('=== 开始获取技术工程师售后工单 ===')
+      console.log('查询参数:', {
+        assignedEngineer: user._id,
+        sortBy: '-createdAt'
+      })
+      
       const response = await axios.get('/api/tickets', {
         params: {
           assignedEngineer: user._id,
@@ -116,7 +157,12 @@ const TechnicalEngineerDashboard = () => {
         }
       })
 
+      console.log('售后工单API响应:', response.data)
+      
       const tickets = response.data.data || []
+      console.log('获取到的工单数量:', tickets.length)
+      console.log('工单列表:', tickets)
+      
       setMyTickets(tickets)
 
       // 计算售后工单统计
@@ -125,8 +171,24 @@ const TechnicalEngineerDashboard = () => {
       // 已完成：问题已解决-待确认、已关闭
       const completedStatuses = ['问题已解决-待确认', '已关闭', 'Resolved', 'Closed']
 
-      const pendingCount = tickets.filter(t => pendingStatuses.includes(t.status)).length
+      const pendingCount = tickets.filter(t => {
+        const isPending = pendingStatuses.includes(t.status)
+        if (isPending) {
+          console.log('待处理工单:', {
+            title: t.title,
+            status: t.status
+          })
+        }
+        return isPending
+      }).length
+      
       const completedCount = tickets.filter(t => completedStatuses.includes(t.status)).length
+
+      console.log('售后工单统计结果:', {
+        总数: tickets.length,
+        待处理: pendingCount,
+        已完成: completedCount
+      })
 
       return {
         pendingTickets: pendingCount,
