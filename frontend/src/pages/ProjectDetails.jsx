@@ -3449,8 +3449,21 @@ const ProjectDetails = () => {
                         <Col xs={24} lg={16}>
                           <div style={{ marginBottom: 16 }}>
                             <Space wrap>
+                              {/* 新增选型按钮 - 技术工程师在技术清单标签页 */}
                               <Button
                                 type="primary"
+                                icon={<PlusOutlined />}
+                                onClick={() => navigate(`/selection-engine?projectId=${project._id}`)}
+                                style={{
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  border: 'none'
+                                }}
+                              >
+                                新增选型
+                              </Button>
+                              
+                              <Button
+                                type="default"
                                 icon={<FilePdfOutlined />}
                                 onClick={handleExportTechnicalItemListToPDF}
                                 disabled={!project?.technical_item_list || project.technical_item_list.length === 0}
@@ -3811,7 +3824,7 @@ const ProjectDetails = () => {
                       
                     {/* 新增选型按钮 - 销售经理不可见 */}
                     {!isSalesManager && (
-                      <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/selection-engine')}>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate(`/selection-engine?projectId=${project._id}`)}>
                         新增选型
                       </Button>
                     )}
