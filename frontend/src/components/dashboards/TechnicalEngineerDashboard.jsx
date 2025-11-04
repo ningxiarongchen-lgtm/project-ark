@@ -77,18 +77,6 @@ const TechnicalEngineerDashboard = () => {
 
       // 后端已经根据用户角色自动过滤了项目，不需要前端再过滤
       const myProjects = response.data.data || []
-      
-      console.log('📊 技术工程师项目数据:', {
-        总项目数: myProjects.length,
-        用户ID: user._id,
-        用户名: user.full_name || user.phone,
-        项目列表: myProjects.map(p => ({
-          项目名: p.project_name,
-          状态: p.project_status || p.status,
-          技术负责人: p.technical_support
-        }))
-      })
-
       setMyProjects(myProjects)
 
       // 计算项目统计
@@ -106,11 +94,6 @@ const TechnicalEngineerDashboard = () => {
         completedStatuses.includes(p.project_status) || 
         completedStatuses.includes(p.status)
       ).length
-
-      console.log('📊 项目统计结果:', {
-        待选型: pendingCount,
-        已完成: completedCount
-      })
 
       return {
         pendingProjects: pendingCount,
@@ -136,16 +119,6 @@ const TechnicalEngineerDashboard = () => {
       const tickets = response.data.data || []
       setMyTickets(tickets)
 
-      console.log('🎫 技术工程师售后工单数据:', {
-        工单总数: tickets.length,
-        用户ID: user._id,
-        工单列表: tickets.map(t => ({
-          工单标题: t.title,
-          状态: t.status,
-          指派工程师: t.assignedEngineer
-        }))
-      })
-
       // 计算售后工单统计
       // 待处理：待技术受理、技术处理中、等待客户反馈
       const pendingStatuses = ['待技术受理', '技术处理中', '等待客户反馈', 'In Progress']
@@ -154,11 +127,6 @@ const TechnicalEngineerDashboard = () => {
 
       const pendingCount = tickets.filter(t => pendingStatuses.includes(t.status)).length
       const completedCount = tickets.filter(t => completedStatuses.includes(t.status)).length
-
-      console.log('🎫 售后工单统计结果:', {
-        待处理: pendingCount,
-        已完成: completedCount
-      })
 
       return {
         pendingTickets: pendingCount,
