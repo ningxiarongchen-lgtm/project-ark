@@ -2684,27 +2684,6 @@ const ProjectDetails = () => {
     if (status === '选型中') {
       // 技术工程师：进行选型
       if (user?.role === 'Technical Engineer') {
-        buttons.push(
-          <Button
-            key="start-selection"
-            type="primary"
-            size="large"
-            icon={<FileSearchOutlined />}
-            onClick={() => {
-              const tabsElement = document.querySelector('.ant-tabs')
-              if (tabsElement) {
-                tabsElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              border: 'none'
-            }}
-          >
-            📋 开始技术选型
-          </Button>
-        )
-        
         // 导出技术清单
         if (project?.technical_item_list && project.technical_item_list.length > 0) {
           buttons.push(
