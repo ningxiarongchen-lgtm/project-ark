@@ -1,8 +1,37 @@
 # 📦 部署指南
 
-## 🚀 部署到 Cloudflare Pages
+## ⚡ 超简单部署（推荐）
 
-### 方法1：使用一键部署脚本（推荐）
+### 一个命令搞定所有！
+
+改完代码后，只需运行：
+
+```bash
+./deploy.sh "你的修改说明"
+```
+
+**示例：**
+```bash
+./deploy.sh "修复Dashboard统计问题"
+./deploy.sh "添加新功能"
+./deploy.sh "优化性能"
+```
+
+这个命令会自动完成：
+1. ✅ Git add（添加所有更改）
+2. ✅ Git commit（提交代码）
+3. ✅ Git push（推送到GitHub）
+4. ✅ npm run build（构建前端）
+5. ✅ 部署到Cloudflare Pages
+6. ✅ 显示访问地址
+
+**就是这么简单！** 🎉
+
+---
+
+## 🚀 其他部署方式
+
+### 方法1：只部署Cloudflare Pages（不提交Git）
 
 ```bash
 # 在项目根目录运行
