@@ -505,7 +505,7 @@ const Dashboard = () => {
       if (user?.role === 'Technical Engineer') {
         pendingSelectionCount = projects.filter(p => 
           p.technical_support?._id === user._id &&
-          (p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿')
+          (p.status === '选型中' || p.status === '待指派技术' || p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿')
         ).length
       } else {
         pendingSelectionCount = projects.filter(p => 
@@ -538,8 +538,8 @@ const Dashboard = () => {
           
           // 待处理售后工单：分配给当前技术工程师且状态为待处理或处理中的工单
           pendingTicketCount = tickets.filter(t => 
-            t.assigned_to?._id === user._id &&
-            (t.status === '待处理' || t.status === '处理中')
+            (t.assigned_to?.id === user._id || t.assigned_to?._id === user._id) &&
+            (t.status === '待技术受理' || t.status === '技术处理中' || t.status === '等待客户反馈' || t.status === '待处理' || t.status === '处理中' || t.status === 'In Progress')
           ).length
         } catch (error) {
           console.error('Failed to fetch tickets:', error)
@@ -559,7 +559,7 @@ const Dashboard = () => {
       if (user?.role === 'Technical Engineer') {
         const myProjects = projects.filter(p => {
           // 项目状态是待选型相关的
-          const isSelectionStatus = p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿' || p.status === '待指派技术'
+          const isSelectionStatus = p.status === '选型中' || p.status === '选型进行中' || p.status === '选型修正中' || p.status === '草稿' || p.status === '待指派技术'
           // 分配给我的 或 还没分配技术工程师的
           const isAssignedToMe = p.technical_support?._id === user._id || !p.technical_support
           return isSelectionStatus && isAssignedToMe
