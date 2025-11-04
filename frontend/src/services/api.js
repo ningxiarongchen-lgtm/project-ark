@@ -35,7 +35,9 @@ const api = axios.create({
     'Content-Type': 'application/json'
   },
   // 🔒 安全改进：启用 withCredentials，允许发送和接收 Cookie
-  withCredentials: true
+  withCredentials: true,
+  // ⏱️ 超时配置：避免长时间等待（Render冷启动或网络慢）
+  timeout: 30000 // 30秒超时
 })
 
 // Track active requests for NProgress
@@ -83,6 +85,19 @@ api.interceptors.response.use(
     activeRequests--
     if (activeRequests === 0) {
       NProgress.done()
+    }
+    
+    // ⏱️ 处理超时错误
+    if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+      console.error('请求超时：后端服务响应缓慢，可能是Render冷启动')
+      // 返回更友好的错误信息
+      error.message = '服务器响应超时，请稍后重试'
+    }
+    
+    // 🌐 处理网络错误
+    if (error.message === 'Network Error') {
+      console.error('网络错误：无法连接到后端服务')
+      error.message = '网络连接失败，请检查您的网络连接'
     }
     
     // 🔒 防止无限循环：只处理非 logout 请求的 401 错误

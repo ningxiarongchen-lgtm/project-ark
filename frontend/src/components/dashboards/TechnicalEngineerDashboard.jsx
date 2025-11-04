@@ -71,17 +71,23 @@ const TechnicalEngineerDashboard = () => {
       const response = await axios.get('/api/projects', {
         params: {
           sortBy: '-createdAt',
-          limit: 100
+          limit: 1000  // 增加limit以获取所有项目
         }
       })
 
-      const allProjects = response.data.data || []
+      // 后端已经根据用户角色自动过滤了项目，不需要前端再过滤
+      const myProjects = response.data.data || []
       
-      // 筛选分配给当前技术工程师的项目
-      const myProjects = allProjects.filter(project => 
-        project.technical_support?._id === user._id || 
-        project.technical_support === user._id
-      )
+      console.log('📊 技术工程师项目数据:', {
+        总项目数: myProjects.length,
+        用户ID: user._id,
+        用户名: user.full_name || user.phone,
+        项目列表: myProjects.map(p => ({
+          项目名: p.project_name,
+          状态: p.project_status || p.status,
+          技术负责人: p.technical_support
+        }))
+      })
 
       setMyProjects(myProjects)
 
@@ -91,18 +97,28 @@ const TechnicalEngineerDashboard = () => {
       // 已完成：待商务报价、已报价、已确认等后续状态
       const completedStatuses = ['待商务报价', '已报价', '已确认', '已完成', 'Won', 'Lost']
 
+      const pendingCount = myProjects.filter(p => 
+        pendingStatuses.includes(p.project_status) || 
+        pendingStatuses.includes(p.status)
+      ).length
+      
+      const completedCount = myProjects.filter(p => 
+        completedStatuses.includes(p.project_status) || 
+        completedStatuses.includes(p.status)
+      ).length
+
+      console.log('📊 项目统计结果:', {
+        待选型: pendingCount,
+        已完成: completedCount
+      })
+
       return {
-        pendingProjects: myProjects.filter(p => 
-          pendingStatuses.includes(p.project_status) || 
-          pendingStatuses.includes(p.status)
-        ).length,
-        completedProjects: myProjects.filter(p => 
-          completedStatuses.includes(p.project_status) || 
-          completedStatuses.includes(p.status)
-        ).length
+        pendingProjects: pendingCount,
+        completedProjects: completedCount
       }
     } catch (error) {
       console.error('获取项目数据失败:', error)
+      message.error('获取项目数据失败: ' + (error.response?.data?.message || error.message))
       return { pendingProjects: 0, completedProjects: 0 }
     }
   }
@@ -120,19 +136,37 @@ const TechnicalEngineerDashboard = () => {
       const tickets = response.data.data || []
       setMyTickets(tickets)
 
+      console.log('🎫 技术工程师售后工单数据:', {
+        工单总数: tickets.length,
+        用户ID: user._id,
+        工单列表: tickets.map(t => ({
+          工单标题: t.title,
+          状态: t.status,
+          指派工程师: t.assignedEngineer
+        }))
+      })
+
       // 计算售后工单统计
       // 待处理：待技术受理、技术处理中、等待客户反馈
       const pendingStatuses = ['待技术受理', '技术处理中', '等待客户反馈', 'In Progress']
       // 已完成：问题已解决-待确认、已关闭
       const completedStatuses = ['问题已解决-待确认', '已关闭', 'Resolved', 'Closed']
 
+      const pendingCount = tickets.filter(t => pendingStatuses.includes(t.status)).length
+      const completedCount = tickets.filter(t => completedStatuses.includes(t.status)).length
+
+      console.log('🎫 售后工单统计结果:', {
+        待处理: pendingCount,
+        已完成: completedCount
+      })
+
       return {
-        pendingTickets: tickets.filter(t => pendingStatuses.includes(t.status)).length,
-        completedTickets: tickets.filter(t => completedStatuses.includes(t.status)).length
+        pendingTickets: pendingCount,
+        completedTickets: completedCount
       }
     } catch (error) {
       console.error('获取售后工单失败:', error)
-      message.error('获取售后工单失败')
+      message.error('获取售后工单失败: ' + (error.response?.data?.message || error.message))
       return { pendingTickets: 0, completedTickets: 0 }
     }
   }

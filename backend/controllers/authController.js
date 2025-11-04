@@ -182,7 +182,8 @@ exports.login = async (req, res) => {
       cookieOptions
     });
 
-    // 只返回用户信息，不返回 token（token 已经在 cookie 中）
+    // 🔧 兼容性改进：同时返回token（供Safari等不完全支持sameSite='none'的浏览器使用）
+    // Cookie优先，如果Cookie失败，前端可以使用返回的token作为备用
     res.json({
       _id: user._id,
       phone: user.phone,
@@ -193,7 +194,9 @@ exports.login = async (req, res) => {
       department: user.department,
       isActive: user.isActive,
       passwordChangeRequired: user.passwordChangeRequired,
-      message: 'Login successful'
+      message: 'Login successful',
+      // 备用token（仅在Cookie不可用时使用）
+      accessToken: accessToken
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

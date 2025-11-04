@@ -26,12 +26,12 @@ const Login = () => {
       setLoading(true)
       const response = await authAPI.login(values)
       
-      // 🔒 安全改进：后端使用 HttpOnly Cookie 存储 token
-      // 响应中不再包含 token，只包含用户信息
-      const user = response.data
+      // 🔧 兼容性改进：后端同时使用Cookie和返回token
+      // Cookie优先（更安全），返回的token作为备用（兼容Safari等浏览器）
+      const { accessToken, ...user } = response.data
       
-      // 不再传递 token 参数，因为 token 已在 HttpOnly Cookie 中
-      login(user, null)
+      // 保存用户信息和备用token
+      login(user, accessToken)
       message.success('登录成功！')
       
       const from = location.state?.from?.pathname || '/'

@@ -24,8 +24,11 @@ router.get('/series/:series', actuatorManagementController.getBySeries);
 // 下载CSV模板
 router.get('/template', actuatorManagementController.downloadTemplate);
 
-// 批量导入
+// 批量导入（通用导入）
 router.post('/import', upload.single('file'), actuatorManagementController.bulkImport);
+
+// 批量导入CSV（专门的执行器CSV格式：AT/GY和SF）
+router.post('/import-csv', upload.single('file'), actuatorManagementController.bulkImportCsv);
 
 // 批量删除
 router.post('/bulk-delete', actuatorManagementController.bulkDelete);

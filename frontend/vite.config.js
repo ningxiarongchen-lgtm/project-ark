@@ -17,16 +17,10 @@ export default defineConfig({
   build: {
     // 浏览器兼容性目标 - 支持Safari、移动端
     target: ['es2015', 'safari11', 'ios11'],
-    // 强制失效所有缓存
+    // 使用Vite默认的代码分割策略
     rollupOptions: {
       output: {
-        // 代码分割优化 - 减少初始加载大小
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'antd-vendor': ['antd', '@ant-design/icons'],
-          'utils': ['axios', 'dayjs', 'zustand']
-        },
-        // 添加时间戳到文件名，强制失效缓存
+        // 简化文件名，添加时间戳
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`
@@ -40,16 +34,25 @@ export default defineConfig({
     sourcemap: false,
     // CSS 兼容性
     cssTarget: 'safari11',
-    // 压缩选项
+    // 压缩选项 - 更激进的压缩
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true, // 移除console
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info'], // 移除特定函数调用
+        passes: 2 // 多次压缩以获得更好效果
+      },
+      format: {
+        comments: false // 移除所有注释
       }
     },
     // 设置chunk大小警告限制
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 800,
+    // 报告压缩后的大小
+    reportCompressedSize: true,
+    // 启用CSS压缩
+    cssMinify: true
   },
   // 优化依赖预构建
   optimizeDeps: {
