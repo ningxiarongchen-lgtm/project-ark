@@ -97,6 +97,21 @@ function processSfActuator(row) {
     }
   }
   
+  // 确定阀门类型（根据型号中是否包含/C）
+  // SF14-300DA → 球阀（对称拨叉）
+  // SF14/C-300DA → 蝶阀（偏心拨叉）
+  let valveType = null;
+  if (row.valve_type) {
+    // 优先使用CSV中提供的valve_type
+    valveType = row.valve_type;
+  } else if (modelBase.includes('/C')) {
+    // 如果型号包含/C，则是蝶阀
+    valveType = 'Butterfly Valve';
+  } else if (modelBase.match(/^SF\d+/)) {
+    // 如果是SF系列但不带/C，则是球阀
+    valveType = 'Ball Valve';
+  }
+  
   // 构建执行器数据对象
   const actuatorData = {
     model_base: modelBase,
@@ -104,6 +119,7 @@ function processSfActuator(row) {
     body_size: row.body_size || null,
     cylinder_size: parseInt(row.cylinder_size) || null,
     mechanism: 'Scotch Yoke', // SF系列是拨叉式，不是齿轮齿条式
+    valve_type: valveType, // 球阀或蝶阀
     action_type: actionType,
     spring_range: springRange,
     
