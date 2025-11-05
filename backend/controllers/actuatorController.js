@@ -593,23 +593,51 @@ exports.downloadTemplate = (req, res) => {
       sheetName = 'AT/GY系列执行器';
       filename = 'actuator_template_AT_GY.xlsx';
     } else {
-      // SF系列（拨叉式）默认模板
+      // SF系列（拨叉式）默认模板 - 包含温度价格计算说明
       templateData = [
         {
           model_base: 'SF10-150DA',
-          series: 'SF',
-          mechanism: 'Scotch Yoke',
-          valve_type: 'Ball Valve',
           body_size: 'SF10',
+          cylinder_size: 150,
           action_type: 'DA',
-          base_price_normal: 5000,
-          base_price_low: 5200,
-          base_price_high: 5500,
-          torque_symmetric: '{"0_3_0":309,"0_4_0":412,"0_5_0":515}',
-          torque_canted: '{"0_3_0":417,"0_4_0":556,"0_5_0":695}',
-          specifications: '{"pressure_range":{"min":2,"max":8},"temperature_range":{"min":-20,"max":80},"rotation_angle":90,"weight":12.5}',
-          description: 'SF10 双作用气动执行器',
-          is_active: true
+          spring_range: '',
+          base_price: 1339,
+          base_price_low: '可选，不填则自动计算为常温价格×1.05',
+          base_price_high: '可选，不填则自动计算为常温价格×1.05',
+          torque_symmetric: '{"0.3_0":309,"0.3_45":185,"0.3_90":309,"0.4_0":412,"0.4_45":247,"0.4_90":412,"0.5_0":515,"0.5_45":309,"0.5_90":515,"0.6_0":618,"0.6_45":371,"0.6_90":618}',
+          torque_canted: '{"0.3_0":417,"0.3_45":200,"0.3_90":282,"0.4_0":556,"0.4_45":267,"0.4_90":376,"0.5_0":695,"0.5_45":333,"0.5_90":470,"0.6_0":834,"0.6_45":400,"0.6_90":564}',
+          connect_flange: 'ISO 5211 F10',
+          L1: 350,
+          L2: 127,
+          m1: 76,
+          m2: 143.5,
+          A: 40,
+          H1: 82,
+          H2: 100,
+          D: 207,
+          G: 'NPT1/4"'
+        },
+        {
+          model_base: 'SF10-150SR3',
+          body_size: 'SF10',
+          cylinder_size: 150,
+          action_type: 'SR',
+          spring_range: 'SR3',
+          base_price: 1716,
+          base_price_low: 1802,
+          base_price_high: 1802,
+          torque_symmetric: '{"sst":187,"srt":91,"set":118,"ast_0.3":183,"art_0.3":89,"aet_0.3":115,"ast_0.4":293,"art_0.4":155,"aet_0.4":225,"ast_0.5":396,"art_0.5":217,"aet_0.5":328}',
+          torque_canted: '{"sst":162,"srt":100,"set":152,"ast_0.3":260,"art_0.3":100,"aet_0.3":113,"ast_0.4":399,"art_0.4":167,"aet_0.4":207,"ast_0.5":538,"art_0.5":234,"aet_0.5":301}',
+          connect_flange: 'ISO 5211 F10',
+          L1: 350,
+          L2: 467,
+          m1: 76,
+          m2: 143.5,
+          A: 40,
+          H1: 82,
+          H2: 100,
+          D: 207,
+          G: 'NPT1/4"'
         }
       ];
       sheetName = 'SF系列执行器';
@@ -646,20 +674,26 @@ exports.downloadTemplate = (req, res) => {
       ];
     } else {
       ws['!cols'] = [
-        { wch: 15 }, // model_base
-        { wch: 10 }, // series
-        { wch: 15 }, // mechanism
-        { wch: 15 }, // valve_type
+        { wch: 18 }, // model_base
         { wch: 12 }, // body_size
+        { wch: 15 }, // cylinder_size
         { wch: 12 }, // action_type
-        { wch: 15 }, // base_price_normal
-        { wch: 15 }, // base_price_low
-        { wch: 15 }, // base_price_high
-        { wch: 40 }, // torque_symmetric
-        { wch: 40 }, // torque_canted
-        { wch: 60 }, // specifications
-        { wch: 30 }, // description
-        { wch: 10 }  // is_active
+        { wch: 15 }, // spring_range
+        { wch: 12 }, // base_price
+        { wch: 40 }, // base_price_low
+        { wch: 40 }, // base_price_high
+        { wch: 80 }, // torque_symmetric
+        { wch: 80 }, // torque_canted
+        { wch: 18 }, // connect_flange
+        { wch: 8 },  // L1
+        { wch: 8 },  // L2
+        { wch: 8 },  // m1
+        { wch: 8 },  // m2
+        { wch: 8 },  // A
+        { wch: 8 },  // H1
+        { wch: 8 },  // H2
+        { wch: 8 },  // D
+        { wch: 12 }  // G
       ];
     }
     

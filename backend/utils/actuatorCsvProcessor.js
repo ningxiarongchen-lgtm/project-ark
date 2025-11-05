@@ -79,13 +79,17 @@ function processSfActuator(row) {
   const torqueSymmetric = parseJsonField(row.torque_symmetric);
   const torqueCanted = parseJsonField(row.torque_canted);
   
-  // 确定作用类型（从model_base中提取，如SF10-150DA中的DA或SR）
+  // 确定作用类型（优先使用CSV中的字段，否则从model_base中提取）
   const modelBase = row.model_base || '';
-  let actionType = 'DA'; // 默认双作用
-  let springRange = null;
+  let actionType = row.action_type || 'DA'; // 优先使用CSV字段
+  let springRange = row.spring_range || null; // 优先使用CSV字段
   
-  if (modelBase.includes('SR')) {
+  // 如果CSV中没有提供，尝试从model_base中提取
+  if (!row.action_type && modelBase.includes('SR')) {
     actionType = 'SR';
+  }
+  
+  if (!row.spring_range && modelBase.includes('SR')) {
     // 从model_base中提取弹簧范围，如SF10-150SR3中的SR3
     const srMatch = modelBase.match(/SR(\d+)/);
     if (srMatch) {
@@ -98,30 +102,38 @@ function processSfActuator(row) {
     model_base: modelBase,
     series: row.series || 'SF',
     body_size: row.body_size || null,
-    cylinder_size: row.cylinder_size || null,
-    mechanism: 'Rack & Pinion',
+    cylinder_size: parseInt(row.cylinder_size) || null,
+    mechanism: 'Scotch Yoke', // SF系列是拨叉式，不是齿轮齿条式
     action_type: actionType,
     spring_range: springRange,
     
-    // 定价信息（SF系列通常只有base_price）
+    // 定价信息（SF系列温度价格计算）
+    // 常温价格：使用CSV中的base_price
     base_price_normal: parseFloat(row.base_price) || null,
-    base_price_low: null,
-    base_price_high: null,
+    // 低温价格：常温价格 + 5%（如果CSV中未提供）
+    base_price_low: row.base_price_low 
+      ? parseFloat(row.base_price_low) 
+      : (parseFloat(row.base_price) ? parseFloat(row.base_price) * 1.05 : null),
+    // 高温价格：常温价格 + 5%（如果CSV中未提供）
+    base_price_high: row.base_price_high 
+      ? parseFloat(row.base_price_high) 
+      : (parseFloat(row.base_price) ? parseFloat(row.base_price) * 1.05 : null),
     
     // 连接法兰
     connect_flange: row.connect_flange || null,
     
     // 尺寸数据（SF系列有多个尺寸字段）
+    // 支持大小写字段名（L1/l1, L2/l2等）
     dimensions: {
-      L1: parseFloat(row.l1) || null,
-      L2: parseFloat(row.l2) || null,
+      L1: parseFloat(row.L1 || row.l1) || null,
+      L2: parseFloat(row.L2 || row.l2) || null,
       m1: parseFloat(row.m1) || null,
       m2: parseFloat(row.m2) || null,
-      A: parseFloat(row.a) || null,
-      H1: parseFloat(row.h1) || null,
-      H2: parseFloat(row.h2) || null,
-      D: parseFloat(row.d) || null,
-      G: row.g || null
+      A: parseFloat(row.A || row.a) || null,
+      H1: parseFloat(row.H1 || row.h1) || null,
+      H2: parseFloat(row.H2 || row.h2) || null,
+      D: parseFloat(row.D || row.d) || null,
+      G: row.G || row.g || null
     },
     
     // 扭矩数据（合并对称和偏置）
