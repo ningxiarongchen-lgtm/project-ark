@@ -178,6 +178,13 @@ const ActuatorManagement = () => {
     );
   };
   
+  // 执行器模板类型配置
+  const templateTypes = [
+    { key: 'SF', label: 'SF系列（拨叉式）' },
+    { key: 'AT', label: 'AT系列（齿轮齿条式）' },
+    { key: 'GY', label: 'GY系列（齿轮齿条式）' }
+  ];
+  
   return (
     <DataManagementTable
       api={dataManagementAPI.actuators}
@@ -185,6 +192,7 @@ const ActuatorManagement = () => {
       title="执行器"
       FormComponent={ActuatorForm}
       renderStatistics={renderStatistics}
+      templateTypes={templateTypes}
       addButtonText="新增执行器"
     />
   );

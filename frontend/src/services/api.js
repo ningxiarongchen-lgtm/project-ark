@@ -151,7 +151,8 @@ export const actuatorsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  downloadTemplate: () => api.get('/actuators/template', { 
+  downloadTemplate: (type = 'SF') => api.get('/actuators/template', { 
+    params: { type },
     responseType: 'blob' 
   })
 }

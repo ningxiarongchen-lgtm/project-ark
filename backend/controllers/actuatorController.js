@@ -542,8 +542,9 @@ exports.downloadTemplate = (req, res) => {
     
     let templateData, sheetName, filename;
     
-    if (type === 'AT' || type === 'GY') {
-      // AT/GY系列（齿轮齿条式）模板
+    if (type === 'AT') {
+      // AT系列（齿轮齿条式）完整模板
+      // 特点：完整的三种温度价格、手轮信息、扭矩数据、法兰尺寸
       templateData = [
         {
           model_base: 'AT-SR52K8',
@@ -590,8 +591,47 @@ exports.downloadTemplate = (req, res) => {
           description: '双作用铝合金齿轮齿条式 AT-052'
         }
       ];
-      sheetName = 'AT/GY系列执行器';
-      filename = 'actuator_template_AT_GY.xlsx';
+      sheetName = 'AT系列执行器';
+      filename = 'actuator_template_AT.xlsx';
+    } else if (type === 'GY') {
+      // GY系列（齿轮齿条式）简化模板
+      // 特点：只有基本价格，无低温/高温价格，无扭矩数据
+      templateData = [
+        {
+          model_base: 'GY-52SR',
+          series: 'GY',
+          mechanism: 'Rack & Pinion',
+          valve_type: 'Ball Valve',
+          action_type: 'SR',
+          body_size: 'GY-052',
+          base_price_normal: 770,
+          flange_standard: 'F05/φ50/4-M6',
+          flange_D: 50,
+          flange_A: 36,
+          flange_C: 30,
+          flange_thread: '4-M6',
+          pneumatic_size: 'G1/4"',
+          description: '单作用正作用用&反作用/齿轮齿条式/行程90°'
+        },
+        {
+          model_base: 'GY-52',
+          series: 'GY',
+          mechanism: 'Rack & Pinion',
+          valve_type: 'Ball Valve',
+          action_type: 'DA',
+          body_size: 'GY-052',
+          base_price_normal: 740,
+          flange_standard: 'F05/φ50/4-M6',
+          flange_D: 50,
+          flange_A: 36,
+          flange_C: 30,
+          flange_thread: '4-M6',
+          pneumatic_size: 'G1/4"',
+          description: '双作用/齿轮齿条式/行程90°'
+        }
+      ];
+      sheetName = 'GY系列执行器';
+      filename = 'actuator_template_GY.xlsx';
     } else {
       // SF系列（拨叉式）默认模板 - 包含温度价格计算说明
       templateData = [
@@ -649,7 +689,8 @@ exports.downloadTemplate = (req, res) => {
     const ws = xlsx.utils.json_to_sheet(templateData);
     
     // 根据模板类型设置不同的列宽
-    if (type === 'AT' || type === 'GY') {
+    if (type === 'AT') {
+      // AT系列：完整字段（包含三种价格、手轮、维修包）
       ws['!cols'] = [
         { wch: 15 }, // model_base
         { wch: 10 }, // series
@@ -670,7 +711,25 @@ exports.downloadTemplate = (req, res) => {
         { wch: 12 }, // flange_C
         { wch: 15 }, // flange_thread
         { wch: 15 }, // pneumatic_size
-        { wch: 30 }  // description
+        { wch: 35 }  // description
+      ];
+    } else if (type === 'GY') {
+      // GY系列：简化字段（只有基本价格，无手轮、维修包）
+      ws['!cols'] = [
+        { wch: 15 }, // model_base
+        { wch: 10 }, // series
+        { wch: 15 }, // mechanism
+        { wch: 15 }, // valve_type
+        { wch: 12 }, // action_type
+        { wch: 12 }, // body_size
+        { wch: 15 }, // base_price_normal
+        { wch: 20 }, // flange_standard
+        { wch: 12 }, // flange_D
+        { wch: 12 }, // flange_A
+        { wch: 12 }, // flange_C
+        { wch: 15 }, // flange_thread
+        { wch: 15 }, // pneumatic_size
+        { wch: 40 }  // description
       ];
     } else {
       ws['!cols'] = [

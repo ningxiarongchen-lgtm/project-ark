@@ -17,7 +17,8 @@ import {
   Row,
   Col,
   Statistic,
-  Card
+  Card,
+  Dropdown
 } from 'antd';
 import {
   PlusOutlined,
@@ -41,6 +42,8 @@ const DataManagementTable = ({
   FormComponent,
   // Statistics configuration
   renderStatistics,
+  // Template types (for template download dropdown)
+  templateTypes = null, // e.g. [{ key: 'SF', label: 'SF系列' }, { key: 'AT', label: 'AT系列' }]
   // Button text
   addButtonText = '新增',
   // Row key
@@ -162,20 +165,23 @@ const DataManagementTable = ({
   };
   
   // 下载模板
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = async (type = null) => {
     try {
-      const response = await api.downloadTemplate();
+      const response = await api.downloadTemplate(type);
       
       // 创建下载链接
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${title}_template.csv`);
+      // 根据类型设置文件名
+      const fileExtension = response.headers['content-type']?.includes('csv') ? 'csv' : 'xlsx';
+      const fileName = type ? `${title}_${type}_template.${fileExtension}` : `${title}_template.${fileExtension}`;
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       
-      message.success('模板下载成功');
+      message.success(`模板下载成功${type ? `（${type}系列）` : ''}`);
     } catch (error) {
       message.error('下载模板失败: ' + (error.response?.data?.message || error.message));
     }
@@ -362,12 +368,29 @@ const DataManagementTable = ({
                 {addButtonText}
               </Button>
             </RoleBasedAccess>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadTemplate}
-            >
-              下载模板
-            </Button>
+            {/* 下载模板按钮：支持单模板和多模板类型 */}
+            {templateTypes ? (
+              <Dropdown
+                menu={{
+                  items: templateTypes.map(type => ({
+                    key: type.key,
+                    label: type.label,
+                    onClick: () => handleDownloadTemplate(type.key)
+                  }))
+                }}
+              >
+                <Button icon={<DownloadOutlined />}>
+                  下载模板
+                </Button>
+              </Dropdown>
+            ) : (
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={() => handleDownloadTemplate()}
+              >
+                下载模板
+              </Button>
+            )}
             <Upload
               accept=".csv,.xlsx,.xls"
               multiple
