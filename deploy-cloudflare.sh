@@ -23,7 +23,7 @@ echo ""
 
 # 3. 部署到 Cloudflare Pages
 echo "☁️  正在部署到 Cloudflare Pages..."
-wrangler pages deploy dist --project-name=smart-system --commit-dirty=true
+wrangler pages deploy dist --project-name=smart-system --commit-message="Update: Multi-file upload optimization"
 
 if [ $? -eq 0 ]; then
     echo ""
