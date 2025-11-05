@@ -61,6 +61,7 @@ const DataManagementTable = ({
   const [editingRecord, setEditingRecord] = useState(null);
   const [importing, setImporting] = useState(false);
   const [statistics, setStatistics] = useState(null);
+  const [importFileList, setImportFileList] = useState([]);
   
   // 加载数据
   const fetchData = async (params = {}) => {
@@ -180,62 +181,93 @@ const DataManagementTable = ({
     }
   };
   
-  // 批量导入
-  const handleImport = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('updateOnDuplicate', 'true');
+  // 批量导入 - 支持多文件
+  const handleImportSubmit = async () => {
+    if (importFileList.length === 0) {
+      message.warning('请先选择要上传的文件');
+      return;
+    }
     
     setImporting(true);
+    let totalSuccess = 0;
+    let totalFailed = 0;
+    let totalRows = 0;
+    const allErrors = [];
+    
     try {
-      const response = await api.bulkImport(formData);
-      
-      if (response.data.success) {
-        const summary = response.data.summary;
-        message.success(
-          `导入完成！总计 ${summary.totalRows} 行，成功 ${summary.imported} 条，失败 ${summary.failed} 条`
-        );
+      // 逐个处理文件
+      for (const file of importFileList) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('updateOnDuplicate', 'true');
         
-        if (summary.failed > 0 && response.data.import?.failed) {
-          Modal.info({
-            title: '导入结果详情',
-            width: 800,
-            content: (
-              <div>
-                <p>成功导入: {summary.imported} 条</p>
-                <p>失败: {summary.failed} 条</p>
-                {response.data.import.failed.length > 0 && (
-                  <div>
-                    <p style={{ fontWeight: 'bold', marginTop: '10px' }}>失败记录:</p>
-                    <ul style={{ maxHeight: '300px', overflow: 'auto' }}>
-                      {response.data.import.failed.slice(0, 10).map((item, index) => (
-                        <li key={index}>
-                          {JSON.stringify(item.data)} - {item.error}
-                        </li>
-                      ))}
-                      {response.data.import.failed.length > 10 && (
-                        <li>... 还有 {response.data.import.failed.length - 10} 条失败记录</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )
+        try {
+          const response = await api.bulkImport(formData);
+          
+          if (response.data.success) {
+            const summary = response.data.summary;
+            totalSuccess += summary.imported || 0;
+            totalFailed += summary.failed || 0;
+            totalRows += summary.totalRows || 0;
+            
+            if (summary.failed > 0 && response.data.import?.failed) {
+              allErrors.push({
+                file: file.name,
+                errors: response.data.import.failed
+              });
+            }
+          }
+        } catch (error) {
+          totalFailed++;
+          allErrors.push({
+            file: file.name,
+            errors: [{ error: error.response?.data?.message || error.message }]
           });
         }
-        
-        fetchData();
-        fetchStatistics();
-      } else {
-        message.error('导入失败: ' + response.data.error);
       }
+      
+      // 显示汇总结果
+      message.success(
+        `导入完成！总计 ${totalRows} 行，成功 ${totalSuccess} 条，失败 ${totalFailed} 条`
+      );
+      
+      // 如果有错误，显示详情
+      if (allErrors.length > 0) {
+        Modal.info({
+          title: '导入结果详情',
+          width: 800,
+          content: (
+            <div>
+              <p>成功导入: {totalSuccess} 条</p>
+              <p>失败: {totalFailed} 条</p>
+              {allErrors.map((fileError, idx) => (
+                <div key={idx}>
+                  <p style={{ fontWeight: 'bold', marginTop: '10px' }}>文件: {fileError.file}</p>
+                  <ul style={{ maxHeight: '200px', overflow: 'auto' }}>
+                    {fileError.errors.slice(0, 5).map((item, index) => (
+                      <li key={index}>
+                        {item.data ? JSON.stringify(item.data) : ''} - {item.error}
+                      </li>
+                    ))}
+                    {fileError.errors.length > 5 && (
+                      <li>... 还有 {fileError.errors.length - 5} 条失败记录</li>
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )
+        });
+      }
+      
+      fetchData();
+      fetchStatistics();
+      setImportFileList([]); // 清空文件列表
     } catch (error) {
-      message.error('导入失败: ' + (error.response?.data?.message || error.message));
+      message.error('导入失败: ' + error.message);
     } finally {
       setImporting(false);
     }
-    
-    return false; // 阻止自动上传
   };
   
   // 表单提交
@@ -338,16 +370,54 @@ const DataManagementTable = ({
             </Button>
             <Upload
               accept=".csv,.xlsx,.xls"
+              multiple
+              fileList={importFileList}
+              beforeUpload={(file) => {
+                // 验证文件类型
+                const isExcel = 
+                  file.type === 'application/vnd.ms-excel' ||
+                  file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                  file.type === 'text/csv' ||
+                  file.name.endsWith('.csv') ||
+                  file.name.endsWith('.xlsx') ||
+                  file.name.endsWith('.xls');
+                
+                if (!isExcel) {
+                  message.error('只支持 Excel 文件格式 (.xlsx, .xls, .csv)');
+                  return Upload.LIST_IGNORE;
+                }
+                
+                // 检查文件大小 (最大 10MB)
+                const isLt10M = file.size / 1024 / 1024 < 10;
+                if (!isLt10M) {
+                  message.error('文件大小不能超过 10MB');
+                  return Upload.LIST_IGNORE;
+                }
+                
+                // 添加到文件列表
+                setImportFileList(prevList => [...prevList, file]);
+                return false; // 阻止自动上传
+              }}
+              onRemove={(file) => {
+                setImportFileList(prevList => prevList.filter(f => f.uid !== file.uid));
+              }}
               showUploadList={false}
-              beforeUpload={handleImport}
             >
               <Button
                 icon={<UploadOutlined />}
-                loading={importing}
               >
-                批量导入
+                选择文件（可多选）
               </Button>
             </Upload>
+            {importFileList.length > 0 && (
+              <Button
+                type="primary"
+                onClick={handleImportSubmit}
+                loading={importing}
+              >
+                开始导入 ({importFileList.length} 个文件)
+              </Button>
+            )}
             <Popconfirm
               title={`确定要删除选中的 ${selectedRowKeys.length} 条记录吗？`}
               onConfirm={handleBulkDelete}

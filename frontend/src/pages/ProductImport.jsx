@@ -11,9 +11,7 @@ import {
   Divider,
   List,
   Tag,
-  Spin,
-  Radio,
-  Checkbox
+  Spin
 } from 'antd';
 import { 
   UploadOutlined, 
@@ -33,8 +31,6 @@ const ProductImport = () => {
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
-  const [importType, setImportType] = useState('actuator'); // 'product' or 'actuator'
-  const [updateOnDuplicate, setUpdateOnDuplicate] = useState(false);
 
   // 处理文件上传
   const handleUpload = async () => {
@@ -45,24 +41,14 @@ const ProductImport = () => {
 
     const formData = new FormData();
     
-    // 根据导入类型选择不同的API端点和字段名
-    let apiEndpoint;
-    
-    if (importType === 'actuator') {
-      apiEndpoint = '/actuator-management/import-csv';
-      formData.append('file', fileList[0]);
-      formData.append('updateOnDuplicate', updateOnDuplicate.toString());
-    } else {
-      apiEndpoint = '/products/import';
-      // 支持多个文件上传
-      fileList.forEach(file => {
-        formData.append('productFiles', file);
-      });
-    }
+    // 产品数据导入 - 支持多个文件上传
+    fileList.forEach(file => {
+      formData.append('productFiles', file);
+    });
 
     setUploading(true);
     try {
-      const response = await api.post(apiEndpoint, formData, {
+      const response = await api.post('/products/import', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -89,8 +75,7 @@ const ProductImport = () => {
         
         // 如果完全成功（没有错误），显示简单成功消息
         if (formattedResult.errorCount === 0 && formattedResult.skippedCount === 0) {
-          const dataType = importType === 'actuator' ? '执行器' : '产品';
-          message.success(`成功导入 ${formattedResult.successCount} 条${dataType}数据！`);
+          message.success(`成功导入 ${formattedResult.successCount} 条产品数据！`);
         }
         
         // 清空文件列表
@@ -186,22 +171,16 @@ const ProductImport = () => {
         return Upload.LIST_IGNORE;
       }
 
-      // 产品导入支持多文件，执行器导入仅支持单文件
-      if (importType === 'actuator') {
-        setFileList([file]);
-      } else {
-        // 产品导入：检查是否已达到最大文件数
-        if (fileList.length >= 10) {
-          message.warning('最多只能选择10个文件');
-          return Upload.LIST_IGNORE;
-        }
-        setFileList(prevList => [...prevList, file]);
+      // 产品导入：检查是否已达到最大文件数
+      if (fileList.length >= 10) {
+        message.warning('最多只能选择10个文件');
+        return Upload.LIST_IGNORE;
       }
+      setFileList(prevList => [...prevList, file]);
       return false; // 阻止自动上传
     },
     fileList,
-    multiple: importType === 'product', // 产品导入允许多选
-    maxCount: importType === 'actuator' ? 1 : undefined, // 执行器限制1个，产品不限制（在beforeUpload中控制）
+    multiple: true, // 允许多选
     accept: '.csv,.xlsx,.xls', // 明确指定接受的文件类型
   };
 
@@ -218,130 +197,85 @@ const ProductImport = () => {
           {/* 标题 */}
           <div className="import-header">
             <FileExcelOutlined style={{ fontSize: 48, color: '#1890ff' }} />
-            <Title level={2}>数据批量导入</Title>
+            <Title level={2}>产品批量导入</Title>
             <Paragraph type="secondary">
-              支持执行器和产品数据批量导入，支持 CSV 和 XLSX 格式
+              支持产品数据批量导入，支持 CSV 和 XLSX 格式，可同时上传多个文件
             </Paragraph>
           </div>
 
           <Divider />
 
-          {/* 导入类型选择 */}
-          <Card size="small" className="import-type-card" style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Text strong>选择导入类型：</Text>
-              <Radio.Group value={importType} onChange={(e) => setImportType(e.target.value)}>
-                <Radio.Button value="actuator">执行器数据（AT/GY/SF系列）</Radio.Button>
-                <Radio.Button value="product">产品数据</Radio.Button>
-              </Radio.Group>
-              
-              {importType === 'actuator' && (
-                <Alert
-                  message="执行器CSV导入"
-                  description={
-                    <div>
-                      <p>支持AT/GY系列和SF系列执行器CSV文件直接导入</p>
-                      <p>• AT/GY格式：model_base, series, action_type, base_price_normal, torque_data, dimensions等</p>
-                      <p>• SF格式：model_base, body_size, cylinder_size, torque_symmetric, torque_canted等</p>
-                      <p>系统会自动识别系列类型并处理JSON字段</p>
-                    </div>
-                  }
-                  type="info"
-                  showIcon
-                  style={{ marginTop: 8 }}
-                />
-              )}
-            </Space>
-          </Card>
-
           {/* 使用说明 */}
           <Alert
             message="使用说明"
-              description={
-              importType === 'actuator' ? (
-                <div>
-                  <p>1. 准备好您的执行器CSV文件（AT/GY或SF格式）</p>
-                  <p>2. 直接上传CSV文件，无需修改格式</p>
-                  <p>3. 选择是否更新重复数据</p>
-                  <p>4. 系统会自动解析JSON字段并导入数据库</p>
-                </div>
-              ) : (
-                <div>
-                  <p>1. 下载标准数据模板（可选）</p>
-                  <p>2. 准备产品数据Excel/CSV文件（仅型号必填，其他字段可选）</p>
-                  <p>3. 支持同时上传多个文件（最多10个）进行批量导入</p>
-                  <p>4. 系统会自动验证数据并返回导入结果</p>
-                </div>
-              )
+            description={
+              <div>
+                <p>1. 下载标准数据模板（可选）</p>
+                <p>2. 准备产品数据Excel/CSV文件（仅型号必填，其他字段可选）</p>
+                <p>3. 支持同时上传多个文件（最多10个）进行批量导入</p>
+                <p>4. 系统会自动验证数据并返回导入结果</p>
+              </div>
             }
             type="info"
             icon={<InfoCircleOutlined />}
             showIcon
           />
 
-          {/* 模板下载区域 - 仅产品导入显示 */}
-          {importType === 'product' && (
-            <Card 
-              title="步骤 1: 下载数据模板" 
-              size="small" 
-              className="step-card"
-            >
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <Paragraph>
-                  请先下载标准数据模板，模板中包含所有必填字段和示例数据。
-                </Paragraph>
-                <Button
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  onClick={handleDownloadTemplate}
-                  size="large"
-                >
-                  下载产品导入模板
-                </Button>
-                <Text type="secondary">
-                  支持的文件格式: .csv, .xlsx, .xls | 最大文件大小: 10MB
-                </Text>
-              </Space>
-            </Card>
-          )}
-
-          {/* 文件上传区域 */}
+          {/* 模板下载区域 */}
           <Card 
-            title={importType === 'actuator' ? "选择并上传CSV文件" : "步骤 2: 选择并上传文件（支持多个文件）"} 
+            title="步骤 1: 下载数据模板" 
             size="small" 
             className="step-card"
           >
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              {importType === 'product' && (
-                <Alert
-                  message="💡 多文件上传提示"
-                  description={
-                    <div>
-                      <p><strong>方式1（推荐）：</strong>点击按钮后，按住 <kbd>Ctrl</kbd>（Windows）或 <kbd>⌘ Command</kbd>（Mac）键，同时点选多个文件</p>
-                      <p><strong>方式2：</strong>点击按钮选择第一个文件，然后再次点击按钮添加更多文件（最多10个）</p>
-                      <p><strong>方式3：</strong>直接将多个文件拖拽到上传区域</p>
-                    </div>
-                  }
-                  type="info"
-                  showIcon
-                  closable
-                  style={{ marginBottom: 16 }}
-                />
-              )}
+              <Paragraph>
+                请先下载标准数据模板，模板中包含所有必填字段和示例数据。
+              </Paragraph>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadTemplate}
+                size="large"
+              >
+                下载产品导入模板
+              </Button>
+              <Text type="secondary">
+                支持的文件格式: .csv, .xlsx, .xls | 最大文件大小: 10MB
+              </Text>
+            </Space>
+          </Card>
+
+          {/* 文件上传区域 */}
+          <Card 
+            title="步骤 2: 选择并上传文件（支持多个文件）" 
+            size="small" 
+            className="step-card"
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Alert
+                message="💡 多文件上传提示"
+                description={
+                  <div>
+                    <p><strong>方式1（推荐）：</strong>点击按钮后，按住 <kbd>Ctrl</kbd>（Windows）或 <kbd>⌘ Command</kbd>（Mac）键，同时点选多个文件</p>
+                    <p><strong>方式2：</strong>点击按钮选择第一个文件，然后再次点击按钮添加更多文件（最多10个）</p>
+                    <p><strong>方式3：</strong>直接将多个文件拖拽到上传区域</p>
+                  </div>
+                }
+                type="info"
+                showIcon
+                closable
+                style={{ marginBottom: 16 }}
+              />
               
               <Upload.Dragger {...uploadProps} style={{ padding: '20px' }}>
                 <p className="ant-upload-drag-icon">
                   <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
                 </p>
                 <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 500 }}>
-                  {importType === 'actuator' 
-                    ? '点击或拖拽文件到此区域上传' 
-                    : '点击或拖拽多个文件到此区域上传'}
+                  点击或拖拽多个文件到此区域上传
                 </p>
                 <p className="ant-upload-hint" style={{ fontSize: 14 }}>
-                  {importType === 'actuator' 
-                    ? '支持单个CSV或Excel文件' 
-                    : '💡 可同时选择多个文件（按住Ctrl/⌘键多选，或直接拖拽多个文件）'}
+                  💡 可同时选择多个文件（按住Ctrl/⌘键多选，或直接拖拽多个文件）
                 </p>
               </Upload.Dragger>
               
@@ -355,19 +289,6 @@ const ProductImport = () => {
                   type="success"
                   showIcon
                 />
-              )}
-
-              {/* 执行器导入的额外选项 */}
-              {importType === 'actuator' && (
-                <Checkbox
-                  checked={updateOnDuplicate}
-                  onChange={(e) => setUpdateOnDuplicate(e.target.checked)}
-                >
-                  <Space>
-                    <Text>更新重复数据</Text>
-                    <Text type="secondary">（勾选后将更新已存在的执行器，否则跳过）</Text>
-                  </Space>
-                </Checkbox>
               )}
 
               <Button
@@ -387,36 +308,22 @@ const ProductImport = () => {
           <Card title="字段说明" size="small" className="info-card">
             <Alert
               message="💡 灵活导入说明"
-              description={
-                importType === 'actuator' 
-                  ? "执行器导入支持AT/GY和SF两种格式的CSV文件，系统会自动识别并处理" 
-                  : "产品导入只要求型号必填，其他字段都是可选的。列名支持中英文，系统会自动识别（如：modelNumber、Model Number、型号）"
-              }
+              description="产品导入只要求型号必填，其他字段都是可选的。列名支持中英文，系统会自动识别（如：modelNumber、Model Number、型号）"
               type="success"
               showIcon
               style={{ marginBottom: 16 }}
             />
             <List
               size="small"
-              dataSource={
-                importType === 'actuator' ? [
-                  { label: 'model_base', required: true, desc: '执行器型号基础（如AT-SR52K8, SF10-150DA）' },
-                  { label: 'series', required: true, desc: '系列名称（AT, GY, SF）' },
-                  { label: 'action_type', required: true, desc: '作用类型（DA=双作用, SR=弹簧复位）' },
-                  { label: 'base_price_normal/low/high', required: true, desc: '价格（至少一个）' },
-                  { label: 'torque_data', required: false, desc: 'JSON格式扭矩数据，自动解析' },
-                  { label: 'dimensions', required: false, desc: 'JSON格式尺寸数据，自动解析' },
-                  { label: '其他字段', required: false, desc: '根据AT/GY或SF格式自动处理' },
-                ] : [
-                  { label: '型号 (modelNumber / Model Number / 型号)', required: true, desc: '产品型号，必须唯一 - 唯一必填字段！' },
-                  { label: '系列 (series / Series / 系列)', required: false, desc: '产品系列（可选，默认SF-Series）' },
-                  { label: '描述 (description / Description / 描述)', required: false, desc: '产品描述（可选，默认自动生成）' },
-                  { label: '扭矩值 (torqueValue / Torque (Nm) / 扭矩值)', required: false, desc: '额定扭矩 (Nm)（可选）' },
-                  { label: '工作压力 (operatingPressure / Pressure (bar) / 工作压力)', required: false, desc: '工作压力 (bar)（可选）' },
-                  { label: '基础价格 (basePrice / Base Price / Price / 价格)', required: false, desc: '产品价格（可选）' },
-                  { label: '其他字段', required: false, desc: '所有其他字段均可选，列名支持中英文，系统自动识别' },
-                ]
-              }
+              dataSource={[
+                { label: '型号 (modelNumber / Model Number / 型号)', required: true, desc: '产品型号，必须唯一 - 唯一必填字段！' },
+                { label: '系列 (series / Series / 系列)', required: false, desc: '产品系列（可选，默认SF-Series）' },
+                { label: '描述 (description / Description / 描述)', required: false, desc: '产品描述（可选，默认自动生成）' },
+                { label: '扭矩值 (torqueValue / Torque (Nm) / 扭矩值)', required: false, desc: '额定扭矩 (Nm)（可选）' },
+                { label: '工作压力 (operatingPressure / Pressure (bar) / 工作压力)', required: false, desc: '工作压力 (bar)（可选）' },
+                { label: '基础价格 (basePrice / Base Price / Price / 价格)', required: false, desc: '产品价格（可选）' },
+                { label: '其他字段', required: false, desc: '所有其他字段均可选，列名支持中英文，系统自动识别' },
+              ]}
               renderItem={item => (
                 <List.Item>
                   <Space>
