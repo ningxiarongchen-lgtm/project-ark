@@ -273,6 +273,22 @@ exports.getProductTemplate = async (req, res) => {
         'materialPiston': 'Aluminum Alloy',
         'materialSeal': 'NBR',
         'cycleLife': 1000000,
+        // 🔧 阀门连接尺寸 - 法兰尺寸
+        'flangeStandard': 'ISO 5211 F07',
+        'flangeD': 70,
+        'flangeA': 36,
+        'flangeC': 50,
+        'flangeF': 30,
+        'flangeThreadSpec': '4-M8',
+        'flangeThreadDepth': 16,
+        // 🔧 阀门连接尺寸 - 气动连接
+        'pneumaticSize': 'NPT1/4"',
+        'pneumaticH2': 20,
+        // 🔧 阀门连接尺寸 - 顶部安装
+        'topMountingStandard': 'NAMUR VDI/VDE 3845',
+        'topMountingL': 50,
+        'topMountingH1': 80,
+        'topMountingH': 100,
         'basePrice': 450.00,
         'currency': 'USD',
         'inStock': true,
@@ -304,6 +320,22 @@ exports.getProductTemplate = async (req, res) => {
         'materialPiston': 'Aluminum Alloy',
         'materialSeal': 'NBR',
         'cycleLife': 1000000,
+        // 🔧 阀门连接尺寸 - 法兰尺寸
+        'flangeStandard': 'ISO 5211 F10',
+        'flangeD': 100,
+        'flangeA': 50,
+        'flangeC': 70,
+        'flangeF': 40,
+        'flangeThreadSpec': '4-M10',
+        'flangeThreadDepth': 18,
+        // 🔧 阀门连接尺寸 - 气动连接
+        'pneumaticSize': 'NPT1/4"',
+        'pneumaticH2': 25,
+        // 🔧 阀门连接尺寸 - 顶部安装
+        'topMountingStandard': 'NAMUR VDI/VDE 3845',
+        'topMountingL': 60,
+        'topMountingH1': 100,
+        'topMountingH': 120,
         'basePrice': 680.00,
         'currency': 'USD',
         'inStock': true,
@@ -438,6 +470,37 @@ exports.bulkImportProducts = async (req, res) => {
                          parseFloat(row.height || row['Height (mm)'] || row['高度']) : undefined,
                   weight: row.weight || row['Weight (kg)'] || row['重量'] ? 
                          parseFloat(row.weight || row['Weight (kg)'] || row['重量']) : undefined
+                },
+                // 🔧 阀门连接尺寸
+                valveConnection: {
+                  flange: {
+                    standard: row.flangeStandard || row['Flange Standard'] || row['法兰标准'] || undefined,
+                    D: row.flangeD || row['Flange D'] || row['法兰D'] ? 
+                       parseFloat(row.flangeD || row['Flange D'] || row['法兰D']) : undefined,
+                    A: row.flangeA || row['Flange A'] || row['法兰A'] ? 
+                       parseFloat(row.flangeA || row['Flange A'] || row['法兰A']) : undefined,
+                    C: row.flangeC || row['Flange C'] || row['法兰C'] ? 
+                       parseFloat(row.flangeC || row['Flange C'] || row['法兰C']) : undefined,
+                    F: row.flangeF || row['Flange F'] || row['法兰F'] ? 
+                       parseFloat(row.flangeF || row['Flange F'] || row['法兰F']) : undefined,
+                    threadSpec: row.flangeThreadSpec || row['Flange Thread Spec'] || row['法兰螺纹'] || undefined,
+                    threadDepth: row.flangeThreadDepth || row['Flange Thread Depth'] || row['法兰螺纹深度'] ? 
+                                parseFloat(row.flangeThreadDepth || row['Flange Thread Depth'] || row['法兰螺纹深度']) : undefined
+                  },
+                  pneumatic: {
+                    size: row.pneumaticSize || row['Pneumatic Size'] || row['气动接口'] || undefined,
+                    h2: row.pneumaticH2 || row['Pneumatic H2'] || row['气动高度'] ? 
+                        parseFloat(row.pneumaticH2 || row['Pneumatic H2'] || row['气动高度']) : undefined
+                  },
+                  topMounting: {
+                    standard: row.topMountingStandard || row['Top Mounting Standard'] || row['顶部安装标准'] || undefined,
+                    L: row.topMountingL || row['Top Mounting L'] || row['顶部安装L'] ? 
+                       parseFloat(row.topMountingL || row['Top Mounting L'] || row['顶部安装L']) : undefined,
+                    h1: row.topMountingH1 || row['Top Mounting H1'] || row['顶部安装H1'] ? 
+                        parseFloat(row.topMountingH1 || row['Top Mounting H1'] || row['顶部安装H1']) : undefined,
+                    H: row.topMountingH || row['Top Mounting H'] || row['顶部安装H'] ? 
+                       parseFloat(row.topMountingH || row['Top Mounting H'] || row['顶部安装H']) : undefined
+                  }
                 },
                 portSize: row.portSize || row['Port Size'] || row['接口尺寸'] || undefined,
                 mountingType: row.mountingType || row['Mounting Type'] || row['安装类型'] || undefined,

@@ -55,6 +55,32 @@ const productSchema = new mongoose.Schema({
       weight: { type: Number } // kg
     },
     
+    // 🔧 阀门连接尺寸（Valve Connection Dimensions）
+    valveConnection: {
+      // 法兰尺寸 (Flange Dimensions)
+      flange: {
+        standard: { type: String }, // 例如: 'ISO 5211 F07', 'ISO 5211 F10'
+        D: { type: Number },        // 法兰直径 (mm)
+        A: { type: Number },        // 方口尺寸 (mm)
+        C: { type: Number },        // 中心孔直径 (mm)
+        F: { type: Number },        // 定位孔间距 (mm)
+        threadSpec: { type: String }, // 螺纹规格，例如: '4-M8', '4-M10'
+        threadDepth: { type: Number } // 螺纹深度 (mm)
+      },
+      // 气动连接尺寸 (Pneumatic Connection)
+      pneumatic: {
+        size: { type: String },  // 例如: 'NPT1/4"', 'G1/4'
+        h2: { type: Number }     // 连接高度 (mm)
+      },
+      // 顶部安装尺寸 (Top Mounting Dimensions)
+      topMounting: {
+        standard: { type: String }, // 例如: 'NAMUR VDI/VDE 3845'
+        L: { type: Number },        // 安装距离 (mm)
+        h1: { type: Number },       // 安装孔位置 (mm)
+        H: { type: Number }         // 总高度 (mm)
+      }
+    },
+    
     // Port specifications
     portSize: {
       type: String,
