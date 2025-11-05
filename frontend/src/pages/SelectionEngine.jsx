@@ -540,12 +540,11 @@ const SelectionEngine = () => {
                           label="阀门类型"
                           name="valve_type"
                           rules={[{ required: true, message: '请选择阀门类型' }]}
-                          tooltip="齿轮齿条式执行器适用于直行程阀门"
+                          tooltip="齿轮齿条式执行器适用于旋转型阀门（球阀、蝶阀）"
                         >
                           <Select placeholder="选择阀门类型">
-                            <Select.Option value="Gate Valve">闸阀 (Gate Valve)</Select.Option>
-                            <Select.Option value="Globe Valve">截止阀 (Globe Valve)</Select.Option>
-                            <Select.Option value="Control Valve">直行程调节阀 (Linear Control Valve)</Select.Option>
+                            <Select.Option value="Ball Valve">球阀 (Ball Valve)</Select.Option>
+                            <Select.Option value="Butterfly Valve">蝶阀 (Butterfly Valve)</Select.Option>
                           </Select>
                         </Form.Item>
                       ) : null
@@ -1311,18 +1310,9 @@ const SelectionEngine = () => {
             onChange={(value) => handleBatchDataChange(record.key, 'valve_type', value)}
             style={{ width: '140px' }}
           >
-            {record.mechanism === 'Scotch Yoke' ? (
-              <>
-                <Select.Option value="Ball Valve">球阀</Select.Option>
-                <Select.Option value="Butterfly Valve">蝶阀</Select.Option>
-              </>
-            ) : (
-              <>
-                <Select.Option value="Gate Valve">闸阀</Select.Option>
-                <Select.Option value="Globe Valve">截止阀</Select.Option>
-                <Select.Option value="Control Valve">调节阀(直行程)</Select.Option>
-              </>
-            )}
+            {/* 所有执行器类型都只支持旋转型阀门 */}
+            <Select.Option value="Ball Valve">球阀</Select.Option>
+            <Select.Option value="Butterfly Valve">蝶阀</Select.Option>
           </Select>
         )
       },
