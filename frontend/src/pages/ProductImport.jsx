@@ -113,8 +113,26 @@ const ProductImport = () => {
         responseType: 'blob'
       });
       
+      // 检查响应类型，确保是Excel文件而不是HTML
+      const contentType = response.headers['content-type'];
+      
+      if (contentType && contentType.includes('text/html')) {
+        // 如果返回的是HTML，说明可能是错误页面或需要登录
+        const text = await response.data.text();
+        console.error('Received HTML instead of Excel:', text.substring(0, 200));
+        message.error('下载失败：服务器返回了错误页面，请确保已登录并有权限访问');
+        return;
+      }
+      
+      // 验证是否真的是Excel文件
+      if (!contentType || !contentType.includes('spreadsheet')) {
+        console.warn('Unexpected content type:', contentType);
+      }
+      
       // 创建下载链接
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', 'product_import_template.xlsx');
@@ -126,7 +144,15 @@ const ProductImport = () => {
       message.success('模板下载成功！');
     } catch (error) {
       console.error('Template download error:', error);
-      message.error('模板下载失败：' + (error.response?.data?.message || error.message));
+      
+      // 如果是认证错误
+      if (error.response?.status === 401) {
+        message.error('请先登录后再下载模板');
+      } else if (error.response?.status === 403) {
+        message.error('没有权限下载模板，此功能仅限管理员和技术工程师');
+      } else {
+        message.error('模板下载失败：' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
