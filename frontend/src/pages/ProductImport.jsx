@@ -312,11 +312,38 @@ const ProductImport = () => {
             className="step-card"
           >
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Upload {...uploadProps}>
-                <Button icon={<UploadOutlined />} size="large">
-                  {importType === 'actuator' ? '选择文件（CSV/Excel）' : '选择文件（可多选，CSV/Excel）'}
-                </Button>
-              </Upload>
+              {importType === 'product' && (
+                <Alert
+                  message="💡 多文件上传提示"
+                  description={
+                    <div>
+                      <p><strong>方式1（推荐）：</strong>点击按钮后，按住 <kbd>Ctrl</kbd>（Windows）或 <kbd>⌘ Command</kbd>（Mac）键，同时点选多个文件</p>
+                      <p><strong>方式2：</strong>点击按钮选择第一个文件，然后再次点击按钮添加更多文件（最多10个）</p>
+                      <p><strong>方式3：</strong>直接将多个文件拖拽到上传区域</p>
+                    </div>
+                  }
+                  type="info"
+                  showIcon
+                  closable
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+              
+              <Upload.Dragger {...uploadProps} style={{ padding: '20px' }}>
+                <p className="ant-upload-drag-icon">
+                  <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+                </p>
+                <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 500 }}>
+                  {importType === 'actuator' 
+                    ? '点击或拖拽文件到此区域上传' 
+                    : '点击或拖拽多个文件到此区域上传'}
+                </p>
+                <p className="ant-upload-hint" style={{ fontSize: 14 }}>
+                  {importType === 'actuator' 
+                    ? '支持单个CSV或Excel文件' 
+                    : '💡 可同时选择多个文件（按住Ctrl/⌘键多选，或直接拖拽多个文件）'}
+                </p>
+              </Upload.Dragger>
               
               {fileList.length > 0 && (
                 <Alert
@@ -358,6 +385,17 @@ const ProductImport = () => {
 
           {/* 字段说明 */}
           <Card title="字段说明" size="small" className="info-card">
+            <Alert
+              message="💡 灵活导入说明"
+              description={
+                importType === 'actuator' 
+                  ? "执行器导入支持AT/GY和SF两种格式的CSV文件，系统会自动识别并处理" 
+                  : "产品导入只要求型号必填，其他字段都是可选的。列名支持中英文，系统会自动识别（如：modelNumber、Model Number、型号）"
+              }
+              type="success"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
             <List
               size="small"
               dataSource={
@@ -370,12 +408,13 @@ const ProductImport = () => {
                   { label: 'dimensions', required: false, desc: 'JSON格式尺寸数据，自动解析' },
                   { label: '其他字段', required: false, desc: '根据AT/GY或SF格式自动处理' },
                 ] : [
-                  { label: '型号 (modelNumber)', required: true, desc: '产品型号，必须唯一（唯一必填字段）' },
-                  { label: '描述 (description)', required: false, desc: '产品描述信息（可选，默认自动生成）' },
-                  { label: '扭矩值 (torqueValue)', required: false, desc: '额定扭矩 (Nm)（可选）' },
-                  { label: '工作压力 (operatingPressure)', required: false, desc: '工作压力 (bar)（可选）' },
-                  { label: '基础价格 (basePrice)', required: false, desc: '产品基础价格（可选）' },
-                  { label: '其他字段', required: false, desc: '所有其他字段均为可选，详见模板' },
+                  { label: '型号 (modelNumber / Model Number / 型号)', required: true, desc: '产品型号，必须唯一 - 唯一必填字段！' },
+                  { label: '系列 (series / Series / 系列)', required: false, desc: '产品系列（可选，默认SF-Series）' },
+                  { label: '描述 (description / Description / 描述)', required: false, desc: '产品描述（可选，默认自动生成）' },
+                  { label: '扭矩值 (torqueValue / Torque (Nm) / 扭矩值)', required: false, desc: '额定扭矩 (Nm)（可选）' },
+                  { label: '工作压力 (operatingPressure / Pressure (bar) / 工作压力)', required: false, desc: '工作压力 (bar)（可选）' },
+                  { label: '基础价格 (basePrice / Base Price / Price / 价格)', required: false, desc: '产品价格（可选）' },
+                  { label: '其他字段', required: false, desc: '所有其他字段均可选，列名支持中英文，系统自动识别' },
                 ]
               }
               renderItem={item => (

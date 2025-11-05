@@ -381,7 +381,7 @@ exports.bulkImportProducts = async (req, res) => {
           try {
             // Validate required fields - 只有型号是必填的
             if (!row.modelNumber && !row['Model Number'] && !row['型号']) {
-              results.errors.push(`${file.originalname} 第${rowNumber}行: 缺少必填字段（型号、modelNumber、描述、扭矩或价格）`);
+              results.errors.push(`${file.originalname} 第${rowNumber}行: 缺少必填字段"型号"（列名可以是：modelNumber、Model Number 或 型号）`);
               results.errorCount++;
               continue;
             }
