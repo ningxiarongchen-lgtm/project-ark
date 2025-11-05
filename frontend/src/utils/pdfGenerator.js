@@ -324,9 +324,9 @@ export const generateSelectionSpecPDF = (selection, project) => {
   
   let yPos = 70
   const projectInfo = [
-    ['Project Number:', project?.project_number || '-'],
-    ['Project Name:', project?.project_name || '-'],
-    ['Client:', project?.client_name || '-'],
+    ['Project Number:', project?.projectNumber || project?.project_number || '-'],
+    ['Project Name:', project?.projectName || project?.project_name || '-'],
+    ['Client:', project?.client?.name || project?.client_name || '-'],
     ['Tag Number:', selection.tag_number || '-'],
     ['Date:', new Date().toLocaleDateString()],
   ]
@@ -578,8 +578,8 @@ export const generateSelectionQuotePDF = (selection, project) => {
   const quoteInfo = [
     ['Quote Date:', new Date().toLocaleDateString()],
     ['Valid Until:', new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString()],
-    ['Project:', project?.project_name || '-'],
-    ['Project No.:', project?.project_number || '-'],
+    ['Project:', project?.projectName || project?.project_name || '-'],
+    ['Project No.:', project?.projectNumber || project?.project_number || '-'],
   ]
   
   // 如果使用单个选型，显示位号；如果使用优化BOM，显示优化标记
@@ -604,9 +604,9 @@ export const generateSelectionQuotePDF = (selection, project) => {
   
   let clientY = 67
   const clientInfo = [
-    project?.client_name || '-',
-    project?.client_contact?.company || '',
-    project?.client_contact?.contact_person || '',
+    project?.client?.name || project?.client_name || '-',
+    project?.client?.company || project?.client_contact?.company || '',
+    project?.client?.contact || project?.client_contact?.contact_person || '',
     project?.client_contact?.email || '',
     project?.client_contact?.phone || '',
   ].filter(Boolean)

@@ -77,12 +77,6 @@ const menuConfig = [
     icon: <ProjectOutlined />,
     roles: ['Technical Engineer', 'Business Engineer', 'Sales Manager'],  // 移除 Administrator
   },
-  {
-    key: '/selection-engine',
-    label: '智慧选型',
-    icon: <ThunderboltOutlined />,
-    roles: ['Technical Engineer'],  // 只有技术工程师可用，移除 Business Engineer
-  },
   // 💰 商务工程师专属菜单
   {
     key: '/finance',

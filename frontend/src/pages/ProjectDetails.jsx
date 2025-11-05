@@ -3428,17 +3428,28 @@ const ProjectDetails = () => {
                         <Col xs={24} lg={16}>
                           <div style={{ marginBottom: 16 }}>
                             <Space wrap>
-                              {/* 新增选型按钮 - 技术工程师在技术清单标签页 */}
+                              {/* 批量智能选型按钮 - 推荐使用 */}
                               <Button
                                 type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={() => navigate(`/selection-engine?projectId=${project._id}`)}
+                                size="large"
+                                icon={<ThunderboltOutlined />}
+                                onClick={() => navigate(`/batch-selection?projectId=${project._id}`)}
                                 style={{
-                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                  border: 'none'
+                                  background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
+                                  border: 'none',
+                                  fontWeight: 'bold'
                                 }}
                               >
-                                新增选型
+                                🚀 批量智能选型
+                              </Button>
+                              
+                              {/* 新增选型按钮 - 技术工程师在技术清单标签页 */}
+                              <Button
+                                type="default"
+                                icon={<PlusOutlined />}
+                                onClick={() => navigate(`/selection-engine?projectId=${project._id}`)}
+                              >
+                                单个选型
                               </Button>
                               
                               <Button

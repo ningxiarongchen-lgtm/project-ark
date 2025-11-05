@@ -51,8 +51,8 @@ const Projects = () => {
     // 搜索过滤
     if (searchText) {
       const filtered = projects.filter(project => 
-        project.project_name?.toLowerCase().includes(searchText.toLowerCase()) ||
-        project.client_name?.toLowerCase().includes(searchText.toLowerCase())
+        (project.projectName || project.project_name)?.toLowerCase().includes(searchText.toLowerCase()) ||
+        (project.client?.name || project.client_name)?.toLowerCase().includes(searchText.toLowerCase())
       )
       setFilteredProjects(filtered)
     } else {
@@ -222,8 +222,8 @@ const Projects = () => {
   const columns = [
     {
       title: '项目名称',
-      dataIndex: 'project_name',
-      key: 'project_name',
+      dataIndex: 'projectName',
+      key: 'projectName',
       render: (text, record) => (
         <Button 
           type="link" 
@@ -236,9 +236,9 @@ const Projects = () => {
     },
     {
       title: '客户名称',
-      dataIndex: 'client_name',
-      key: 'client_name',
-      render: (text) => text || '-',
+      dataIndex: ['client', 'name'],
+      key: 'clientName',
+      render: (text, record) => record.client?.name || record.client_name || '-',
     },
     {
       title: '选型数量',
@@ -468,7 +468,7 @@ const Projects = () => {
         >
           <Form.Item
             label="项目名称"
-            name="project_name"
+            name="projectName"
             rules={[{ required: true, message: '请输入项目名称' }]}
           >
             <Input placeholder="输入项目名称" />
@@ -476,7 +476,7 @@ const Projects = () => {
 
           <Form.Item
             label="客户名称"
-            name="client_name"
+            name={['client', 'name']}
           >
             <Input placeholder="输入客户名称（可选）" />
           </Form.Item>

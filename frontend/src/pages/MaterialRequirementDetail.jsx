@@ -451,10 +451,10 @@ const MaterialRequirementDetail = () => {
           </Descriptions.Item>
           
           <Descriptions.Item label="客户" span={2}>
-            {requirement.production_order_snapshot?.client_name || '-'}
+            {requirement.production_order_snapshot?.client?.name || requirement.production_order_snapshot?.client_name || '-'}
           </Descriptions.Item>
           <Descriptions.Item label="项目名称">
-            {requirement.production_order_snapshot?.project_name || '-'}
+            {requirement.production_order_snapshot?.projectName || requirement.production_order_snapshot?.project_name || '-'}
           </Descriptions.Item>
           
           <Descriptions.Item label="要求到货日期" span={2}>

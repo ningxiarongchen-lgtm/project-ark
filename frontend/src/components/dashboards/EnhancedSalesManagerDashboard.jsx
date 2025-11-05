@@ -136,14 +136,16 @@ const EnhancedSalesManagerDashboard = () => {
     },
     {
       title: '项目名称',
-      dataIndex: 'project_name',
-      key: 'project_name',
+      dataIndex: 'projectName',
+      key: 'projectName',
+      render: (text, record) => text || record.project_name,
       ellipsis: true
     },
     {
       title: '客户',
-      dataIndex: 'client_name',
-      key: 'client_name',
+      dataIndex: ['client', 'name'],
+      key: 'clientName',
+      render: (text, record) => record.client?.name || record.client_name || '-',
       width: 150,
       ellipsis: true
     },
@@ -414,14 +416,14 @@ const EnhancedSalesManagerDashboard = () => {
                         avatar={<Avatar style={{ backgroundColor: '#52c41a' }}>{project.project_number?.slice(-2)}</Avatar>}
                         title={
                           <Space>
-                            <span>{project.project_name}</span>
+                            <span>{project.projectName || project.project_name}</span>
                             <Tag color="green">已报价</Tag>
                           </Space>
                         }
                         description={
                           <Space split={<Divider type="vertical" />}>
-                            <span>客户: {project.client_name}</span>
-                            <span>编号: {project.project_number}</span>
+                            <span>客户: {project.client?.name || project.client_name || '-'}</span>
+                            <span>编号: {project.projectNumber || project.project_number}</span>
                             <span>创建: {project.createdAt ? dayjs(project.createdAt).format('MM-DD') : '-'}</span>
                           </Space>
                         }

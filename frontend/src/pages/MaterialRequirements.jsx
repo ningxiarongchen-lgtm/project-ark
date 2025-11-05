@@ -183,9 +183,9 @@ const MaterialRequirements = () => {
       width: 180,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
-          <span>{record.production_order_snapshot?.client_name || '-'}</span>
+          <span>{record.production_order_snapshot?.client?.name || record.production_order_snapshot?.client_name || '-'}</span>
           <span style={{ fontSize: '12px', color: '#999' }}>
-            {record.production_order_snapshot?.project_name || '-'}
+            {record.production_order_snapshot?.projectName || record.production_order_snapshot?.project_name || '-'}
           </span>
         </Space>
       )

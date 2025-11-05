@@ -148,8 +148,8 @@ const PendingFinalPaymentWidget = () => {
                 <List.Item.Meta
                   title={
                     <Space>
-                      <Text strong>{project.project_name}</Text>
-                      <Tag color="blue">{project.project_number}</Tag>
+                      <Text strong>{project.projectName || project.project_name}</Text>
+                      <Tag color="blue">{project.projectNumber || project.project_number}</Tag>
                       <Tag color="green" icon={<CheckCircleOutlined />}>
                         质检已合格
                       </Tag>
@@ -158,7 +158,7 @@ const PendingFinalPaymentWidget = () => {
                   description={
                     <Space direction="vertical" size={0}>
                       <Text type="secondary">
-                        客户：{project.client_name || '未填写'}
+                        客户：{project.client?.name || project.client_name || '未填写'}
                       </Text>
                       <Text type="secondary">
                         尾款金额：
@@ -199,15 +199,15 @@ const PendingFinalPaymentWidget = () => {
             <div>
               <Paragraph>
                 <Text strong>项目名称：</Text>
-                {selectedProject.project_name}
+                {selectedProject.projectName || selectedProject.project_name}
               </Paragraph>
               <Paragraph>
                 <Text strong>项目编号：</Text>
-                {selectedProject.project_number}
+                {selectedProject.projectNumber || selectedProject.project_number}
               </Paragraph>
               <Paragraph>
                 <Text strong>客户名称：</Text>
-                {selectedProject.client_name || '未填写'}
+                {selectedProject.client?.name || selectedProject.client_name || '未填写'}
               </Paragraph>
               <Paragraph>
                 <Text strong>尾款金额：</Text>

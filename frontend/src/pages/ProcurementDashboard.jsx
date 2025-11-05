@@ -382,7 +382,7 @@ const ProcurementDashboard = () => {
                     description={
                       <Space direction="vertical" size={4}>
                         <span>
-                          项目：{item.production_order_snapshot?.client_name} - {item.production_order_snapshot?.project_name}
+                          项目：{item.production_order_snapshot?.client?.name || item.production_order_snapshot?.client_name} - {item.production_order_snapshot?.projectName || item.production_order_snapshot?.project_name}
                         </span>
                         <Space>
                           <span>物料数：{item.statistics?.total_items || 0} 项</span>
@@ -445,7 +445,7 @@ const ProcurementDashboard = () => {
                     description={
                       <Space direction="vertical" size={4}>
                         <span>
-                          项目：{item.production_order_snapshot?.client_name} - {item.production_order_snapshot?.project_name}
+                          项目：{item.production_order_snapshot?.client?.name || item.production_order_snapshot?.client_name} - {item.production_order_snapshot?.projectName || item.production_order_snapshot?.project_name}
                         </span>
                         <Space>
                           <span>进度：{completed}/{total} ({percentage}%)</span>

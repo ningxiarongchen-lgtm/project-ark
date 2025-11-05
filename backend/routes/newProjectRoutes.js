@@ -23,7 +23,8 @@ const {
   addQuotationBomItem,
   deleteQuotationBomItem,
   confirmFinalPayment,
-  getPendingFinalPaymentProjects
+  getPendingFinalPaymentProjects,
+  batchAddTechnicalItems
 } = require('../controllers/newProjectController');
 const { protect, authorize } = require('../middleware/auth');
 const { checkProjectOwnership } = require('../middleware/ownership');
@@ -68,6 +69,9 @@ router.delete('/:id/files/:fileId', authorize('Technical Engineer', 'Business En
 router.post('/:id/submit-technical-list', authorize('Technical Engineer', 'Administrator'), checkProjectOwnership, submitTechnicalList);
 router.post('/:id/reject-technical-list', authorize('Business Engineer', 'Administrator'), checkProjectOwnership, rejectTechnicalList);
 router.post('/:id/respond-modification', authorize('Technical Engineer', 'Administrator'), checkProjectOwnership, respondToModification);
+
+// 🚀 批量添加技术清单
+router.post('/:id/batch-add-technical-items', authorize('Technical Engineer', 'Administrator'), checkProjectOwnership, batchAddTechnicalItems);
 router.post('/:id/confirm-technical-version', authorize('Business Engineer', 'Administrator'), checkProjectOwnership, confirmTechnicalVersion);
 router.get('/:id/technical-versions', getTechnicalVersions);
 router.get('/:id/modification-requests', getModificationRequests);

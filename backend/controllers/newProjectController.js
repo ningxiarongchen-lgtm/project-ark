@@ -530,6 +530,78 @@ exports.getProjectStats = async (req, res) => {
   }
 };
 
+// 🚀 ========== 批量添加技术清单 ==========
+
+// @desc    批量添加技术清单项目（用于批量选型）
+// @route   POST /api/new-projects/:id/batch-add-technical-items
+// @access  Private (Technical Engineer only)
+exports.batchAddTechnicalItems = async (req, res) => {
+  try {
+    const { items } = req.body;
+    
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供有效的技术清单项目数组'
+      });
+    }
+    
+    const project = await NewProject.findById(req.params.id);
+    
+    if (!project) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到指定的项目'
+      });
+    }
+    
+    // 权限检查：只有技术工程师可以添加
+    if (req.user.role !== 'Technical Engineer' && req.user.role !== 'Administrator') {
+      return res.status(403).json({
+        success: false,
+        message: '只有技术工程师可以添加技术清单项目'
+      });
+    }
+    
+    // 初始化technical_item_list（如果不存在）
+    if (!project.technical_item_list) {
+      project.technical_item_list = [];
+    }
+    
+    // 添加所有项目到技术清单
+    items.forEach(item => {
+      project.technical_item_list.push({
+        tag: item.tag || '',
+        model_name: item.model_name,
+        quantity: item.quantity || 1,
+        description: item.description || '',
+        technical_specs: item.technical_specs || {},
+        notes: item.notes || '',
+        added_at: new Date()
+      });
+    });
+    
+    await project.save();
+    
+    res.json({
+      success: true,
+      message: `成功添加 ${items.length} 个技术清单项目`,
+      data: {
+        projectId: project._id,
+        addedCount: items.length,
+        totalItems: project.technical_item_list.length
+      }
+    });
+  } catch (error) {
+    console.error('批量添加技术清单失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '批量添加技术清单失败',
+      error: error.message
+    });
+  }
+};
+
 // 🔒 ========== 技术清单版本管理 API ==========
 
 // @desc    技术工程师提交技术清单（锁定版本）

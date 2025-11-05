@@ -230,7 +230,10 @@ export const projectsAPI = {
   
   // 💰 款到发货流程 - 尾款确认
   getPendingFinalPayment: () => api.get('/new-projects/pending-final-payment'),
-  confirmFinalPayment: (id, data) => api.post(`/new-projects/${id}/confirm-final-payment`, data)
+  confirmFinalPayment: (id, data) => api.post(`/new-projects/${id}/confirm-final-payment`, data),
+  
+  // 🚀 批量添加技术清单
+  batchAddTechnicalItems: (id, items) => api.post(`/new-projects/${id}/batch-add-technical-items`, { items })
 }
 
 // ==================== 旧的 Products/Accessories API（向后兼容）====================

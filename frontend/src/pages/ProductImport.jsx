@@ -143,31 +143,40 @@ const ProductImport = () => {
       const isExcel = 
         file.type === 'application/vnd.ms-excel' ||
         file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.type === 'text/csv';
+        file.type === 'text/csv' ||
+        file.name.endsWith('.csv') ||
+        file.name.endsWith('.xlsx') ||
+        file.name.endsWith('.xls');
       
       if (!isExcel) {
         message.error('只支持 Excel 文件格式 (.xlsx, .xls, .csv)');
-        return false;
+        return Upload.LIST_IGNORE; // 使用 Upload.LIST_IGNORE 而不是 false
       }
 
       // 验证文件大小 (最大 10MB)
       const isLt10M = file.size / 1024 / 1024 < 10;
       if (!isLt10M) {
         message.error('文件大小不能超过 10MB');
-        return false;
+        return Upload.LIST_IGNORE;
       }
 
       // 产品导入支持多文件，执行器导入仅支持单文件
       if (importType === 'actuator') {
         setFileList([file]);
       } else {
+        // 产品导入：检查是否已达到最大文件数
+        if (fileList.length >= 10) {
+          message.warning('最多只能选择10个文件');
+          return Upload.LIST_IGNORE;
+        }
         setFileList(prevList => [...prevList, file]);
       }
       return false; // 阻止自动上传
     },
     fileList,
     multiple: importType === 'product', // 产品导入允许多选
-    maxCount: importType === 'actuator' ? 1 : 10, // 执行器限制1个，产品最多10个
+    maxCount: importType === 'actuator' ? 1 : undefined, // 执行器限制1个，产品不限制（在beforeUpload中控制）
+    accept: '.csv,.xlsx,.xls', // 明确指定接受的文件类型
   };
 
   // 关闭结果模态框

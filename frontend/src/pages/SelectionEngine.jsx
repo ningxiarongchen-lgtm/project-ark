@@ -56,9 +56,15 @@ const SelectionEngine = () => {
   const fetchProject = async (id) => {
     try {
       const response = await projectsAPI.getById(id)
-      setCurrentProject(response.data)
+      console.log('📋 获取到项目信息:', response.data)
+      // 处理API返回格式：可能是 { success: true, data: project } 或直接是 project
+      const projectData = response.data.data || response.data
+      console.log('📋 处理后的项目数据:', projectData)
+      setCurrentProject(projectData)
+      // 不显示加载成功提示，避免打扰用户
     } catch (error) {
-      message.error('获取项目信息失败')
+      console.error('获取项目信息失败:', error)
+      message.error('获取项目信息失败: ' + (error.response?.data?.message || error.message))
     }
   }
 
@@ -206,10 +212,37 @@ const SelectionEngine = () => {
       }
 
       await projectsAPI.autoSelect(currentProject._id, selectionData)
-      message.success(`已保存到项目（包含 ${selectedAccessories.length} 个配件）`)
+      
+      // 保存成功提示，并提供跳转选项
+      Modal.success({
+        title: '选型结果已保存',
+        content: (
+          <div>
+            <p>已成功保存到项目 <strong>{currentProject.projectName}</strong></p>
+            <p>• 执行器: {selectedActuator.model_base}</p>
+            {selectedOverride && <p>• 手动操作装置: {selectedOverride.model}</p>}
+            <p>• 配件: {selectedAccessories.length} 个</p>
+          </div>
+        ),
+        okText: '返回项目详情',
+        cancelText: '继续选型',
+        okCancel: true,
+        onOk: () => {
+          navigate(`/projects/${currentProject._id}?tab=technical`)
+        },
+        onCancel: () => {
+          // 重置表单继续选型
+          form.resetFields()
+          setResults([])
+          setSelectedActuator(null)
+          setSelectedOverride(null)
+          setSelectedAccessories([])
+        }
+      })
+      
       setSaveToProjectModal(false)
       
-      // 重置表单和结果
+      // 重置表单和结果（如果用户选择继续选型）
       form.resetFields()
       setResults([])
       setSelectedActuator(null)
@@ -356,7 +389,7 @@ const SelectionEngine = () => {
             <div>
               <div>✅ 成功保存 {successCount} 个选型结果到项目</div>
               <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                💡 提示：您可以继续添加更多选型，或者点击"保存并提交报价"完成选型工作
+                💡 提示：您可以继续添加更多选型，或者点击「保存并提交报价」完成选型工作
               </div>
             </div>
           ),
@@ -389,13 +422,25 @@ const SelectionEngine = () => {
                 <div>
                   <Text type="secondary">项目名称：</Text>
                   <br />
-                  <Text strong>{currentProject.project_name}</Text>
+                  <Text strong>{currentProject.projectName}</Text>
+                </div>
+                <div>
+                  <Text type="secondary">项目编号：</Text>
+                  <br />
+                  <Text>{currentProject.projectNumber || '-'}</Text>
                 </div>
                 <div>
                   <Text type="secondary">客户名称：</Text>
                   <br />
-                  <Text>{currentProject.client_name || '-'}</Text>
+                  <Text>{currentProject.client?.name || '-'}</Text>
                 </div>
+                {currentProject.client?.company && (
+                  <div>
+                    <Text type="secondary">公司：</Text>
+                    <br />
+                    <Text>{currentProject.client.company}</Text>
+                  </div>
+                )}
                 <Divider style={{ margin: '8px 0' }} />
                 <div>
                   <Text type="secondary">已选型：</Text>
@@ -1344,10 +1389,13 @@ const SelectionEngine = () => {
           <Card size="small">
             <Space>
               <Text type="secondary">当前项目：</Text>
-              <Text strong>{currentProject.project_name}</Text>
+              <Text strong>{currentProject.projectName}</Text>
+              <Text type="secondary">|</Text>
+              <Text type="secondary">项目编号：</Text>
+              <Text>{currentProject.projectNumber || '-'}</Text>
               <Text type="secondary">|</Text>
               <Text type="secondary">客户：</Text>
-              <Text>{currentProject.client_name || '-'}</Text>
+              <Text>{currentProject.client?.name || '-'}</Text>
             </Space>
           </Card>
         )}
@@ -1459,6 +1507,56 @@ const SelectionEngine = () => {
   // 主渲染
   return (
     <div>
+      {/* 项目信息卡片 - 当从项目页面跳转时显示 */}
+      {currentProject && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={
+            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Text strong style={{ fontSize: 16 }}>
+                📋 为项目进行选型: {currentProject.projectName}
+              </Text>
+              <Space split={<Text type="secondary">|</Text>}>
+                <Text type="secondary">
+                  项目编号: {currentProject.projectNumber}
+                </Text>
+                <Text type="secondary">
+                  客户: {currentProject.client?.name || '-'}
+                </Text>
+                {currentProject.client?.company && (
+                  <Text type="secondary">
+                    公司: {currentProject.client.company}
+                  </Text>
+                )}
+              </Space>
+              {currentProject.technical_requirements && (
+                <div style={{ 
+                  marginTop: 8, 
+                  padding: '8px 12px', 
+                  background: '#f0f2f5', 
+                  borderRadius: 4,
+                  border: '1px solid #d9d9d9'
+                }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    技术需求:
+                  </Text>
+                  <div style={{ marginTop: 4 }}>
+                    <Text style={{ fontSize: 13 }}>
+                      {currentProject.technical_requirements}
+                    </Text>
+                  </div>
+                </div>
+              )}
+              <Text type="secondary" style={{ fontSize: 12, fontStyle: 'italic' }}>
+                💡 提示: 选型完成后，配件会自动添加到此项目的技术清单中
+              </Text>
+            </Space>
+          }
+        />
+      )}
+      
       <Card 
         title={
           <Space>
