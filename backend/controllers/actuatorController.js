@@ -332,12 +332,62 @@ exports.uploadExcel = async (req, res) => {
     const formattedData = rawData.map(row => {
       const actuatorData = {
         model_base: row.model_base || row['型号基础'] || row['型号'],
+        series: row.series || row['系列'],
+        mechanism: row.mechanism || row['机构类型'],
+        valve_type: row.valve_type || row['阀门类型'],
         body_size: row.body_size || row['本体尺寸'],
         action_type: row.action_type || row['作用类型'],
-        base_price: parseFloat(row.base_price || row['基础价格'] || row['价格']),
         description: row.description || row['描述'] || '',
         is_active: row.is_active !== undefined ? row.is_active : true
       };
+      
+      // 价格字段（支持SF和AT/GY系列）
+      if (row.base_price_normal || row['常温价格']) {
+        actuatorData.base_price_normal = parseFloat(row.base_price_normal || row['常温价格']);
+      } else if (row.base_price || row['基础价格'] || row['价格']) {
+        actuatorData.base_price_normal = parseFloat(row.base_price || row['基础价格'] || row['价格']);
+      }
+      
+      if (row.base_price_low || row['低温价格']) {
+        actuatorData.base_price_low = parseFloat(row.base_price_low || row['低温价格']);
+      }
+      
+      if (row.base_price_high || row['高温价格']) {
+        actuatorData.base_price_high = parseFloat(row.base_price_high || row['高温价格']);
+      }
+      
+      // AT/GY系列特有字段
+      if (row.manual_override_model || row['手轮型号']) {
+        actuatorData.manual_override_model = row.manual_override_model || row['手轮型号'];
+      }
+      if (row.manual_override_price || row['手轮价格']) {
+        actuatorData.manual_override_price = parseFloat(row.manual_override_price || row['手轮价格']);
+      }
+      if (row.spare_parts_model || row['维修包型号']) {
+        actuatorData.spare_parts_model = row.spare_parts_model || row['维修包型号'];
+      }
+      if (row.spare_parts_price || row['维修包价格']) {
+        actuatorData.spare_parts_price = parseFloat(row.spare_parts_price || row['维修包价格']);
+      }
+      
+      // 连接尺寸字段
+      if (row.flange_standard || row.flange_D || row.flange_A) {
+        actuatorData.dimensions = actuatorData.dimensions || {};
+        actuatorData.dimensions.flange = {
+          standard: row.flange_standard || row['法兰标准'],
+          D: row.flange_D ? parseFloat(row.flange_D) : undefined,
+          A: row.flange_A ? parseFloat(row.flange_A) : undefined,
+          C: row.flange_C ? parseFloat(row.flange_C) : undefined,
+          threadSpec: row.flange_thread || row['法兰螺纹']
+        };
+      }
+      
+      if (row.pneumatic_size || row['气动接口']) {
+        actuatorData.dimensions = actuatorData.dimensions || {};
+        actuatorData.dimensions.pneumaticConnection = {
+          size: row.pneumatic_size || row['气动接口']
+        };
+      }
 
       // 处理扭矩数据（可以是JSON字符串或对象）
       if (row.torque_symmetric) {
@@ -488,44 +538,137 @@ exports.uploadExcel = async (req, res) => {
 // @access  Private/Admin
 exports.downloadTemplate = (req, res) => {
   try {
-    // 创建示例数据
-    const templateData = [
-      {
-        model_base: 'SF10-150DA',
-        body_size: 'SF10',
-        action_type: 'DA',
-        base_price: 5000,
-        torque_symmetric: '{"0_3_0":309,"0_4_0":412,"0_5_0":515}',
-        torque_canted: '{"0_3_0":417,"0_4_0":556,"0_5_0":695}',
-        specifications: '{"pressure_range":{"min":2,"max":8},"temperature_range":{"min":-20,"max":80},"rotation_angle":90,"weight":12.5}',
-        description: 'SF10 双作用气动执行器',
-        is_active: true
-      }
-    ];
+    const { type } = req.query; // 支持通过参数指定模板类型: 'SF' 或 'AT'
+    
+    let templateData, sheetName, filename;
+    
+    if (type === 'AT' || type === 'GY') {
+      // AT/GY系列（齿轮齿条式）模板
+      templateData = [
+        {
+          model_base: 'AT-SR52K8',
+          series: 'AT',
+          mechanism: 'Rack & Pinion',
+          valve_type: 'Ball Valve',
+          action_type: 'SR',
+          body_size: 'AT-052',
+          base_price_normal: 75,
+          base_price_low: 77,
+          base_price_high: 86,
+          manual_override_model: 'SD-1',
+          manual_override_price: 127,
+          spare_parts_model: '1.5包',
+          spare_parts_price: 1.5,
+          flange_standard: 'F05/φ50/4-M6',
+          flange_D: 50,
+          flange_A: 36,
+          flange_C: 30,
+          flange_thread: '4-M6',
+          pneumatic_size: 'G1/4"',
+          description: '单作用铝合金齿轮齿条式 AT-052'
+        },
+        {
+          model_base: 'AT-DA52',
+          series: 'AT',
+          mechanism: 'Rack & Pinion',
+          valve_type: 'Ball Valve',
+          action_type: 'DA',
+          body_size: 'AT-052',
+          base_price_normal: 64,
+          base_price_low: 66,
+          base_price_high: 76,
+          manual_override_model: 'SD-1',
+          manual_override_price: 127,
+          spare_parts_model: '1.5包',
+          spare_parts_price: 1.5,
+          flange_standard: 'F05/φ50/4-M6',
+          flange_D: 50,
+          flange_A: 36,
+          flange_C: 30,
+          flange_thread: '4-M6',
+          pneumatic_size: 'G1/4"',
+          description: '双作用铝合金齿轮齿条式 AT-052'
+        }
+      ];
+      sheetName = 'AT/GY系列执行器';
+      filename = 'actuator_template_AT_GY.xlsx';
+    } else {
+      // SF系列（拨叉式）默认模板
+      templateData = [
+        {
+          model_base: 'SF10-150DA',
+          series: 'SF',
+          mechanism: 'Scotch Yoke',
+          valve_type: 'Ball Valve',
+          body_size: 'SF10',
+          action_type: 'DA',
+          base_price_normal: 5000,
+          base_price_low: 5200,
+          base_price_high: 5500,
+          torque_symmetric: '{"0_3_0":309,"0_4_0":412,"0_5_0":515}',
+          torque_canted: '{"0_3_0":417,"0_4_0":556,"0_5_0":695}',
+          specifications: '{"pressure_range":{"min":2,"max":8},"temperature_range":{"min":-20,"max":80},"rotation_angle":90,"weight":12.5}',
+          description: 'SF10 双作用气动执行器',
+          is_active: true
+        }
+      ];
+      sheetName = 'SF系列执行器';
+      filename = 'actuator_template_SF.xlsx';
+    }
 
     // 创建工作簿
     const wb = xlsx.utils.book_new();
     const ws = xlsx.utils.json_to_sheet(templateData);
     
-    // 设置列宽
-    ws['!cols'] = [
-      { wch: 15 }, // model_base
-      { wch: 12 }, // body_size
-      { wch: 12 }, // action_type
-      { wch: 12 }, // base_price
-      { wch: 40 }, // torque_symmetric
-      { wch: 40 }, // torque_canted
-      { wch: 60 }, // specifications
-      { wch: 30 }, // description
-      { wch: 10 }  // is_active
-    ];
+    // 根据模板类型设置不同的列宽
+    if (type === 'AT' || type === 'GY') {
+      ws['!cols'] = [
+        { wch: 15 }, // model_base
+        { wch: 10 }, // series
+        { wch: 15 }, // mechanism
+        { wch: 15 }, // valve_type
+        { wch: 12 }, // action_type
+        { wch: 12 }, // body_size
+        { wch: 15 }, // base_price_normal
+        { wch: 15 }, // base_price_low
+        { wch: 15 }, // base_price_high
+        { wch: 20 }, // manual_override_model
+        { wch: 20 }, // manual_override_price
+        { wch: 18 }, // spare_parts_model
+        { wch: 18 }, // spare_parts_price
+        { wch: 20 }, // flange_standard
+        { wch: 12 }, // flange_D
+        { wch: 12 }, // flange_A
+        { wch: 12 }, // flange_C
+        { wch: 15 }, // flange_thread
+        { wch: 15 }, // pneumatic_size
+        { wch: 30 }  // description
+      ];
+    } else {
+      ws['!cols'] = [
+        { wch: 15 }, // model_base
+        { wch: 10 }, // series
+        { wch: 15 }, // mechanism
+        { wch: 15 }, // valve_type
+        { wch: 12 }, // body_size
+        { wch: 12 }, // action_type
+        { wch: 15 }, // base_price_normal
+        { wch: 15 }, // base_price_low
+        { wch: 15 }, // base_price_high
+        { wch: 40 }, // torque_symmetric
+        { wch: 40 }, // torque_canted
+        { wch: 60 }, // specifications
+        { wch: 30 }, // description
+        { wch: 10 }  // is_active
+      ];
+    }
     
-    xlsx.utils.book_append_sheet(wb, ws, '执行器数据');
+    xlsx.utils.book_append_sheet(wb, ws, sheetName);
     
     // 生成Buffer
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
-    res.setHeader('Content-Disposition', 'attachment; filename="actuator_template.xlsx"');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
     

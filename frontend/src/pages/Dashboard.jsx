@@ -602,13 +602,6 @@ const Dashboard = () => {
       },
       {
         icon: <DatabaseOutlined />,
-        title: '产品导入',
-        description: '批量导入产品数据',
-        color: '#52c41a',
-        onClick: () => navigate('/product-import')
-      },
-      {
-        icon: <DatabaseOutlined />,
         title: '数据管理',
         description: '管理执行器、配件和供应商',
         color: '#722ed1',

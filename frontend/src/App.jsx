@@ -48,7 +48,6 @@ const Profile = lazy(() => import('./pages/Profile'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const DataManagement = lazy(() => import('./pages/DataManagement'))
 const ProductCatalog = lazy(() => import('./pages/ProductCatalog'))
-const ProductImport = lazy(() => import('./pages/ProductImport'))
 const AdminReports = lazy(() => import('./pages/AdminReports'))
 const MaterialRequirements = lazy(() => import('./pages/MaterialRequirements'))
 const MaterialRequirementDetail = lazy(() => import('./pages/MaterialRequirementDetail'))
@@ -160,11 +159,6 @@ function App() {
           <Route path="data-management" element={
             <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer', 'Procurement Specialist']}>
               <DataManagement />
-            </ProtectedRoute>
-          } />
-          <Route path="product-import" element={
-            <ProtectedRoute requiredRoles={['Administrator', 'Technical Engineer']}>
-              <ProductImport />
             </ProtectedRoute>
           } />
           <Route path="suppliers" element={

@@ -53,12 +53,6 @@ const menuConfig = [
     roles: ['Administrator'],
   },
   {
-    key: '/product-import',
-    label: '产品批量导入',
-    icon: <UploadOutlined />,
-    roles: ['Administrator'],
-  },
-  {
     key: '/data-management',
     label: '数据管理',
     icon: <DatabaseOutlined />,
