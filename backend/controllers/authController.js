@@ -126,19 +126,19 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ phone }).select('+password');
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: '账号不存在，请检查手机号是否正确' });
     }
 
     // Check if user is active
     if (!user.isActive) {
-      return res.status(401).json({ message: 'Account is inactive. Please contact administrator.' });
+      return res.status(401).json({ message: '账号已停用，请联系管理员' });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: '密码错误，请重新输入' });
     }
 
     // Update last login

@@ -155,11 +155,136 @@ exports.updateProject = async (req, res) => {
       });
     }
     
+    // 🔔 记录状态变更，用于发送通知
+    const oldStatus = project.status;
+    const newStatus = req.body.status;
+    
     const updatedProject = await NewProject.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
     ).populate('created_by assigned_to');
+    
+    // 🔔 工作流通知：根据状态变更发送通知
+    if (oldStatus !== newStatus && newStatus) {
+      const notificationService = require('../services/notificationService');
+      
+      try {
+        // 1. 销售经理提交项目 → 通知技术工程师
+        if (newStatus === '待技术选型' || newStatus === 'Pending Technical Selection') {
+          await notificationService.notifyRole('Technical Engineer', {
+            title: '新项目待选型',
+            message: `项目「${updatedProject.name}」已提交，请进行技术选型`,
+            link: `/selection-engine?projectId=${updatedProject._id}`,
+            type: 'project_submitted',
+            priority: 'high',
+            relatedEntity: {
+              entityType: 'NewProject',
+              entityId: updatedProject._id
+            }
+          });
+          
+          // 同时通知销售经理（创建者）
+          if (updatedProject.created_by && updatedProject.created_by._id) {
+            await notificationService.notifySingleUser(updatedProject.created_by._id.toString(), {
+              title: '项目已提交技术选型',
+              message: `您的项目「${updatedProject.name}」已成功提交给技术工程师进行选型`,
+              link: `/projects/${updatedProject._id}`,
+              type: 'info',
+              priority: 'medium',
+              relatedEntity: {
+                entityType: 'NewProject',
+                entityId: updatedProject._id
+              }
+            });
+          }
+        }
+        
+        // 2. 技术工程师完成选型 → 通知商务工程师报价
+        else if (newStatus === '技术方案完成' || newStatus === 'Technical Solution Completed') {
+          await notificationService.notifyRole('Business Engineer', {
+            title: '新项目待报价',
+            message: `项目「${updatedProject.name}」技术方案已完成，请进行报价`,
+            link: `/projects/${updatedProject._id}?tab=quote`,
+            type: 'quote_needed',
+            priority: 'high',
+            relatedEntity: {
+              entityType: 'NewProject',
+              entityId: updatedProject._id
+            }
+          });
+          
+          // 通知销售经理选型进度
+          if (updatedProject.created_by && updatedProject.created_by._id) {
+            await notificationService.notifySingleUser(updatedProject.created_by._id.toString(), {
+              title: '项目选型已完成',
+              message: `项目「${updatedProject.name}」的技术选型已完成，商务工程师正在准备报价`,
+              link: `/projects/${updatedProject._id}`,
+              type: 'info',
+              priority: 'medium',
+              relatedEntity: {
+                entityType: 'NewProject',
+                entityId: updatedProject._id
+              }
+            });
+          }
+        }
+        
+        // 3. 商务工程师完成报价 → 通知销售经理下载报价单
+        else if (newStatus === '报价完成' || newStatus === 'Quote Completed') {
+          if (updatedProject.created_by && updatedProject.created_by._id) {
+            await notificationService.notifySingleUser(updatedProject.created_by._id.toString(), {
+              title: '⚠️ 报价已完成，请尽快下载报价单',
+              message: `项目「${updatedProject.name}」的报价已完成，请下载报价单并发送给客户`,
+              link: `/projects/${updatedProject._id}?tab=quote`,
+              type: 'quote_completed',
+              priority: 'urgent',
+              relatedEntity: {
+                entityType: 'NewProject',
+                entityId: updatedProject._id
+              }
+            });
+          }
+          
+          // 通知所有销售经理角色（备用）
+          await notificationService.notifyRole('Sales Manager', {
+            title: '项目报价已完成',
+            message: `项目「${updatedProject.name}」的报价已完成，请及时下载报价单`,
+            link: `/projects/${updatedProject._id}`,
+            type: 'quote_completed',
+            priority: 'high',
+            relatedEntity: {
+              entityType: 'NewProject',
+              entityId: updatedProject._id
+            }
+          });
+        }
+        
+        // 4. 项目赢单 → 通知生产计划员
+        else if (newStatus === '已赢单' || newStatus === 'Won') {
+          await notificationService.notifyProjectWon(updatedProject);
+          
+          // 通知销售经理
+          if (updatedProject.created_by && updatedProject.created_by._id) {
+            await notificationService.notifySingleUser(updatedProject.created_by._id.toString(), {
+              title: '🎉 恭喜！项目赢单',
+              message: `项目「${updatedProject.name}」已成功赢单，生产计划员将开始安排生产`,
+              link: `/projects/${updatedProject._id}`,
+              type: 'success',
+              priority: 'high',
+              relatedEntity: {
+                entityType: 'NewProject',
+                entityId: updatedProject._id
+              }
+            });
+          }
+        }
+        
+      } catch (notificationError) {
+        // 通知发送失败不应阻塞主流程
+        console.error('📢 发送工作流通知失败:', notificationError);
+      }
+    }
     
     res.json({
       success: true,
