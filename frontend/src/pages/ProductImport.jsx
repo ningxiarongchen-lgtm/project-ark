@@ -432,14 +432,6 @@ const ProductImport = () => {
               )}
             />
           </Card>
-
-          {/* 权限提示 */}
-          <Alert
-            message="权限要求"
-            description="此功能仅限管理员和技术工程师使用"
-            type="warning"
-            showIcon
-          />
         </Space>
       </Card>
 

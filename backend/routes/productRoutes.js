@@ -19,17 +19,17 @@ router.use(protect);
 // Search products (selection engine)
 router.post('/search', searchProducts);
 
-// Get product import template
+// Get product import template (仅管理员)
 router.get(
   '/template',
-  authorize('Administrator', 'Technical Engineer'),
+  authorize('Administrator'),
   getProductTemplate
 );
 
-// Bulk import products (支持多文件上传)
+// Bulk import products (仅管理员，支持多文件上传)
 router.post(
   '/import',
-  authorize('Administrator', 'Technical Engineer'),
+  authorize('Administrator'),
   dataUpload.array('productFiles', 10), // 允许最多10个文件
   bulkImportProducts
 );
