@@ -79,11 +79,17 @@ exports.calculateSelection = async (req, res) => {
         });
       }
     } else if (mechanism === 'Rack & Pinion') {
-      // AT/GY系列（齿轮齿条式）：闸阀、截止阀、直行程调节阀
-      if (actualValveType && !['Gate Valve', 'Globe Valve', 'Control Valve'].includes(actualValveType)) {
+      // AT/GY系列（齿轮齿条式）：球阀、蝶阀（旋转型阀门，行程90°）
+      if (!actualValveType) {
         return res.status(400).json({
           success: false,
-          message: 'AT/GY系列执行器的阀门类型必须是 "Gate Valve"（闸阀）、"Globe Valve"（截止阀）或 "Control Valve"（直行程调节阀）'
+          message: '请提供阀门类型（valveType）: "Ball Valve"（球阀）或 "Butterfly Valve"（蝶阀）'
+        });
+      }
+      if (!['Ball Valve', 'Butterfly Valve'].includes(actualValveType)) {
+        return res.status(400).json({
+          success: false,
+          message: 'AT/GY系列执行器的阀门类型必须是 "Ball Valve"（球阀）或 "Butterfly Valve"（蝶阀）- 旋转型阀门'
         });
       }
     }
