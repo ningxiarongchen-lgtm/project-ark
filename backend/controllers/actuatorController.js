@@ -336,7 +336,9 @@ exports.uploadExcel = async (req, res) => {
         mechanism: row.mechanism || row['机构类型'],
         valve_type: row.valve_type || row['阀门类型'],
         body_size: row.body_size || row['本体尺寸'],
+        cylinder_size: row.cylinder_size ? parseFloat(row.cylinder_size) : undefined,
         action_type: row.action_type || row['作用类型'],
+        spring_range: row.spring_range || row['弹簧范围'],
         description: row.description || row['描述'] || '',
         is_active: row.is_active !== undefined ? row.is_active : true
       };
@@ -370,22 +372,44 @@ exports.uploadExcel = async (req, res) => {
         actuatorData.spare_parts_price = parseFloat(row.spare_parts_price || row['维修包价格']);
       }
       
-      // 连接尺寸字段
-      if (row.flange_standard || row.flange_D || row.flange_A) {
+      // SF系列轮廓尺寸字段
+      if (row.L1 || row.L2 || row.m1 || row.m2 || row.A || row.H1 || row.H2 || row.D) {
         actuatorData.dimensions = actuatorData.dimensions || {};
-        actuatorData.dimensions.flange = {
-          standard: row.flange_standard || row['法兰标准'],
-          D: row.flange_D ? parseFloat(row.flange_D) : undefined,
-          A: row.flange_A ? parseFloat(row.flange_A) : undefined,
-          C: row.flange_C ? parseFloat(row.flange_C) : undefined,
-          threadSpec: row.flange_thread || row['法兰螺纹']
+        actuatorData.dimensions.outline = {
+          L1: row.L1 ? parseFloat(row.L1) : undefined,
+          L2: row.L2 ? parseFloat(row.L2) : undefined,
+          m1: row.m1 ? parseFloat(row.m1) : undefined,
+          m2: row.m2 ? parseFloat(row.m2) : undefined,
+          A: row.A ? parseFloat(row.A) : undefined,
+          H1: row.H1 ? parseFloat(row.H1) : undefined,
+          H2: row.H2 ? parseFloat(row.H2) : undefined,
+          D: row.D ? parseFloat(row.D) : undefined
         };
       }
       
-      if (row.pneumatic_size || row['气动接口']) {
+      // SF系列连接法兰字段
+      if (row.connect_flange || row['连接法兰']) {
+        actuatorData.dimensions = actuatorData.dimensions || {};
+        actuatorData.dimensions.flange = actuatorData.dimensions.flange || {};
+        actuatorData.dimensions.flange.standard = row.connect_flange || row['连接法兰'];
+      }
+      
+      // AT/GY系列法兰尺寸字段
+      if (row.flange_standard || row.flange_D || row.flange_A) {
+        actuatorData.dimensions = actuatorData.dimensions || {};
+        actuatorData.dimensions.flange = actuatorData.dimensions.flange || {};
+        actuatorData.dimensions.flange.standard = actuatorData.dimensions.flange.standard || row.flange_standard || row['法兰标准'];
+        actuatorData.dimensions.flange.D = row.flange_D ? parseFloat(row.flange_D) : actuatorData.dimensions.flange.D;
+        actuatorData.dimensions.flange.A = row.flange_A ? parseFloat(row.flange_A) : actuatorData.dimensions.flange.A;
+        actuatorData.dimensions.flange.C = row.flange_C ? parseFloat(row.flange_C) : actuatorData.dimensions.flange.C;
+        actuatorData.dimensions.flange.threadSpec = row.flange_thread || row['法兰螺纹'] || actuatorData.dimensions.flange.threadSpec;
+      }
+      
+      // 气动接口字段（SF系列：G字段，AT/GY系列：pneumatic_size）
+      if (row.G || row.pneumatic_size || row['气动接口']) {
         actuatorData.dimensions = actuatorData.dimensions || {};
         actuatorData.dimensions.pneumaticConnection = {
-          size: row.pneumatic_size || row['气动接口']
+          size: row.G || row.pneumatic_size || row['气动接口']
         };
       }
 
@@ -544,7 +568,7 @@ exports.downloadTemplate = (req, res) => {
     
     if (type === 'AT') {
       // AT系列（齿轮齿条式）完整模板
-      // 特点：完整的三种温度价格、手轮信息、扭矩数据、法兰尺寸
+      // 特点：完整的三种温度价格、手轮信息、扭矩数据、法兰尺寸、弹簧范围
       templateData = [
         {
           model_base: 'AT-SR52K8',
@@ -552,6 +576,7 @@ exports.downloadTemplate = (req, res) => {
           mechanism: 'Rack & Pinion',
           valve_type: 'Ball Valve',
           action_type: 'SR',
+          spring_range: 'K8',
           body_size: 'AT-052',
           base_price_normal: 75,
           base_price_low: 77,
@@ -574,6 +599,7 @@ exports.downloadTemplate = (req, res) => {
           mechanism: 'Rack & Pinion',
           valve_type: 'Ball Valve',
           action_type: 'DA',
+          spring_range: '',
           body_size: 'AT-052',
           base_price_normal: 64,
           base_price_low: 66,
@@ -637,11 +663,15 @@ exports.downloadTemplate = (req, res) => {
       templateData = [
         {
           model_base: 'SF10-150DA',
+          series: 'SF',
+          mechanism: 'Scotch Yoke',
+          valve_type: 'Ball Valve',
           body_size: 'SF10',
           cylinder_size: 150,
           action_type: 'DA',
           spring_range: '',
           base_price: 1339,
+          base_price_normal: 1339,
           base_price_low: '可选，不填则自动计算为常温价格×1.05',
           base_price_high: '可选，不填则自动计算为常温价格×1.05',
           torque_symmetric: '{"0.3_0":309,"0.3_45":185,"0.3_90":309,"0.4_0":412,"0.4_45":247,"0.4_90":412,"0.5_0":515,"0.5_45":309,"0.5_90":515,"0.6_0":618,"0.6_45":371,"0.6_90":618}',
@@ -655,15 +685,20 @@ exports.downloadTemplate = (req, res) => {
           H1: 82,
           H2: 100,
           D: 207,
-          G: 'NPT1/4"'
+          G: 'NPT1/4"',
+          description: 'SF系列拨叉式/双作用/球阀对称拨叉'
         },
         {
           model_base: 'SF10-150SR3',
+          series: 'SF',
+          mechanism: 'Scotch Yoke',
+          valve_type: 'Ball Valve',
           body_size: 'SF10',
           cylinder_size: 150,
           action_type: 'SR',
           spring_range: 'SR3',
           base_price: 1716,
+          base_price_normal: 1716,
           base_price_low: 1802,
           base_price_high: 1802,
           torque_symmetric: '{"sst":187,"srt":91,"set":118,"ast_0.3":183,"art_0.3":89,"aet_0.3":115,"ast_0.4":293,"art_0.4":155,"aet_0.4":225,"ast_0.5":396,"art_0.5":217,"aet_0.5":328}',
@@ -677,7 +712,8 @@ exports.downloadTemplate = (req, res) => {
           H1: 82,
           H2: 100,
           D: 207,
-          G: 'NPT1/4"'
+          G: 'NPT1/4"',
+          description: 'SF系列拨叉式/单作用/球阀对称拨叉'
         }
       ];
       sheetName = 'SF系列执行器';
@@ -690,13 +726,14 @@ exports.downloadTemplate = (req, res) => {
     
     // 根据模板类型设置不同的列宽
     if (type === 'AT') {
-      // AT系列：完整字段（包含三种价格、手轮、维修包）
+      // AT系列：完整字段（包含三种价格、手轮、维修包、弹簧范围）
       ws['!cols'] = [
         { wch: 15 }, // model_base
         { wch: 10 }, // series
         { wch: 15 }, // mechanism
         { wch: 15 }, // valve_type
         { wch: 12 }, // action_type
+        { wch: 15 }, // spring_range
         { wch: 12 }, // body_size
         { wch: 15 }, // base_price_normal
         { wch: 15 }, // base_price_low
@@ -734,11 +771,15 @@ exports.downloadTemplate = (req, res) => {
     } else {
       ws['!cols'] = [
         { wch: 18 }, // model_base
+        { wch: 10 }, // series
+        { wch: 15 }, // mechanism
+        { wch: 15 }, // valve_type
         { wch: 12 }, // body_size
         { wch: 15 }, // cylinder_size
         { wch: 12 }, // action_type
         { wch: 15 }, // spring_range
         { wch: 12 }, // base_price
+        { wch: 15 }, // base_price_normal
         { wch: 40 }, // base_price_low
         { wch: 40 }, // base_price_high
         { wch: 80 }, // torque_symmetric
@@ -752,7 +793,8 @@ exports.downloadTemplate = (req, res) => {
         { wch: 8 },  // H1
         { wch: 8 },  // H2
         { wch: 8 },  // D
-        { wch: 12 }  // G
+        { wch: 12 }, // G
+        { wch: 40 }  // description
       ];
     }
     

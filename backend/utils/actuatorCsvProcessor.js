@@ -60,7 +60,7 @@ function processAtGyActuator(row) {
     dimensions: dimensions,
     
     // 默认状态
-    status: 'active',
+    status: '已发布',
     
     // 元数据
     notes: `导入自CSV: ${row.model_base}`
@@ -126,14 +126,24 @@ function processSfActuator(row) {
     // 定价信息（SF系列温度价格计算）
     // 常温价格：使用CSV中的base_price
     base_price_normal: parseFloat(row.base_price) || null,
-    // 低温价格：常温价格 + 5%（如果CSV中未提供）
-    base_price_low: row.base_price_low 
-      ? parseFloat(row.base_price_low) 
-      : (parseFloat(row.base_price) ? parseFloat(row.base_price) * 1.05 : null),
-    // 高温价格：常温价格 + 5%（如果CSV中未提供）
-    base_price_high: row.base_price_high 
-      ? parseFloat(row.base_price_high) 
-      : (parseFloat(row.base_price) ? parseFloat(row.base_price) * 1.05 : null),
+    // 低温价格：优先使用CSV中的值，否则基于常温价格计算
+    base_price_low: (() => {
+      if (row.base_price_low && row.base_price_low !== '可选不填则自动为常温×1.05') {
+        const parsed = parseFloat(row.base_price_low);
+        return isNaN(parsed) ? null : parsed;
+      }
+      const basePrice = parseFloat(row.base_price);
+      return (basePrice && !isNaN(basePrice)) ? basePrice * 1.05 : null;
+    })(),
+    // 高温价格：优先使用CSV中的值，否则基于常温价格计算
+    base_price_high: (() => {
+      if (row.base_price_high && row.base_price_high !== '可选不填则自动为常温×1.05') {
+        const parsed = parseFloat(row.base_price_high);
+        return isNaN(parsed) ? null : parsed;
+      }
+      const basePrice = parseFloat(row.base_price);
+      return (basePrice && !isNaN(basePrice)) ? basePrice * 1.05 : null;
+    })(),
     
     // 连接法兰
     connect_flange: row.connect_flange || null,
@@ -159,7 +169,7 @@ function processSfActuator(row) {
     },
     
     // 默认状态
-    status: 'active',
+    status: '已发布',
     
     // 元数据
     notes: `导入自CSV: ${modelBase} - SF系列`
@@ -258,8 +268,8 @@ function validateActuatorData(data) {
     errors.push('action_type必须是DA（双作用）或SR（弹簧复位）');
   }
   
-  // 弹簧复位类型必须有spring_range
-  if (data.action_type === 'SR' && !data.spring_range) {
+  // 弹簧复位类型必须有spring_range（GY系列除外，因为GY系列型号中已包含作用方式）
+  if (data.action_type === 'SR' && !data.spring_range && data.series !== 'GY') {
     errors.push('弹簧复位类型（SR）必须提供spring_range');
   }
   

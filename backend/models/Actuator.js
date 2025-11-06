@@ -55,6 +55,12 @@ const actuatorSchema = new mongoose.Schema({
     uppercase: true
   },
   
+  // 气缸尺寸（SF系列专用）
+  cylinder_size: {
+    type: Number,
+    min: [0, '气缸尺寸不能为负数']
+  },
+  
   // 作用类型
   action_type: {
     type: String,

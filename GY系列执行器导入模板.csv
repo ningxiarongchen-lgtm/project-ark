@@ -1,0 +1,26 @@
+model_base,series,mechanism,valve_type,action_type,body_size,base_price_normal,flange_standard,flange_D,flange_A,flange_C,flange_thread,pneumatic_size,description
+GY-52SR,GY,Rack & Pinion,Ball Valve,SR,GY-052,770,F05/φ50/4-M6,50,36,30,4-M6,G1/4",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-63SR,GY,Rack & Pinion,Ball Valve,SR,GY-063,860,F05/φ50/4-M6,50,36,30,4-M6,G1/4",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-83SR,GY,Rack & Pinion,Ball Valve,SR,GY-083,1260,F07/φ70/4-M8,70,50,40,4-M8,G1/4",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-105SR,GY,Rack & Pinion,Ball Valve,SR,GY-105,1970,F10/φ102/4-M10,102,70,50,4-M10,G1/4",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-125SR,GY,Rack & Pinion,Ball Valve,SR,GY-125,2770,F10/φ102/4-M10,102,70,50,4-M10,G1/4",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-140SR,GY,Rack & Pinion,Ball Valve,SR,GY-140,4070,F12/φ125/4-M12,125,90,60,4-M12,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-160SR,GY,Rack & Pinion,Ball Valve,SR,GY-160,5725,F14/φ140/4-M16,140,102,70,4-M16,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-210SR,GY,Rack & Pinion,Ball Valve,SR,GY-210,15010,F14/φ140/4-M16,140,102,70,4-M16,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-240SR,GY,Rack & Pinion,Ball Valve,SR,GY-240,25550,F16/φ165/4-M20,165,115,80,4-M20,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-270SR,GY,Rack & Pinion,Ball Valve,SR,GY-270,36800,F16/φ165/4-M20,165,115,80,4-M20,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-300SR,GY,Rack & Pinion,Ball Valve,SR,GY-300,40950,F16/φ165/4-M20,165,115,80,4-M20,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-400SR,GY,Rack & Pinion,Ball Valve,SR,GY-400,73450,F16/φ165/4-M20,165,115,80,4-M20,G1/2",单作用正作用&反作用/齿轮齿条式/行程90°
+GY-52,GY,Rack & Pinion,Ball Valve,DA,GY-052,740,F05/φ50/4-M6,50,36,30,4-M6,G1/4",双作用/齿轮齿条式/行程90°
+GY-63,GY,Rack & Pinion,Ball Valve,DA,GY-063,820,F05/φ50/4-M6,50,36,30,4-M6,G1/4",双作用/齿轮齿条式/行程90°
+GY-83,GY,Rack & Pinion,Ball Valve,DA,GY-083,1200,F07/φ70/4-M8,70,50,40,4-M8,G1/4",双作用/齿轮齿条式/行程90°
+GY-105,GY,Rack & Pinion,Ball Valve,DA,GY-105,1860,F10/φ102/4-M10,102,70,50,4-M10,G1/4",双作用/齿轮齿条式/行程90°
+GY-125,GY,Rack & Pinion,Ball Valve,DA,GY-125,2620,F10/φ102/4-M10,102,70,50,4-M10,G1/4",双作用/齿轮齿条式/行程90°
+GY-140,GY,Rack & Pinion,Ball Valve,DA,GY-140,3840,F12/φ125/4-M12,125,90,60,4-M12,G1/2",双作用/齿轮齿条式/行程90°
+GY-160,GY,Rack & Pinion,Ball Valve,DA,GY-160,5345,F14/φ140/4-M16,140,102,70,4-M16,G1/2",双作用/齿轮齿条式/行程90°
+GY-210,GY,Rack & Pinion,Ball Valve,DA,GY-210,14360,F14/φ140/4-M16,140,102,70,4-M16,G1/2",双作用/齿轮齿条式/行程90°
+GY-240,GY,Rack & Pinion,Ball Valve,DA,GY-240,24800,F16/φ165/4-M20,165,115,80,4-M20,G1/2",双作用/齿轮齿条式/行程90°
+GY-270,GY,Rack & Pinion,Ball Valve,DA,GY-270,35950,F16/φ165/4-M20,165,115,80,4-M20,G1/2",双作用/齿轮齿条式/行程90°
+GY-300,GY,Rack & Pinion,Ball Valve,DA,GY-300,39800,F16/φ165/4-M20,165,115,80,4-M20,G1/2",双作用/齿轮齿条式/行程90°
+GY-400,GY,Rack & Pinion,Ball Valve,DA,GY-400,71900,F16/φ165/4-M20,165,115,80,4-M20,G1/2",双作用/齿轮齿条式/行程90°
+
