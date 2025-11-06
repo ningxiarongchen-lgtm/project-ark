@@ -56,19 +56,7 @@ export default defineConfig({
   },
   // 优化依赖预构建
   optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'antd', 
-      'leancloud-storage',
-      '@radix-ui/react-dialog'
-    ]
-  },
-  // 解决 Radix UI 依赖问题
-  resolve: {
-    alias: {
-      '@radix-ui/react-dialog': '@radix-ui/react-dialog'
-    }
+    include: ['react', 'react-dom', 'antd', 'leancloud-storage']
   }
 })
 
