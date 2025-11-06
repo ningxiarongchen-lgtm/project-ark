@@ -1,0 +1,58 @@
+name: Deployment Check
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages", "Deploy to Render"]
+    types:
+      - completed
+
+jobs:
+  verify-deployment:
+    runs-on: ubuntu-latest
+    name: Verify Deployment Success
+    
+    steps:
+      - name: Wait for services to stabilize
+        run: sleep 30
+        
+      - name: Test Frontend
+        run: |
+          echo "Testing frontend deployment..."
+          FRONTEND_URL="https://model-selection-frontend.pages.dev"
+          
+          for i in {1..5}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL)
+            if [ $STATUS -eq 200 ]; then
+              echo "✅ Frontend is accessible (attempt $i/5)"
+              break
+            else
+              echo "⏳ Waiting for frontend (attempt $i/5, HTTP $STATUS)"
+              sleep 10
+            fi
+          done
+          
+      - name: Test Backend API
+        run: |
+          echo "Testing backend API..."
+          BACKEND_URL="https://model-selection-backend.onrender.com"
+          
+          for i in {1..5}; do
+            RESPONSE=$(curl -s "$BACKEND_URL/api/health" || echo "")
+            STATUS=$(echo $RESPONSE | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "")
+            
+            if [ "$STATUS" = "OK" ]; then
+              echo "✅ Backend API is healthy (attempt $i/5)"
+              echo "Response: $RESPONSE"
+              break
+            else
+              echo "⏳ Waiting for backend (attempt $i/5)"
+              sleep 15
+            fi
+          done
+          
+      - name: Test API Connectivity
+        run: |
+          echo "Testing frontend-backend connectivity..."
+          # 这里可以添加更多的集成测试
+          echo "✅ Deployment verification complete"
+

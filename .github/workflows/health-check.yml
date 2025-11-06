@@ -1,0 +1,46 @@
+name: Health Check
+
+on:
+  schedule:
+    # 每小时检查一次（UTC 时间）
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-frontend:
+    runs-on: ubuntu-latest
+    name: Check Frontend Health
+    
+    steps:
+      - name: Check Cloudflare Pages
+        run: |
+          FRONTEND_URL="https://model-selection-frontend.pages.dev"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" $FRONTEND_URL)
+          
+          if [ $STATUS -eq 200 ]; then
+            echo "✅ Frontend is healthy (HTTP $STATUS)"
+          else
+            echo "❌ Frontend is unhealthy (HTTP $STATUS)"
+            exit 1
+          fi
+          
+  check-backend:
+    runs-on: ubuntu-latest
+    name: Check Backend Health
+    
+    steps:
+      - name: Check Render API
+        run: |
+          BACKEND_URL="https://model-selection-backend.onrender.com"
+          RESPONSE=$(curl -s "$BACKEND_URL/api/health")
+          STATUS=$(echo $RESPONSE | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+          
+          if [ "$STATUS" = "OK" ]; then
+            echo "✅ Backend is healthy"
+            echo "Response: $RESPONSE"
+          else
+            echo "❌ Backend is unhealthy"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
