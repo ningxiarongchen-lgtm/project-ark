@@ -287,6 +287,7 @@ const SelectionEngine = () => {
       key: Date.now(),
       tag_number: '',
       required_torque: null,
+      safetyFactor: 1.3, // 默认安全系数1.3
       working_pressure: 0.4,
       valve_type: 'Ball Valve',
       mechanism: 'Scotch Yoke'
@@ -471,7 +472,8 @@ const SelectionEngine = () => {
                 needs_manual_override: false,
                 max_rotation_angle: 90,
                 temperature_type: 'normal',
-                temperature_code: 'No code'
+                temperature_code: 'No code',
+                safetyFactor: 1.3 // 默认安全系数1.3
               }}
             >
               <Collapse defaultActiveKey={['1', '2']} ghost>
@@ -673,6 +675,23 @@ const SelectionEngine = () => {
                         </Form.Item>
                       )
                     }
+                  </Form.Item>
+
+                  {/* 安全系数选择 */}
+                  <Form.Item
+                    label="安全系数"
+                    name="safetyFactor"
+                    rules={[{ required: true, message: '请选择安全系数' }]}
+                    tooltip="安全系数用于计算执行器实际需求扭矩。默认1.3，特殊要求可调整。实际需求 = 阀门扭矩 × 安全系数"
+                  >
+                    <Select placeholder="选择安全系数">
+                      <Select.Option value={1.0}>1.0 (无安全裕量)</Select.Option>
+                      <Select.Option value={1.2}>1.2 (标准)</Select.Option>
+                      <Select.Option value={1.3}>1.3 (推荐，默认)</Select.Option>
+                      <Select.Option value={1.5}>1.5 (高安全要求)</Select.Option>
+                      <Select.Option value={1.8}>1.8 (极高安全要求)</Select.Option>
+                      <Select.Option value={2.0}>2.0 (最高安全要求)</Select.Option>
+                    </Select>
                   </Form.Item>
 
                   <Form.Item
@@ -1261,6 +1280,26 @@ const SelectionEngine = () => {
             min={1}
             style={{ width: '100%' }}
           />
+        )
+      },
+      {
+        title: '安全系数',
+        dataIndex: 'safetyFactor',
+        key: 'safetyFactor',
+        width: 120,
+        render: (text, record) => (
+          <Select 
+            value={text || 1.3} 
+            onChange={(value) => handleBatchDataChange(record.key, 'safetyFactor', value)}
+            style={{ width: '100%' }}
+          >
+            <Select.Option value={1.0}>1.0</Select.Option>
+            <Select.Option value={1.2}>1.2</Select.Option>
+            <Select.Option value={1.3}>1.3</Select.Option>
+            <Select.Option value={1.5}>1.5</Select.Option>
+            <Select.Option value={1.8}>1.8</Select.Option>
+            <Select.Option value={2.0}>2.0</Select.Option>
+          </Select>
         )
       },
       {
