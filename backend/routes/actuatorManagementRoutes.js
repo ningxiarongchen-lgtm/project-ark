@@ -21,14 +21,20 @@ router.get('/by-torque', actuatorManagementController.getByTorqueRequirement);
 // 按系列查询
 router.get('/series/:series', actuatorManagementController.getBySeries);
 
-// 下载CSV模板
+// 下载CSV模板（旧版，保留兼容性）
 router.get('/template', actuatorManagementController.downloadTemplate);
+
+// 下载统一的Excel模板（新版，推荐使用）
+router.get('/template/unified', actuatorManagementController.downloadUnifiedTemplate);
 
 // 批量导入（通用导入）
 router.post('/import', upload.single('file'), actuatorManagementController.bulkImport);
 
-// 批量导入CSV（专门的执行器CSV格式：AT/GY和SF）
+// 批量导入CSV（专门的执行器CSV格式：AT/GY和SF，旧版）
 router.post('/import-csv', upload.single('file'), actuatorManagementController.bulkImportCsv);
+
+// 批量导入统一Excel（新版，全量替换模式）
+router.post('/import/unified', upload.single('file'), actuatorManagementController.bulkImportUnifiedExcel);
 
 // 批量删除
 router.post('/bulk-delete', actuatorManagementController.bulkDelete);

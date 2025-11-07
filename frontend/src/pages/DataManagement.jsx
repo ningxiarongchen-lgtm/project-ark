@@ -9,9 +9,11 @@ import {
   DatabaseOutlined,
   ToolOutlined,
   ShoppingOutlined,
-  UserOutlined
+  UserOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import ActuatorManagement from '../components/dataManagement/ActuatorManagement';
+import ActuatorManagementSimplified from '../components/dataManagement/ActuatorManagementSimplified';
 import AccessoryManagement from '../components/dataManagement/AccessoryManagement';
 import SupplierManagement from '../components/dataManagement/SupplierManagement';
 import { useAuthStore } from '../store/authStore';
@@ -19,7 +21,7 @@ import { useAuthStore } from '../store/authStore';
 const { TabPane } = Tabs;
 
 const DataManagement = () => {
-  const [activeTab, setActiveTab] = useState('actuators');
+  const [activeTab, setActiveTab] = useState('actuators-bulk');
   const { user } = useAuthStore();
   
   // 检查权限
@@ -65,8 +67,22 @@ const DataManagement = () => {
             <TabPane
               tab={
                 <span>
+                  <FileExcelOutlined />
+                  执行器批量导入
+                </span>
+              }
+              key="actuators-bulk"
+            >
+              <ActuatorManagementSimplified />
+            </TabPane>
+          )}
+          
+          {hasActuatorAccess && (
+            <TabPane
+              tab={
+                <span>
                   <ToolOutlined />
-                  执行器管理
+                  执行器管理（高级）
                 </span>
               }
               key="actuators"

@@ -726,7 +726,18 @@ export const dataManagementAPI = {
     ...createDataManagementAPI('actuators'),
     // Actuator特定方法
     getByTorque: (params) => api.get('/data-management/actuators/by-torque', { params }),
-    getBySeries: (series) => api.get(`/data-management/actuators/series/${series}`)
+    getBySeries: (series) => api.get(`/data-management/actuators/series/${series}`),
+    // 新版统一Excel模板API
+    downloadUnifiedTemplate: () => api.get('/data-management/actuators/template/unified', {
+      responseType: 'blob'
+    }),
+    bulkImportUnified: (formData) => {
+      return api.post('/data-management/actuators/import/unified', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+    }
   },
   
   accessories: {

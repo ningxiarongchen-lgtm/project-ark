@@ -7,6 +7,13 @@ const Actuator = require('../models/Actuator');
 const { createCrudController } = require('./dataManagementController');
 const { processActuatorCsv, validateActuatorData } = require('../utils/actuatorCsvProcessor');
 const { parseFile } = require('../utils/dataImporter');
+const { createActuatorTemplate } = require('../utils/actuatorExcelTemplate');
+const { 
+  parseActuatorExcel, 
+  validateActuatorData: validateExcelData, 
+  generateErrorReport,
+  transformToDbFormat 
+} = require('../utils/actuatorExcelProcessor');
 
 // 自定义验证逻辑
 function validateActuator(data) {
@@ -240,6 +247,140 @@ actuatorController.bulkImportCsv = async (req, res) => {
       success: false,
       message: '导入失败',
       error: error.message
+    });
+  }
+};
+
+/**
+ * 下载统一的执行器Excel模板
+ */
+actuatorController.downloadUnifiedTemplate = async (req, res) => {
+  try {
+    const buffer = await createActuatorTemplate();
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=C-MAX_Actuator_Data_Template.xlsx');
+    res.setHeader('Content-Length', buffer.length);
+    
+    res.send(buffer);
+  } catch (error) {
+    console.error('模板下载失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '模板下载失败',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * 导入统一的执行器Excel文件（全量替换模式）
+ */
+actuatorController.bulkImportUnifiedExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: '请上传Excel文件'
+      });
+    }
+    
+    console.log('开始处理Excel文件:', req.file.originalname);
+    
+    // 步骤1: 解析Excel文件
+    const parseResult = await parseActuatorExcel(req.file.buffer);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: parseResult.error
+      });
+    }
+    
+    console.log('Excel解析成功，数据行数:', {
+      SF: parseResult.data.SF.length,
+      AT: parseResult.data.AT.length,
+      GY: parseResult.data.GY.length
+    });
+    
+    // 步骤2: 校验数据
+    const validationResult = validateExcelData(parseResult.data);
+    
+    if (!validationResult.success) {
+      console.log('数据校验失败，错误数量:', validationResult.errors.length);
+      
+      // 生成带错误说明的Excel文件
+      const errorReportBuffer = await generateErrorReport(req.file.buffer, validationResult.errors);
+      
+      // 将错误报告保存为临时文件并返回下载链接
+      const timestamp = Date.now();
+      const errorFileName = `Error_Report_${timestamp}.xlsx`;
+      
+      // 返回错误信息和错误报告
+      return res.status(400).json({
+        success: false,
+        message: `数据校验失败，发现 ${validationResult.errors.length} 个错误。请下载错误报告查看详情。`,
+        hasErrors: true,
+        errorCount: validationResult.errors.length,
+        errors: validationResult.errors,
+        errorReport: {
+          fileName: errorFileName,
+          data: errorReportBuffer.toString('base64') // 转换为base64传输
+        }
+      });
+    }
+    
+    console.log('数据校验成功，开始转换数据格式');
+    
+    // 步骤3: 转换为数据库格式
+    const dbRecords = transformToDbFormat(validationResult.validData);
+    
+    console.log('数据转换完成，记录数:', dbRecords.length);
+    
+    // 步骤4: 全量替换导入（清空旧数据，导入新数据）
+    const session = await Actuator.startSession();
+    session.startTransaction();
+    
+    try {
+      // 删除所有现有执行器数据
+      const deleteResult = await Actuator.deleteMany({}, { session });
+      console.log('已清空旧数据，删除记录数:', deleteResult.deletedCount);
+      
+      // 批量插入新数据
+      const insertResult = await Actuator.insertMany(dbRecords, { session, ordered: false });
+      console.log('新数据导入成功，插入记录数:', insertResult.length);
+      
+      await session.commitTransaction();
+      
+      // 统计各系列导入数量
+      const sfCount = dbRecords.filter(r => r.series === 'SF').length;
+      const atCount = dbRecords.filter(r => r.series === 'AT').length;
+      const gyCount = dbRecords.filter(r => r.series === 'GY').length;
+      
+      res.json({
+        success: true,
+        message: `数据导入成功！共更新SF系列${sfCount}条，AT系列${atCount}条，GY系列${gyCount}条记录。`,
+        summary: {
+          totalImported: dbRecords.length,
+          sfCount,
+          atCount,
+          gyCount,
+          oldDataDeleted: deleteResult.deletedCount
+        }
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    console.error('Excel导入失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '导入失败',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
