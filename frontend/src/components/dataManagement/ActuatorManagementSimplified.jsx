@@ -442,7 +442,7 @@ const ActuatorManagementSimplified = () => {
       >
         <Alert
           message="请下载错误报告查看详细信息"
-          description="错误报告是您上传文件的副本，在每个有错误的行中添加了"错误说明"列，指出具体的问题。修复错误后可重新上传。"
+          description='错误报告是您上传文件的副本，在每个有错误的行中添加了"错误说明"列，指出具体的问题。修复错误后可重新上传。'
           type="error"
           showIcon
           style={{ marginBottom: '16px' }}
