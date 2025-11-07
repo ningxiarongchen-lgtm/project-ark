@@ -197,10 +197,37 @@ function cleanAndNormalizeData(rawData, fieldMapping = {}) {
       // 跳过空列
       if (!key || key.trim() === '') continue;
       
-      // 首先尝试使用字段映射
+      // 首先尝试使用字段映射（精确匹配）
       let fieldName = fullFieldMapping[key] || fullFieldMapping[key.trim()];
       
-      // 如果没有映射，则清理字段名
+      // 如果没有精确匹配，尝试模糊匹配（移除特殊字符后匹配）
+      if (!fieldName) {
+        // 提取核心字段名（移除括号内容、星号、空格等）
+        const cleanKey = key
+          .replace(/[（\(].*?[）\)]/g, '') // 移除括号及其内容
+          .replace(/[\*\s\-_]+/g, '')      // 移除星号、空格、横线、下划线
+          .trim();
+        
+        // 尝试用清理后的key匹配
+        fieldName = fullFieldMapping[cleanKey];
+        
+        // 如果还是没有，尝试匹配映射表中的key（也清理后比较）
+        if (!fieldName) {
+          for (const [mapKey, mapValue] of Object.entries(fullFieldMapping)) {
+            const cleanMapKey = mapKey
+              .replace(/[（\(].*?[）\)]/g, '')
+              .replace(/[\*\s\-_]+/g, '')
+              .trim();
+            
+            if (cleanKey === cleanMapKey || key.includes(mapKey) || mapKey.includes(cleanKey)) {
+              fieldName = mapValue;
+              break;
+            }
+          }
+        }
+      }
+      
+      // 如果还是没有映射，则使用默认清理逻辑
       if (!fieldName) {
         fieldName = key
           .toLowerCase()
