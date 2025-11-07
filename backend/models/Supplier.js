@@ -44,8 +44,8 @@ const supplierSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['合格 (Qualified)', '考察中 (Onboarding)', '不合格 (Disqualified)'],
-    default: '考察中 (Onboarding)'
+    enum: ['active', 'inactive', 'blacklisted', '合格 (Qualified)', '考察中 (Onboarding)', '不合格 (Disqualified)'],
+    default: 'active'
   }
 }, {
   timestamps: true

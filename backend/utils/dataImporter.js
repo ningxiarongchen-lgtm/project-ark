@@ -81,6 +81,49 @@ async function parseFile(fileBuffer, fileName) {
  * @returns {Array} 清理后的数据数组
  */
 function cleanAndNormalizeData(rawData, fieldMapping = {}) {
+  // 预定义的中文到英文字段映射（供应商相关）
+  const defaultFieldMapping = {
+    '供应商名称': 'name',
+    '名称': 'name',
+    '联系人': 'contact_person',
+    '电话': 'phone',
+    '手机': 'phone',
+    '联系电话': 'phone',
+    '地址': 'address',
+    '经营范围': 'business_scope',
+    '业务范围': 'business_scope',
+    '范围': 'business_scope',
+    '评级': 'rating',
+    '评级(1-5)': 'rating',
+    '评级 (1-5)': 'rating',
+    '认证状态': 'certification_status',
+    '认证': 'certification_status',
+    '累计交易额': 'total_transaction_value',
+    '交易额': 'total_transaction_value',
+    '准时交付率': 'on_time_delivery_rate',
+    '交付率': 'on_time_delivery_rate',
+    '准时交付率NOTES': 'on_time_delivery_rate',
+    'NOTES': 'notes',
+    '备注': 'notes',
+    '说明': 'notes',
+    '示例notes': 'notes',
+    '状态': 'status',
+    '状态(active/inactive/blacklisted)': 'status',
+    '状态 (active/inactive/blacklisted)': 'status',
+    // 执行器相关字段映射
+    '系列': 'series',
+    '型号': 'model',
+    '阀门类型': 'valveType',
+    '阀门口径': 'valveSize',
+    '输出扭矩': 'outputTorque',
+    // 通用字段映射
+    '邮箱': 'email',
+    '价格': 'price'
+  };
+  
+  // 合并用户提供的映射和默认映射
+  const fullFieldMapping = { ...defaultFieldMapping, ...fieldMapping };
+  
   return rawData.map(row => {
     const cleanedRow = {};
     
@@ -88,15 +131,20 @@ function cleanAndNormalizeData(rawData, fieldMapping = {}) {
       // 跳过空列
       if (!key || key.trim() === '') continue;
       
-      // 应用字段映射
-      let fieldName = fieldMapping[key] || key;
+      // 首先尝试使用字段映射
+      let fieldName = fullFieldMapping[key] || fullFieldMapping[key.trim()];
       
-      // 清理字段名（移除空格、转小写、替换特殊字符）
-      fieldName = fieldName
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '_')
-        .replace(/[^a-z0-9_]/g, '');
+      // 如果没有映射，则清理字段名
+      if (!fieldName) {
+        fieldName = key
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, '_')
+          .replace(/[^\u4e00-\u9fa5a-z0-9_]/g, ''); // 保留中文、英文、数字和下划线
+          
+        // 如果字段名为空（全是特殊字符），跳过
+        if (fieldName === '') continue;
+      }
       
       // 清理值
       let cleanedValue = value;
@@ -115,8 +163,8 @@ function cleanAndNormalizeData(rawData, fieldMapping = {}) {
         else if (cleanedValue.toLowerCase() === 'false') {
           cleanedValue = false;
         }
-        // 转换数字
-        else if (!isNaN(cleanedValue) && cleanedValue !== '') {
+        // 转换数字（但跳过明显的字符串，如电话号码）
+        else if (!isNaN(cleanedValue) && cleanedValue !== '' && fieldName !== 'phone' && !cleanedValue.startsWith('0')) {
           cleanedValue = Number(cleanedValue);
         }
       }
