@@ -28,8 +28,8 @@ jobs:
       - name: Install dependencies and build
         working-directory: ./frontend
         run: |
-          npm install
-          npx vite build
+          npm ci
+          npm run build
         env:
           NODE_ENV: production
           
