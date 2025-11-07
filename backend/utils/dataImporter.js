@@ -81,8 +81,9 @@ async function parseFile(fileBuffer, fileName) {
  * @returns {Array} 清理后的数据数组
  */
 function cleanAndNormalizeData(rawData, fieldMapping = {}) {
-  // 预定义的中文到英文字段映射（供应商相关）
+  // 预定义的中文到英文字段映射（全模型支持）
   const defaultFieldMapping = {
+    // ========== 供应商字段 ==========
     '供应商名称': 'name',
     '名称': 'name',
     '联系人': 'contact_person',
@@ -110,15 +111,80 @@ function cleanAndNormalizeData(rawData, fieldMapping = {}) {
     '状态': 'status',
     '状态(active/inactive/blacklisted)': 'status',
     '状态 (active/inactive/blacklisted)': 'status',
-    // 执行器相关字段映射
+    
+    // ========== 执行器字段 ==========
+    '基础型号': 'model_base',
+    '型号': 'model_base',
     '系列': 'series',
-    '型号': 'model',
-    '阀门类型': 'valveType',
-    '阀门口径': 'valveSize',
-    '输出扭矩': 'outputTorque',
-    // 通用字段映射
+    '机构类型': 'mechanism',
+    '机构': 'mechanism',
+    '阀门类型': 'valve_type',
+    '阀门': 'valve_type',
+    '本体尺寸': 'body_size',
+    '尺寸': 'body_size',
+    '气缸尺寸': 'cylinder_size',
+    '作用类型': 'action_type',
+    '作用': 'action_type',
+    '弹簧范围': 'spring_range',
+    '输出扭矩': 'output_torque',
+    '扭矩': 'output_torque',
+    '最大扭矩': 'max_output_torque',
+    '输入压力': 'input_pressure',
+    '压力': 'input_pressure',
+    '气源压力': 'air_pressure',
+    '回转角度': 'rotation_angle',
+    '角度': 'rotation_angle',
+    '工作温度范围': 'temperature_range',
+    '温度范围': 'temperature_range',
+    '重量': 'weight',
+    '连接方式': 'connection_type',
+    '连接类型': 'connection_type',
+    '连接尺寸': 'connection_size',
+    '失气位置': 'fail_safe_position',
+    '故障安全位置': 'fail_safe_position',
+    
+    // 价格字段
+    '常温标准价': 'base_price_normal',
+    '常温价格': 'base_price_normal',
+    '标准价格': 'base_price_normal',
+    '低温标准价': 'base_price_low',
+    '低温价格': 'base_price_low',
+    '高温标准价': 'base_price_high',
+    '高温价格': 'base_price_high',
+    '价格': 'base_price_normal',
+    
+    // ========== 配件字段 ==========
+    '配件名称': 'name',
+    '配件类别': 'category',
+    '类别': 'category',
+    '规格': 'specifications',
+    '型号规格': 'model_number',
+    '制造商': 'manufacturer',
+    '厂家': 'manufacturer',
+    '描述': 'description',
+    '库存数量': 'stock_info.quantity',
+    '是否可用': 'stock_info.available',
+    '交货时间': 'stock_info.lead_time',
+    '是否激活': 'is_active',
+    
+    // ========== 用户字段 ==========
+    '姓名': 'full_name',
+    '全名': 'full_name',
+    '英文名': 'english_name',
+    '个性签名': 'signature',
+    '签名': 'signature',
+    '密码': 'password',
+    '角色': 'role',
+    '部门': 'department',
+    '是否激活': 'isActive',
+    '激活状态': 'isActive',
+    
+    // ========== 通用字段 ==========
     '邮箱': 'email',
-    '价格': 'price'
+    '邮件': 'email',
+    '创建时间': 'createdAt',
+    '更新时间': 'updatedAt',
+    '修改时间': 'updatedAt'
   };
   
   // 合并用户提供的映射和默认映射
