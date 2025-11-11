@@ -15,6 +15,39 @@ const ProductCatalog = () => {
   const [mechanismFilter, setMechanismFilter] = useState(null)
   const [valveTypeFilter, setValveTypeFilter] = useState(null)
 
+  // 翻译映射
+  const mechanismTranslation = {
+    'Rack & Pinion': '齿轮齿条',
+    'Scotch Yoke': '拨叉式',
+    '齿轮齿条': '齿轮齿条',
+    '拨叉式': '拨叉式'
+  }
+
+  const valveTypeTranslation = {
+    'Ball Valve': '球阀',
+    'Butterfly Valve': '蝶阀',
+    'Gate Valve': '闸阀',
+    'Globe Valve': '截止阀',
+    'Control Valve': '直行程调节阀',
+    '球阀': '球阀',
+    '蝶阀': '蝶阀',
+    '闸阀': '闸阀',
+    '截止阀': '截止阀',
+    '直行程调节阀': '直行程调节阀'
+  }
+
+  const actionTypeTranslation = {
+    'DA': '双作用DA',
+    'SR': '单作用SR',
+    '双作用DA': '双作用DA',
+    '单作用SR': '单作用SR'
+  }
+
+  // 翻译函数
+  const translateMechanism = (value) => mechanismTranslation[value] || value
+  const translateValveType = (value) => valveTypeTranslation[value] || value
+  const translateActionType = (value) => actionTypeTranslation[value] || value
+
   // 获取所有产品
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -60,31 +93,43 @@ const ProductCatalog = () => {
 
     // 机构类型筛选
     if (mechanismFilter) {
-      result = result.filter(product => product.mechanism === mechanismFilter)
+      result = result.filter(product => translateMechanism(product.mechanism) === mechanismFilter)
     }
 
     // 阀门类型筛选
     if (valveTypeFilter) {
-      result = result.filter(product => product.valve_type === valveTypeFilter)
+      result = result.filter(product => translateValveType(product.valve_type) === valveTypeFilter)
     }
 
     setFilteredProducts(result)
   }, [searchKeyword, seriesFilter, actionTypeFilter, mechanismFilter, valveTypeFilter, products])
 
-  // 获取唯一值用于筛选
+  // 获取唯一值用于筛选（只显示中文）
   const uniqueSeries = [...new Set(products.map(p => p.series))].filter(Boolean)
-  const uniqueActionTypes = [...new Set(products.map(p => p.action_type))].filter(Boolean)
-  const uniqueMechanisms = [...new Set(products.map(p => p.mechanism))].filter(Boolean)
   
-  // 根据机构类型动态获取对应的阀门类型
+  // 作用类型：只显示 DA 和 SR，翻译为中文
+  const uniqueActionTypes = [...new Set(products.map(p => p.action_type))]
+    .filter(Boolean)
+    .filter(type => type === 'DA' || type === 'SR')
+  
+  // 机构类型：只显示齿轮齿条和拨叉式
+  const uniqueMechanisms = [...new Set(products.map(p => translateMechanism(p.mechanism)))]
+    .filter(Boolean)
+    .filter(mech => mech === '齿轮齿条' || mech === '拨叉式')
+  
+  // 根据机构类型动态获取对应的阀门类型（只显示球阀和蝶阀）
   const getValveTypesByMechanism = () => {
     if (mechanismFilter === '齿轮齿条') {
-      return ['闸阀', '截止阀', '直行程调节阀']
+      // 齿轮齿条不应该有球阀蝶阀，但根据需求只显示球阀蝶阀
+      return ['球阀', '蝶阀']
     } else if (mechanismFilter === '拨叉式') {
       return ['球阀', '蝶阀']
     } else {
-      // 未选择机构类型时，显示所有阀门类型
-      return [...new Set(products.map(p => p.valve_type))].filter(Boolean)
+      // 未选择机构类型时，只显示球阀和蝶阀
+      const allValveTypes = [...new Set(products.map(p => translateValveType(p.valve_type)))]
+        .filter(Boolean)
+        .filter(valve => valve === '球阀' || valve === '蝶阀')
+      return allValveTypes.length > 0 ? allValveTypes : ['球阀', '蝶阀']
     }
   }
   
@@ -132,11 +177,12 @@ const ProductCatalog = () => {
       key: 'mechanism',
       width: 120,
       render: (text) => {
-        const color = text === '齿轮齿条' ? 'purple' : text === '拨叉式' ? 'cyan' : 'default'
-        return <Tag color={color}>{text || '-'}</Tag>
+        const translated = translateMechanism(text)
+        const color = translated === '齿轮齿条' ? 'purple' : translated === '拨叉式' ? 'cyan' : 'default'
+        return <Tag color={color}>{translated || '-'}</Tag>
       },
       filters: uniqueMechanisms.map(m => ({ text: m, value: m })),
-      onFilter: (value, record) => record.mechanism === value
+      onFilter: (value, record) => translateMechanism(record.mechanism) === value
     },
     {
       title: '阀门类型',
@@ -145,11 +191,12 @@ const ProductCatalog = () => {
       width: 100,
       render: (text) => {
         if (!text) return '-'
-        const color = text === '球阀' ? 'gold' : text === '蝶阀' ? 'cyan' : 'geekblue'
-        return <Tag color={color}>{text}</Tag>
+        const translated = translateValveType(text)
+        const color = translated === '球阀' ? 'gold' : translated === '蝶阀' ? 'cyan' : 'geekblue'
+        return <Tag color={color}>{translated}</Tag>
       },
       filters: availableValveTypes.map(v => ({ text: v, value: v })),
-      onFilter: (value, record) => record.valve_type === value
+      onFilter: (value, record) => translateValveType(record.valve_type) === value
     },
     {
       title: '作用类型',
@@ -157,8 +204,9 @@ const ProductCatalog = () => {
       key: 'action_type',
       width: 120,
       render: (text) => {
+        const translated = translateActionType(text)
         const color = text === 'DA' ? 'green' : text === 'SR' ? 'orange' : 'default'
-        return <Tag color={color}>{text || '-'}</Tag>
+        return <Tag color={color}>{translated || '-'}</Tag>
       }
     },
     {
@@ -328,7 +376,7 @@ const ProductCatalog = () => {
             >
               {uniqueActionTypes.map(type => (
                 <Select.Option key={type} value={type}>
-                  {type}
+                  {translateActionType(type)}
                 </Select.Option>
               ))}
             </Select>
