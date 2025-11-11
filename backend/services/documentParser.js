@@ -3,15 +3,33 @@
  * 支持PDF、图片、Excel等多种格式
  */
 
-const pdf = require('pdf-parse');
-const Tesseract = require('tesseract.js');
 const fs = require('fs');
 const path = require('path');
+
+// 动态加载依赖，避免在没有安装时报错
+let pdf, Tesseract;
+try {
+  pdf = require('pdf-parse');
+} catch (e) {
+  console.warn('⚠️  pdf-parse未安装，PDF解析功能将不可用');
+}
+try {
+  Tesseract = require('tesseract.js');
+} catch (e) {
+  console.warn('⚠️  tesseract.js未安装，OCR功能将不可用');
+}
 
 /**
  * 从PDF中提取文本
  */
 async function extractTextFromPDF(filePath) {
+  if (!pdf) {
+    return {
+      success: false,
+      error: 'PDF解析功能未启用，请安装pdf-parse依赖'
+    };
+  }
+  
   try {
     const dataBuffer = fs.readFileSync(filePath);
     const data = await pdf(dataBuffer);
@@ -35,6 +53,13 @@ async function extractTextFromPDF(filePath) {
  * 从图片中提取文本（OCR）
  */
 async function extractTextFromImage(filePath) {
+  if (!Tesseract) {
+    return {
+      success: false,
+      error: 'OCR功能未启用，请安装tesseract.js依赖'
+    };
+  }
+  
   try {
     const result = await Tesseract.recognize(
       filePath,
