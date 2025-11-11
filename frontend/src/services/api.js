@@ -760,7 +760,10 @@ export const dataManagementAPI = {
     getByRole: (role) => api.get(`/data-management/users/role/${role}`),
     getActiveUsers: () => api.get('/data-management/users/active'),
     toggleStatus: (id) => api.patch(`/data-management/users/${id}/toggle-status`),
-    resetPassword: (id, newPassword) => api.put(`/data-management/users/${id}/reset-password`, { newPassword })
+    resetPassword: (id, newPassword) => api.put(`/data-management/users/${id}/reset-password`, { newPassword }),
+    exportSelected: (ids) => api.post('/data-management/users/export', { ids }, {
+      responseType: 'blob'
+    })
   }
 }
 

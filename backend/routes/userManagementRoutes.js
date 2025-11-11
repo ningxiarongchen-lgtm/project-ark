@@ -25,6 +25,9 @@ router.post('/import', upload.single('file'), userController.bulkImport);
 // 批量删除
 router.post('/bulk-delete', userController.bulkDelete);
 
+// 批量导出
+router.post('/export', userController.exportUsers);
+
 // 获取激活用户
 router.get('/active', userController.getActiveUsers);
 

@@ -219,5 +219,79 @@ userController.getStatistics = async (req, res) => {
   }
 };
 
+// 批量导出用户数据
+userController.exportUsers = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供要导出的用户ID列表'
+      });
+    }
+    
+    // 查询选中的用户（不包含密码）
+    const users = await User.find({ _id: { $in: ids } })
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到要导出的用户'
+      });
+    }
+    
+    // 准备Excel数据
+    const XLSX = require('xlsx');
+    const workbook = XLSX.utils.book_new();
+    
+    // 转换数据为表格格式
+    const exportData = users.map(user => ({
+      '手机号': user.phone || '',
+      '姓名': user.full_name || '',
+      '角色': user.role || '',
+      '部门': user.department || '',
+      '状态': user.isActive ? '激活' : '停用',
+      '最后登录': user.lastLogin ? new Date(user.lastLogin).toLocaleString('zh-CN') : '-',
+      '创建时间': user.createdAt ? new Date(user.createdAt).toLocaleString('zh-CN') : '-'
+    }));
+    
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    // 设置列宽
+    worksheet['!cols'] = [
+      { wch: 15 }, // 手机号
+      { wch: 12 }, // 姓名
+      { wch: 20 }, // 角色
+      { wch: 15 }, // 部门
+      { wch: 10 }, // 状态
+      { wch: 20 }, // 最后登录
+      { wch: 20 }  // 创建时间
+    ];
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, '用户列表');
+    
+    // 生成Excel文件
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // 设置响应头
+    const filename = `用户列表_${new Date().toISOString().split('T')[0]}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    
+    res.send(buffer);
+  } catch (error) {
+    console.error('导出用户失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '导出用户失败',
+      error: error.message
+    });
+  }
+};
+
 module.exports = userController;
 

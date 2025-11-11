@@ -26,7 +26,8 @@ import {
   UploadOutlined,
   DeleteOutlined,
   ReloadOutlined,
-  SearchOutlined
+  SearchOutlined,
+  ExportOutlined
 } from '@ant-design/icons';
 import RoleBasedAccess from '../RoleBasedAccess';
 
@@ -161,6 +162,39 @@ const DataManagementTable = ({
       fetchStatistics();
     } catch (error) {
       message.error('批量删除失败: ' + (error.response?.data?.message || error.message));
+    }
+  };
+  
+  // 批量导出
+  const handleExport = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要导出的记录');
+      return;
+    }
+    
+    try {
+      // 检查API是否支持导出功能
+      if (!api.exportSelected) {
+        message.error('该模块暂不支持导出功能');
+        return;
+      }
+      
+      const response = await api.exportSelected(selectedRowKeys);
+      
+      // 创建下载链接
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `${title}_导出_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      message.success(`成功导出 ${selectedRowKeys.length} 条记录`);
+    } catch (error) {
+      message.error('导出失败: ' + (error.response?.data?.message || error.message));
     }
   };
   
@@ -439,6 +473,15 @@ const DataManagementTable = ({
                 loading={importing}
               >
                 开始导入 ({importFileList.length} 个文件)
+              </Button>
+            )}
+            {api.exportSelected && (
+              <Button
+                icon={<ExportOutlined />}
+                onClick={handleExport}
+                disabled={selectedRowKeys.length === 0}
+              >
+                下载选中 ({selectedRowKeys.length})
               </Button>
             )}
             <Popconfirm
