@@ -259,7 +259,7 @@ actuatorController.downloadUnifiedTemplate = async (req, res) => {
     const buffer = await createActuatorTemplate();
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=C-MAX_Actuator_Data_Template.xlsx');
+    res.setHeader('Content-Disposition', 'attachment; filename=Project_ArK_Actuator_Template.xlsx');
     res.setHeader('Content-Length', buffer.length);
     
     res.send(buffer);
