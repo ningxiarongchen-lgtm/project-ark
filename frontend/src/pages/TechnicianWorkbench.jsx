@@ -4,7 +4,7 @@ import {
   Card, Table, Space, Button, Tag, Typography, Badge, Tabs,
   Input, Select, DatePicker, Row, Col, Statistic, Alert, Divider,
   Tooltip, Modal, message, Empty, Descriptions
-} from 'ant-design'
+} from 'antd'
 import {
   ThunderboltOutlined, FileTextOutlined, EyeOutlined,
   ClockCircleOutlined, CheckCircleOutlined, SearchOutlined,
