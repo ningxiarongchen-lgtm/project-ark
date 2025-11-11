@@ -1,4 +1,4 @@
-# 智能制造管理系统 (C-MAX)
+# Project ArK 智能制造管理系统
 
 > 一个完整的智能制造管理系统，包含执行器选型、项目管理、合同管理、质检、生产计划等功能。
 
@@ -16,7 +16,7 @@
 
 ## 系统概述
 
-C-MAX 智能制造管理系统是一个为执行器制造企业设计的全流程管理平台，覆盖从销售、选型、生产到质检的完整业务流程。
+Project ArK 智能制造管理系统是一个为执行器制造企业设计的全流程管理平台，覆盖从销售、选型、生产到质检的完整业务流程。
 
 ### 核心特性
 
@@ -91,7 +91,7 @@ npm install
 ```env
 NODE_ENV=development
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/cmax
+MONGODB_URI=mongodb://localhost:27017/project-ark
 JWT_SECRET=your_jwt_secret_key_here
 CORS_ORIGIN=http://localhost:5173
 ```
