@@ -31,6 +31,7 @@ const Quotes = lazy(() => import('./pages/Quotes'))
 const QuoteDetails = lazy(() => import('./pages/QuoteDetails'))
 const SelectionEngine = lazy(() => import('./pages/SelectionEngine'))
 const BatchSelection = lazy(() => import('./pages/BatchSelection'))
+const SmartBatchSelection = lazy(() => import('./pages/SmartBatchSelection'))
 const TechnicianWorkbench = lazy(() => import('./pages/TechnicianWorkbench'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const SupplierManagement = lazy(() => import('./pages/SupplierManagement'))
@@ -121,6 +122,7 @@ function App() {
           <Route path="quotes/:id" element={<QuoteDetails />} />
           <Route path="selection-engine" element={<SelectionEngine />} />
           <Route path="batch-selection" element={<BatchSelection />} />
+          <Route path="smart-batch-selection" element={<SmartBatchSelection />} />
           <Route path="technician-workbench" element={<TechnicianWorkbench />} />
           <Route path="orders" element={<OrderManagement />} />
           <Route path="orders/:id" element={<OrderDetails />} />

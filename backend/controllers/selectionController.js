@@ -168,8 +168,16 @@ exports.calculateSelection = async (req, res) => {
     // ========================================
     // 步骤 3: 构建查询条件 - 动态筛选
     // ========================================
+    // 机构类型映射（支持中英文）
+    const mechanismMapping = {
+      'Scotch Yoke': ['Scotch Yoke', '拨叉式'],
+      'Rack & Pinion': ['Rack & Pinion', '齿轮齿条']
+    };
+    
+    const mechanismValues = mechanismMapping[mechanism] || [mechanism];
+    
     let query = {
-      mechanism: mechanism, // 根据机构类型筛选
+      mechanism: { $in: mechanismValues }, // 支持中英文机构类型
       status: '已发布' // 只选择已发布的产品
     };
     
@@ -232,7 +240,13 @@ exports.calculateSelection = async (req, res) => {
           // 根据阀门类型，选择相应的扭矩数据
           if (actualValveType === 'Ball Valve') {
             // 球阀：只检查对称轭架扭矩
-            const symmetricTorque = actuator.torque_symmetric.get(torqueKey);
+            // 兼容两种数据结构：torque_symmetric (Map) 或 torque_data.symmetric (Object)
+            let symmetricTorque = null;
+            if (actuator.torque_symmetric && actuator.torque_symmetric.get) {
+              symmetricTorque = actuator.torque_symmetric.get(torqueKey);
+            } else if (actuator.torque_data && actuator.torque_data.symmetric) {
+              symmetricTorque = actuator.torque_data.symmetric[torqueKey];
+            }
             
             if (symmetricTorque && symmetricTorque >= requiredTorque) {
               shouldInclude = true;
@@ -247,7 +261,13 @@ exports.calculateSelection = async (req, res) => {
             
           } else if (actualValveType === 'Butterfly Valve') {
             // 蝶阀：只检查倾斜轭架扭矩
-            const cantedTorque = actuator.torque_canted.get(torqueKey);
+            // 兼容两种数据结构：torque_canted (Map) 或 torque_data.canted (Object)
+            let cantedTorque = null;
+            if (actuator.torque_canted && actuator.torque_canted.get) {
+              cantedTorque = actuator.torque_canted.get(torqueKey);
+            } else if (actuator.torque_data && actuator.torque_data.canted) {
+              cantedTorque = actuator.torque_data.canted[torqueKey];
+            }
             
             if (cantedTorque && cantedTorque >= requiredTorque) {
               shouldInclude = true;
@@ -266,17 +286,28 @@ exports.calculateSelection = async (req, res) => {
           // SF系列单作用执行器根据故障安全位置判断扭矩匹配逻辑
           const torqueData = actuator.torqueData || actuator.torque_data || {};
           
-          // 提取弹簧扭矩数据
-          const springTorque = torqueData.springTorque || {};
-          const SST = springTorque.SST; // 弹簧复位起点扭矩
-          const SET = springTorque.SET; // 弹簧复位终点扭矩
+          // 根据阀门类型选择对应的扭矩数据（symmetric或canted）
+          let torqueSet = null;
+          if (actualValveType === 'Ball Valve') {
+            torqueSet = torqueData.symmetric || {};
+          } else if (actualValveType === 'Butterfly Valve') {
+            torqueSet = torqueData.canted || {};
+          }
+          
+          if (!torqueSet) {
+            console.log(`  ✗ ${actuator.model_base}: 未找到${actualValveType}对应的扭矩数据`);
+            continue;
+          }
+          
+          // 提取弹簧扭矩数据（兼容大小写）
+          const SST = torqueSet.SST || torqueSet.sst; // 弹簧起点扭矩
+          const SET = torqueSet.SET || torqueSet.set; // 弹簧终点扭矩
           
           // 提取气源扭矩数据（根据工作压力）
-          const airTorque = torqueData.airTorque || {};
-          const pressureKey_sr = `${working_pressure}MPa`;
-          const airTorqueAtPressure = airTorque[pressureKey_sr] || {};
-          const AST = airTorqueAtPressure.AST; // 气源动作起点扭矩
-          const AET = airTorqueAtPressure.AET; // 气源动作终点扭矩
+          // 数据格式: ast_0.3, aet_0.3, ast_0.5, aet_0.5 等
+          const pressureKey = String(working_pressure).replace('.', '_');
+          const AST = torqueSet[`AST_${working_pressure}`] || torqueSet[`ast_${pressureKey}`]; // 气源起点扭矩
+          const AET = torqueSet[`AET_${working_pressure}`] || torqueSet[`aet_${pressureKey}`]; // 气源终点扭矩
           
           console.log(`  🔍 SF-SR执行器 ${actuator.model_base} 扭矩数据:`, {
             springTorque: { SST, SET },

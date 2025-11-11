@@ -455,6 +455,16 @@ async function seedActuators() {
             };
             
             // 解析扭矩数据（如果有）
+            // AT/GY系列使用 torque_data 字段
+            if (row.torque_data) {
+              try {
+                actuator.torque_data = JSON.parse(row.torque_data);
+              } catch (e) {
+                console.warn(`   ⚠️  行 ${rowCount}: 扭矩数据解析失败`);
+              }
+            }
+            
+            // SF系列使用 torque_symmetric 和 torque_canted 字段
             if (row.torque_symmetric || row.对称扭矩) {
               try {
                 actuator.torque_symmetric = JSON.parse(row.torque_symmetric || row.对称扭矩);

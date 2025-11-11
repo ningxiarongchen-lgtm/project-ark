@@ -45,6 +45,8 @@ const userManagementRoutes = require('./routes/userManagementRoutes');
 const contractRoutes = require('./routes/contractRoutes');
 // 产品目录路由（销售经理专用）
 const catalogRoutes = require('./routes/catalog.routes');
+// 文档智能解析路由
+const documentRoutes = require('./routes/documentRoutes');
 
 // 测试环境专用路由（仅在测试环境加载）
 let testingRoutes = null;
@@ -165,6 +167,7 @@ app.use('/api/manual-overrides', manualOverrideRoutes);
 app.use('/api/new-projects', newProjectRoutes);
 app.use('/api/selection', selectionRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/document', documentRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/orders', orderRoutes);
