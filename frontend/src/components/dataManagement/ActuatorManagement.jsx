@@ -9,6 +9,11 @@ import ActuatorForm from './forms/ActuatorForm';
 import { dataManagementAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
+// ==== 中英文映射表 ====
+const mechanismMap = { 'Rack & Pinion': '齿轮齿条', 'Scotch Yoke': '拨叉式' };
+const valveMap = { 'Ball Valve': '球阀', 'Butterfly Valve': '蝶阀', '球阀': '球阀', '蝶阀': '蝶阀' };
+const actionTypeMap = { 'SR': '单作用（SR）', 'DA': '双作用（DA）' };
+
 const ActuatorManagement = () => {
   const { user } = useAuthStore();
   
@@ -38,13 +43,27 @@ const ActuatorManagement = () => {
       width: 100
     },
     {
+      title: '机构类型',
+      dataIndex: 'mechanism',
+      key: 'mechanism',
+      width: 100,
+      render: (text) => mechanismMap[text] || text
+    },
+    {
+      title: '阀门类型',
+      dataIndex: 'valve_type',
+      key: 'valve_type',
+      width: 100,
+      render: (text) => valveMap[text] || ''
+    },
+    {
       title: '作用类型',
       dataIndex: 'action_type',
       key: 'action_type',
       width: 100,
       render: (text) => (
         <Tag color={text === 'DA' ? 'green' : 'orange'}>
-          {text === 'DA' ? '双作用' : '单作用'}
+          {actionTypeMap[text] || text}
         </Tag>
       )
     },
