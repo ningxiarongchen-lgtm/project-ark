@@ -145,8 +145,16 @@ const BatchSelection = () => {
     const quantityIndex = findColumnIndex(['quantity', '数量', 'qty'])
     const serviceIndex = findColumnIndex(['service', '工艺', '介质'])
     const safetyFactorIndex = findColumnIndex(['safety', 'factor', '安全系数', '系数'])
+    const actionTypeIndex = findColumnIndex(['action', '作用类型', 'da', 'sr'])
+    const failSafeIndex = findColumnIndex(['fail', 'safe', '故障', '安全位置'])
+    const openingTorqueIndex = findColumnIndex(['opening', '开启扭矩'])
+    const closingTorqueIndex = findColumnIndex(['closing', '关闭扭矩'])
+    const mechanismIndex = findColumnIndex(['mechanism', '机构类型', 'scotch', 'rack'])
     
-    console.log('列索引:', { tagIndex, torqueIndex, sizeIndex, valveTypeIndex, quantityIndex })
+    console.log('列索引:', { 
+      tagIndex, torqueIndex, sizeIndex, valveTypeIndex, quantityIndex,
+      actionTypeIndex, failSafeIndex, openingTorqueIndex, closingTorqueIndex, mechanismIndex
+    })
     
     const parsed = []
     
@@ -181,17 +189,75 @@ const BatchSelection = () => {
         }
       }
       
+      // 提取作用类型（DA/SR）
+      let actionType = 'DA' // 默认双作用
+      if (actionTypeIndex >= 0 && row[actionTypeIndex]) {
+        const actionStr = String(row[actionTypeIndex]).toUpperCase()
+        if (actionStr.includes('SR') || actionStr.includes('单作用')) {
+          actionType = 'SR'
+        } else if (actionStr.includes('DA') || actionStr.includes('双作用')) {
+          actionType = 'DA'
+        }
+      }
+      
+      // 提取故障安全位置（仅SR需要）
+      let failSafePosition = null
+      if (actionType === 'SR' && failSafeIndex >= 0 && row[failSafeIndex]) {
+        const failStr = String(row[failSafeIndex]).toLowerCase()
+        if (failStr.includes('close') || failStr.includes('关')) {
+          failSafePosition = 'Fail Close'
+        } else if (failStr.includes('open') || failStr.includes('开')) {
+          failSafePosition = 'Fail Open'
+        }
+      }
+      
+      // 提取开启和关闭扭矩（仅SR需要）
+      let openingTorque = null
+      let closingTorque = null
+      if (actionType === 'SR') {
+        if (openingTorqueIndex >= 0 && row[openingTorqueIndex]) {
+          openingTorque = parseFloat(String(row[openingTorqueIndex]).replace(/[^0-9.]/g, ''))
+        }
+        if (closingTorqueIndex >= 0 && row[closingTorqueIndex]) {
+          closingTorque = parseFloat(String(row[closingTorqueIndex]).replace(/[^0-9.]/g, ''))
+        }
+        
+        // 如果只提供了一个扭矩值，两个方向都使用该值
+        if (!openingTorque && !closingTorque) {
+          openingTorque = torque
+          closingTorque = torque
+        } else if (!openingTorque) {
+          openingTorque = closingTorque
+        } else if (!closingTorque) {
+          closingTorque = openingTorque
+        }
+      }
+      
+      // 提取机构类型
+      let mechanism = 'Scotch Yoke' // 默认拨叉式
+      if (mechanismIndex >= 0 && row[mechanismIndex]) {
+        const mechStr = String(row[mechanismIndex]).toLowerCase()
+        if (mechStr.includes('rack') || mechStr.includes('pinion') || mechStr.includes('齿轮') || mechStr.includes('at') || mechStr.includes('gy')) {
+          mechanism = 'Rack & Pinion'
+        }
+      }
+      
       parsed.push({
         key: index,
         tag,
         torque,
-        safetyFactor: itemSafetyFactor, // 保存实际使用的安全系数
-        safetyTorque: Math.round(torque * itemSafetyFactor), // 计算安全扭矩
+        safetyFactor: itemSafetyFactor,
+        safetyTorque: Math.round(torque * itemSafetyFactor),
         size,
         valveType,
         quantity: isNaN(quantity) ? 1 : quantity,
         service,
-        status: 'pending' // pending, selecting, success, failed
+        actionType, // DA 或 SR
+        failSafePosition, // Fail Close 或 Fail Open（仅SR）
+        openingTorque, // 开启扭矩（仅SR）
+        closingTorque, // 关闭扭矩（仅SR）
+        mechanism, // Scotch Yoke 或 Rack & Pinion
+        status: 'pending'
       })
     })
     
@@ -233,12 +299,29 @@ const BatchSelection = () => {
       try {
         // 调用选型API
         const selectionParams = {
-          mechanism: 'Scotch Yoke', // 默认使用苏格兰轭式
-          required_torque: item.safetyTorque, // 使用1.5倍安全系数后的扭矩
-          working_pressure: 0.6, // 默认工作压力
+          mechanism: item.mechanism || 'Scotch Yoke',
           valve_type: item.valveType,
           valve_size: item.size ? `DN${item.size}` : undefined,
-          working_angle: 90
+          working_pressure: 0.6, // 默认工作压力
+          safetyFactor: item.safetyFactor || 1.3
+        }
+        
+        // DA（双作用）参数
+        if (item.actionType === 'DA') {
+          selectionParams.required_torque = item.safetyTorque
+          selectionParams.action_type_preference = 'DA'
+        }
+        // SR（单作用）参数
+        else if (item.actionType === 'SR') {
+          selectionParams.action_type_preference = 'SR'
+          selectionParams.failSafePosition = item.failSafePosition || 'Fail Close' // 默认故障关
+          selectionParams.requiredOpeningTorque = item.openingTorque || item.torque
+          selectionParams.requiredClosingTorque = item.closingTorque || item.torque
+        }
+        // 默认DA
+        else {
+          selectionParams.required_torque = item.safetyTorque
+          selectionParams.action_type_preference = 'DA'
         }
         
         console.log(`选型参数 [${item.tag}]:`, selectionParams)
@@ -448,16 +531,39 @@ const BatchSelection = () => {
   // 下载Excel模板
   const handleDownloadTemplate = () => {
     const template = [
-      ['TAG/位号', '阀门类型', '阀门尺寸', '扭矩(Nm)', '安全系数', '数量', '工艺介质'],
-      ['FV-001', '球阀', 'DN100', '500', '1.3', '1', '气动液端滑水闸阀'],
-      ['FV-002', 'Ball Valve', 'DN150', '800', '1.5', '2', '水处理系统（高安全要求）'],
-      ['FV-003', 'B822', 'DN50', '190', '', '1', '（留空则使用默认1.3）']
+      ['TAG/位号', '阀门类型', '阀门尺寸', '扭矩(Nm)', '安全系数', '作用类型', '故障安全位置', '开启扭矩(Nm)', '关闭扭矩(Nm)', '机构类型', '数量', '工艺介质'],
+      ['FV-001', '球阀', 'DN100', '500', '1.3', 'DA', '', '', '', 'Scotch Yoke', '1', '气动液端滑水闸阀'],
+      ['FV-002', 'Ball Valve', 'DN150', '800', '1.5', 'SR', 'Fail Close', '400', '450', 'Scotch Yoke', '2', '水处理系统（高安全要求）'],
+      ['FV-003', 'B822', 'DN50', '190', '', 'DA', '', '', '', 'Rack & Pinion', '1', '（留空则使用默认1.3）'],
+      ['', '', '', '', '', '', '', '', '', '', '', ''],
+      ['说明：', '', '', '', '', '', '', '', '', '', '', ''],
+      ['作用类型', 'DA=双作用（普通）', 'SR=单作用（带弹簧故障保护）', '', '', '', '', '', '', '', '', ''],
+      ['故障安全位置', 'Fail Close=故障关（弹簧关阀）', 'Fail Open=故障开（弹簧开阀）', '仅SR类型需要填写', '', '', '', '', '', '', '', ''],
+      ['开启/关闭扭矩', '仅SR类型需要填写', '如果只提供一个扭矩值，系统会自动使用该值', '', '', '', '', '', '', '', '', ''],
+      ['机构类型', 'Scotch Yoke=拨叉式(SF系列)', 'Rack & Pinion=齿轮齿条(AT/GY系列)', '留空默认Scotch Yoke', '', '', '', '', '', '', '', '']
     ]
     
     const ws = XLSX.utils.aoa_to_sheet(template)
+    
+    // 设置列宽
+    ws['!cols'] = [
+      { wch: 12 }, // TAG
+      { wch: 15 }, // 阀门类型
+      { wch: 12 }, // 尺寸
+      { wch: 12 }, // 扭矩
+      { wch: 10 }, // 安全系数
+      { wch: 12 }, // 作用类型
+      { wch: 15 }, // 故障安全位置
+      { wch: 12 }, // 开启扭矩
+      { wch: 12 }, // 关闭扭矩
+      { wch: 15 }, // 机构类型
+      { wch: 8 },  // 数量
+      { wch: 25 }  // 工艺介质
+    ]
+    
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '批量选型模板')
-    XLSX.writeFile(wb, '批量选型模板.xlsx')
+    XLSX.writeFile(wb, 'Project_ArK_批量选型模板.xlsx')
     message.success('模板下载成功')
   }
   
