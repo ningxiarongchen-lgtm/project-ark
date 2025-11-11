@@ -12,7 +12,7 @@ const getApiUrl = () => {
   
   // 生产环境默认值（如果没有配置环境变量）
   if (import.meta.env.PROD) {
-    return 'https://project-ark-efy7.onrender.com/api'
+    return 'https://project-ark-ely7.onrender.com/api'
   }
   
   // 本地开发环境
