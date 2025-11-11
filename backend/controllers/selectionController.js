@@ -23,7 +23,7 @@ exports.calculateSelection = async (req, res) => {
       
       // 其他必需参数
       working_pressure, // 工作压力（MPa）
-      working_angle = 0, // 工作角度（0 或 90）
+      working_angle, // 工作角度（将自动设置为90度，因为球阀和蝶阀都是旋转型阀门）
       action_type_preference, // 作用类型偏好：'DA' 或 'SR'
       mechanism, // 机构类型：'Scotch Yoke' 或 'Rack & Pinion'
       body_size_preference, // 本体尺寸偏好
@@ -93,6 +93,13 @@ exports.calculateSelection = async (req, res) => {
         });
       }
     }
+
+    // ========================================
+    // 自动设置工作角度为90度（球阀和蝶阀都是旋转型阀门）
+    // ========================================
+    const actualWorkingAngle = 90; // 固定为90度
+    console.log(`🔄 工作角度自动设置为 ${actualWorkingAngle}° (球阀/蝶阀为旋转型阀门)`);
+
 
     // 验证故障安全位置参数（单作用执行器必需）
     if (action_type_preference === 'SR' && !failSafePosition) {
@@ -208,9 +215,9 @@ exports.calculateSelection = async (req, res) => {
       // ========== Scotch Yoke 逻辑（SF 系列）- 基于阀门类型 ==========
       // 转换压力键格式（0.3 → 0_3）
       const pressureKey = String(working_pressure).replace('.', '_');
-      const torqueKey = `${pressureKey}_${working_angle}`;
+      const torqueKey = `${pressureKey}_${actualWorkingAngle}`;
 
-      console.log(`🎯 Scotch Yoke 选型: 阀门类型 = ${actualValveType}, 压力键 = ${torqueKey}`);
+      console.log(`🎯 Scotch Yoke 选型: 阀门类型 = ${actualValveType}, 工作角度 = ${actualWorkingAngle}°, 压力键 = ${torqueKey}`);
 
       for (const actuator of candidateActuators) {
         let shouldInclude = false;
@@ -711,9 +718,9 @@ exports.calculateSelection = async (req, res) => {
         required_opening_torque: requiredOpeningTorque, // 开启扭矩（单作用）
         required_closing_torque: requiredClosingTorque, // 关闭扭矩（单作用）
         working_pressure,
-        working_angle: mechanism === 'Scotch Yoke' ? working_angle : 'N/A',
+        working_angle: actualWorkingAngle, // 固定为90度（旋转型阀门）
         mechanism,
-        valve_type: mechanism === 'Scotch Yoke' ? actualValveType : 'N/A', // 阀门类型
+        valve_type: actualValveType, // 阀门类型
         fail_safe_position: failSafePosition || 'Not Applicable', // ⭐ 故障安全位置
         temperature_code: temperature_code || 'No code', // ⭐ 温度代码（所有系列）
         temperature_type: mechanism === 'Rack & Pinion' ? temperature_type : 'N/A', // 使用温度（AT/GY系列）

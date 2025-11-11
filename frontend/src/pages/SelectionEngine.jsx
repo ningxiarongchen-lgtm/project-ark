@@ -721,17 +721,6 @@ const SelectionEngine = () => {
                       <Select.Option value="M">高温 High Temp (-20~120°C)</Select.Option>
                     </Select>
                   </Form.Item>
-
-                  <Form.Item
-                    label="旋转角度 (度)"
-                    name="max_rotation_angle"
-                    tooltip="阀门旋转的角度，通常为90°"
-                  >
-                    <Select>
-                      <Select.Option value={90}>90°</Select.Option>
-                      <Select.Option value={0}>0° (双方向)</Select.Option>
-                    </Select>
-                  </Form.Item>
                 </Panel>
 
                 <Panel header="轭架和附件" key="2">
