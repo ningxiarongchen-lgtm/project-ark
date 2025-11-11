@@ -69,6 +69,9 @@ const BatchSelection = () => {
     try {
       const response = await projectsAPI.getById(id)
       const project = response.data
+      
+      console.log('项目数据:', project) // 调试日志
+      
       setCurrentProject(project)
       
       // 尝试从技术需求中提取安全系数
@@ -76,7 +79,6 @@ const BatchSelection = () => {
         const extractedFactor = extractSafetyFactorFromText(project.technical_requirements)
         if (extractedFactor) {
           setSafetyFactor(extractedFactor)
-          // 只在识别到安全系数时才显示提示
           console.log(`✅ 已从技术需求中识别安全系数: ${extractedFactor}倍`)
         }
       }
