@@ -370,4 +370,126 @@ exports.getSystemStats = async (req, res) => {
   }
 };
 
+// @desc    Fix SR torque data (torque_data -> torqueData)
+// @route   POST /api/admin/fix-sr-torque
+// @access  Private/Admin
+exports.fixSRTorqueData = async (req, res) => {
+  try {
+    const Actuator = require('../models/Actuator');
+    
+    // 键名映射
+    const KEY_MAPPING = {
+      'sst': 'SST',
+      'srt': 'SRT',
+      'set': 'SET',
+      'ast_0.3': 'AST_0_3',
+      'art_0.3': 'ART_0_3',
+      'aet_0.3': 'AET_0_3',
+      'ast_0.4': 'AST_0_4',
+      'art_0.4': 'ART_0_4',
+      'aet_0.4': 'AET_0_4',
+      'ast_0.5': 'AST_0_5',
+      'art_0.5': 'ART_0_5',
+      'aet_0.5': 'AET_0_5',
+      'ast_0.6': 'AST_0_6',
+      'art_0.6': 'ART_0_6',
+      'aet_0.6': 'AET_0_6'
+    };
+
+    function transformKeys(obj) {
+      if (!obj) return null;
+      const transformed = {};
+      for (const [oldKey, value] of Object.entries(obj)) {
+        const newKey = KEY_MAPPING[oldKey] || oldKey.toUpperCase();
+        transformed[newKey] = value;
+      }
+      return transformed;
+    }
+
+    // 查找需要修复的SR执行器
+    const allSR = await Actuator.find({ 
+      series: 'SF', 
+      action_type: 'SR',
+      torque_data: { $exists: true }
+    });
+
+    let success = 0;
+    let failed = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const sr of allSR) {
+      try {
+        // 检查是否已经有正确的torqueData
+        if (sr.torqueData && (sr.torqueData.symmetric || sr.torqueData.canted)) {
+          skipped++;
+          continue;
+        }
+
+        // 获取旧数据
+        const oldData = sr.torque_data;
+        if (!oldData) {
+          skipped++;
+          continue;
+        }
+
+        // 转换数据
+        const newTorqueData = {};
+        
+        if (oldData.symmetric) {
+          newTorqueData.symmetric = transformKeys(oldData.symmetric);
+        }
+        
+        if (oldData.canted) {
+          newTorqueData.canted = transformKeys(oldData.canted);
+        }
+
+        // 更新数据
+        sr.torqueData = newTorqueData;
+        await sr.save();
+        
+        success++;
+        
+      } catch (error) {
+        failed++;
+        errors.push({
+          model: sr.model_base,
+          error: error.message
+        });
+      }
+    }
+
+    // 验证修复结果
+    const withTorqueData = await Actuator.countDocuments({
+      series: 'SF',
+      action_type: 'SR',
+      $or: [
+        { 'torqueData.symmetric': { $exists: true } },
+        { 'torqueData.canted': { $exists: true } }
+      ]
+    });
+
+    res.json({
+      success: true,
+      message: 'SR扭矩数据修复完成',
+      results: {
+        total: allSR.length,
+        success,
+        failed,
+        skipped,
+        verified: withTorqueData
+      },
+      errors: errors.length > 0 ? errors : undefined
+    });
+
+  } catch (error) {
+    console.error('修复SR数据错误:', error);
+    res.status(500).json({ 
+      success: false,
+      message: '修复失败',
+      error: error.message 
+    });
+  }
+};
+
 

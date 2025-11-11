@@ -5,7 +5,8 @@ const {
   importAccessories,
   exportProducts,
   getProductTemplate,
-  getSystemStats
+  getSystemStats,
+  fixSRTorqueData
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -22,6 +23,9 @@ router.post('/import/products', upload.single('file'), importProducts);
 router.post('/import/accessories', upload.single('file'), importAccessories);
 router.get('/export/products', exportProducts);
 router.get('/template/products', getProductTemplate);
+
+// Data maintenance
+router.post('/fix-sr-torque', fixSRTorqueData);
 
 module.exports = router;
 
