@@ -208,6 +208,14 @@ const actuatorSchema = new mongoose.Schema({
     default: {}
   },
   
+  // SR单作用扭矩数据（标准格式）
+  // 存储SR系列的扭矩数据，包含symmetric或canted对象
+  // 例如: { symmetric: { SST: 230, SET: 153, AST_0_3: 155, ... } }
+  torqueData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+  
   // 尺寸数据（扩展字段，用于所有系列）
   // 存储完整的尺寸信息，包括轮廓、法兰、顶部安装和气动连接
   dimensions: {
