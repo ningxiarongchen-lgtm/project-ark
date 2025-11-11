@@ -14,6 +14,12 @@ const {
   generateErrorReport,
   transformToDbFormat 
 } = require('../utils/actuatorExcelProcessor');
+const {
+  parseActuatorExcelCN,
+  validateExcelDataCN,
+  generateErrorReportCN,
+  transformToDbFormatCN
+} = require('../utils/actuatorExcelProcessorCN');
 
 // 自定义验证逻辑
 function validateActuator(data) {
@@ -381,6 +387,137 @@ actuatorController.bulkImportUnifiedExcel = async (req, res) => {
       message: '导入失败',
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
+/**
+ * 批量导入（中文字段模板）
+ * 这是主要的导入方法，使用中文字段名
+ */
+actuatorController.bulkImport = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: '请上传Excel文件'
+      });
+    }
+    
+    console.log('开始处理中文字段Excel文件:', req.file.originalname);
+    
+    // 步骤1: 解析Excel文件（中文字段）
+    const parseResult = await parseActuatorExcelCN(req.file.buffer);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: parseResult.error
+      });
+    }
+    
+    console.log('Excel解析成功，数据行数:', {
+      SF: parseResult.data.SF.length,
+      AT: parseResult.data.AT.length,
+      GY: parseResult.data.GY.length
+    });
+    
+    // 步骤2: 校验数据
+    const validationResult = validateExcelDataCN(parseResult.data);
+    
+    if (!validationResult.success) {
+      console.log('数据校验失败，错误数量:', validationResult.errors.length);
+      
+      // 生成带错误说明的Excel文件
+      const errorReportBuffer = await generateErrorReportCN(req.file.buffer, validationResult.errors);
+      
+      // 返回错误信息和错误报告
+      return res.status(400).json({
+        success: false,
+        message: `数据校验失败，发现 ${validationResult.errors.length} 个错误。`,
+        hasErrors: true,
+        errorCount: validationResult.errors.length,
+        errors: validationResult.errors.map(e => ({
+          sheet: e.sheet,
+          row: e.row,
+          model: e.model,
+          errors: e.errors
+        })),
+        errorReport: {
+          fileName: `Error_Report_${Date.now()}.xlsx`,
+          data: errorReportBuffer.toString('base64')
+        }
+      });
+    }
+    
+    console.log('数据校验成功，开始转换数据格式');
+    
+    // 步骤3: 转换为数据库格式
+    const dbRecords = transformToDbFormatCN(validationResult.validData);
+    
+    console.log('数据转换完成，记录数:', dbRecords.length);
+    
+    // 步骤4: 批量导入（更新或插入）
+    const updateOnDuplicate = req.body.updateOnDuplicate === 'true';
+    let successCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    const errors = [];
+    
+    for (const record of dbRecords) {
+      try {
+        const existing = await Actuator.findOne({ model_base: record.model_base });
+        
+        if (existing) {
+          if (updateOnDuplicate) {
+            // 更新现有记录
+            Object.assign(existing, record);
+            await existing.save();
+            updatedCount++;
+            successCount++;
+          } else {
+            // 跳过重复记录
+            skippedCount++;
+          }
+        } else {
+          // 创建新记录
+          await Actuator.create(record);
+          successCount++;
+        }
+      } catch (error) {
+        errors.push({
+          model: record.model_base,
+          error: error.message
+        });
+      }
+    }
+    
+    // 统计各系列导入数量
+    const sfCount = dbRecords.filter(r => r.series === 'SF').length;
+    const atCount = dbRecords.filter(r => r.series === 'AT').length;
+    const gyCount = dbRecords.filter(r => r.series === 'GY').length;
+    
+    res.json({
+      success: true,
+      message: `导入完成！共处理${dbRecords.length}条记录，成功${successCount}条（新增${successCount - updatedCount}条，更新${updatedCount}条），跳过${skippedCount}条。`,
+      summary: {
+        totalRows: dbRecords.length,
+        imported: successCount,
+        updated: updatedCount,
+        skipped: skippedCount,
+        failed: errors.length,
+        sfCount,
+        atCount,
+        gyCount
+      },
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error('Excel导入失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '导入失败',
+      error: error.message
     });
   }
 };
