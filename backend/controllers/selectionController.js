@@ -169,7 +169,8 @@ exports.calculateSelection = async (req, res) => {
     // 步骤 3: 构建查询条件 - 动态筛选
     // ========================================
     let query = {
-      mechanism: mechanism // 根据机构类型筛选
+      mechanism: mechanism, // 根据机构类型筛选
+      status: '已发布' // 只选择已发布的产品
     };
     
     if (action_type_preference) {
@@ -193,8 +194,8 @@ exports.calculateSelection = async (req, res) => {
 
     console.log('🔍 查询条件:', query);
 
-    // 从数据库获取候选执行器
-    const candidateActuators = await Actuator.find(query);
+    // 从数据库获取候选执行器（按body_size排序，优先推荐小型号）
+    const candidateActuators = await Actuator.find(query).sort({ body_size: 1 });
 
     if (candidateActuators.length === 0) {
       return res.status(404).json({
@@ -286,14 +287,15 @@ exports.calculateSelection = async (req, res) => {
           // 根据故障安全位置和阀门类型判断
           if (failSafePosition === 'Fail Close') {
             // 故障关 (STC): 弹簧关阀，气源开阀
-            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩 × 安全系数
-            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩 × 安全系数
-            const condition1 = SET && SET >= requiredClosingTorque * safetyFactor;
-            const condition2 = AST && AST >= requiredOpeningTorque * safetyFactor;
+            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩
+            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩
+            const condition1 = SET && SET >= requiredClosingTorque;
+            const condition2 = AST && AST >= requiredOpeningTorque;
             
             if (condition1 && condition2) {
               shouldInclude = true;
-              actualTorque = Math.min(SET / safetyFactor, AST / safetyFactor);
+              // 实际可用扭矩取两者中较小值
+              actualTorque = Math.min(SET, AST);
               
               // 根据阀门类型确定轭架类型
               if (actualValveType === 'Ball Valve') {
@@ -311,14 +313,15 @@ exports.calculateSelection = async (req, res) => {
             
           } else if (failSafePosition === 'Fail Open') {
             // 故障开 (STO): 弹簧开阀，气源关阀
-            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩 × 安全系数
-            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩 × 安全系数
-            const condition1 = SST && SST >= requiredOpeningTorque * safetyFactor;
-            const condition2 = AET && AET >= requiredClosingTorque * safetyFactor;
+            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩
+            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩
+            const condition1 = SST && SST >= requiredOpeningTorque;
+            const condition2 = AET && AET >= requiredClosingTorque;
             
             if (condition1 && condition2) {
               shouldInclude = true;
-              actualTorque = Math.min(SST / safetyFactor, AET / safetyFactor);
+              // 实际可用扭矩取两者中较小值
+              actualTorque = Math.min(SST, AET);
               
               // 根据阀门类型确定轭架类型
               if (actualValveType === 'Ball Valve') {
@@ -511,14 +514,15 @@ exports.calculateSelection = async (req, res) => {
           // 根据故障安全位置判断
           if (failSafePosition === 'Fail Close') {
             // 故障关 (STC): 弹簧关阀，气源开阀
-            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩 × 安全系数
-            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩 × 安全系数
-            const condition1 = SET && SET >= requiredClosingTorque * safetyFactor;
-            const condition2 = AST && AST >= requiredOpeningTorque * safetyFactor;
+            // 条件1: 弹簧复位终点扭矩 SET >= 关闭扭矩
+            // 条件2: 气源动作起点扭矩 AST >= 开启扭矩
+            const condition1 = SET && SET >= requiredClosingTorque;
+            const condition2 = AST && AST >= requiredOpeningTorque;
             
             if (condition1 && condition2) {
               shouldInclude = true;
-              actualTorque = Math.min(SET / safetyFactor, AST / safetyFactor);
+              // 实际可用扭矩取两者中较小值
+              actualTorque = Math.min(SET, AST);
               
               console.log(`  ✓ ${actuator.model_base}-STC: 故障关匹配成功`);
               console.log(`    - SET (${SET}) >= 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
@@ -531,22 +535,23 @@ exports.calculateSelection = async (req, res) => {
             
           } else if (failSafePosition === 'Fail Open') {
             // 故障开 (STO): 弹簧开阀，气源关阀
-            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩 × 安全系数
-            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩 × 安全系数
-            const condition1 = SST && SST >= requiredOpeningTorque * safetyFactor;
-            const condition2 = AET && AET >= requiredClosingTorque * safetyFactor;
+            // 条件1: 弹簧复位起点扭矩 SST >= 开启扭矩
+            // 条件2: 气源动作终点扭矩 AET >= 关闭扭矩
+            const condition1 = SST && SST >= requiredOpeningTorque;
+            const condition2 = AET && AET >= requiredClosingTorque;
             
             if (condition1 && condition2) {
               shouldInclude = true;
-              actualTorque = Math.min(SST / safetyFactor, AET / safetyFactor);
+              // 实际可用扭矩取两者中较小值
+              actualTorque = Math.min(SST, AET);
               
               console.log(`  ✓ ${actuator.model_base}-STO: 故障开匹配成功`);
-              console.log(`    - SST (${SST}) >= 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
-              console.log(`    - AET (${AET}) >= 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+              console.log(`    - SST (${SST}) >= 开启扭矩 (${requiredOpeningTorque})`);
+              console.log(`    - AET (${AET}) >= 关闭扭矩 (${requiredClosingTorque})`);
             } else {
               console.log(`  ✗ ${actuator.model_base}-STO: 故障开不匹配`);
-              if (!condition1) console.log(`    - SST (${SST}) < 开启扭矩 × ${safetyFactor} (${requiredOpeningTorque * safetyFactor})`);
-              if (!condition2) console.log(`    - AET (${AET}) < 关闭扭矩 × ${safetyFactor} (${requiredClosingTorque * safetyFactor})`);
+              if (!condition1) console.log(`    - SST (${SST}) < 开启扭矩 (${requiredOpeningTorque})`);
+              if (!condition2) console.log(`    - AET (${AET}) < 关闭扭矩 (${requiredClosingTorque})`);
             }
           }
         }
